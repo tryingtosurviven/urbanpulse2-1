@@ -1,0 +1,41 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Environment Monitoring Agent",
+    "description": "Ingests live data from data.gov.sg to monitor PSI, weather, wind, and humidity. Detects environmental spikes to signal the prediction agent.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://application-33.1abc2def3gh.au-syd.codeengine.appdomain.cloud/knowledge",
+      "description": "UrbanPulse Backend Server"
+    }
+  ],
+  "paths": {
+    "/snapshot": {
+      "get": {
+        "summary": "Get Environmental Readings",
+        "description": "Fetches current PSI, PM2.5, weather, wind, and humidity readings for monitoring.",
+        "operationId": "get_environmental_data",
+        "responses": {
+          "200": {
+            "description": "Successful retrieval of live environmental data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "psi": { "type": "number" },
+                    "weather": { "type": "string" },
+                    "wind_direction": { "type": "string" },
+                    "humidity": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
