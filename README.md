@@ -10,10 +10,38 @@ UrbanPulse provides real-time health alerts based on Singapore's air quality and
 * **PSI 51-100 (Moderate)**: Normal activity; sensitive groups monitor symptoms.
 * **PSI > 100 (Unhealthy)**: Automate alert to Polyclinics to prepare masks and resources.
 
+## 🧩 Agent Architecture (watsonx Orchestrate)
 
-## 🚨 Problem Statement
+UrbanPulse is implemented as a **multi-agent system** using **IBM watsonx Orchestrate**, where each agent has a clear responsibility and operates autonomously under orchestration.
 
-Singapore already has strong sensors, data, and policies — but responses to air quality, heat, and urban stress remain **reactive and siloed**.
+### Core Agents
+### 1. Environment Monitoring Agent
+- Ingests live and simulated data from data.gov.sg
+- Monitors air quality (PSI / PM₂.₅), weather, wind direction, and humidity
+- Detects abnormal pollution or environmental spikes
+- Sends structured signals to the prediction agent
+
+### 2. Prediction & Risk Assessment Agent
+- Runs machine learning models to forecast haze movement and severity
+- Predicts PM₂.₅ spikes by district and time window
+- Translates environmental signals into health risk levels
+- Triggers downstream actions when thresholds are exceeded
+
+### 3. Action Execution Agent
+- Executes autonomous responses based on predicted risk
+- Triggers HVAC systems to switch to *Recycle Mode*
+- Sends automated alerts to polyclinics and facilities managers
+- Issues non-identifying public nudges and recommendations
+- Logs all executed actions for traceability
+
+### 4. Policy & Orchestrator Agent
+- Coordinates all agents within watsonx Orchestrate
+- Enforces health, safety, and fairness constraints
+- Approves, blocks, or modifies actions before execution
+- Maintains audit logs and ensures explainable decisions
+
+Each action executed by UrbanPulse is the result of **agent-to-agent reasoning and orchestration**, not a single rule-based script.
+
 
 UrbanPulse addresses the missing layer:  
 **AI agents that predict, negotiate, and execute actions automatically across systems.**
@@ -76,3 +104,4 @@ The backend is a Flask API (nea_agent.py) hosted on IBM Cloud. It fetches data f
 ## 📌 Repository
 
 https://github.com/shaira44444/urbanpulse
+
