@@ -1,0 +1,18 @@
+from nea_agent import run_snapshot
+
+def main(args):
+    try:
+        # This calls the logic you already wrote in nea_agent.py
+        data = run_snapshot()
+
+        # IBM Functions must return a dictionary with these keys
+        return {
+            "headers": { "Content-Type": "application/json" },
+            "statusCode": 200,
+            "body": data
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": {"error": str(e)}
+        }
