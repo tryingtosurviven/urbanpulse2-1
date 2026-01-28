@@ -1,6 +1,5 @@
 import os
 from flask import Flask, jsonify, Response
-from nea_agent import run_snapshot, format_like_colab
 
 app = Flask(__name__)
 
@@ -14,10 +13,12 @@ def health():
 
 @app.get("/snapshot")
 def snapshot():
+    from nea_agent import run_snapshot  # lazy import
     return jsonify(run_snapshot())
 
 @app.get("/log")
 def log():
+    from nea_agent import run_snapshot, format_like_colab  # lazy import
     snap = run_snapshot()
     text = format_like_colab(snap)
     return Response(text, mimetype="text/plain")
