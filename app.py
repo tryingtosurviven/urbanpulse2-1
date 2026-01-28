@@ -1,11 +1,20 @@
 import os
-from flask import Flask, jsonify, Response
+from flask import Flask, jsonify, Response, request
 
 app = Flask(__name__)
 
+@app.post("/alert")
+def alert():
+    payload = request.get_json(silent=True) or {}
+    # Mock action for demo
+    return jsonify({
+        "status": "alert_triggered",
+        "received": payload
+    })
+
 @app.get("/")
 def home():
-    return {"message": "URBANPULSE is running", "endpoints": ["/health", "/snapshot", "/log"]}
+    return {"message": "URBANPULSE is running", "endpoints": ["/health", "/snapshot", "/log", "/alert"]}
 
 @app.get("/health")
 def health():
