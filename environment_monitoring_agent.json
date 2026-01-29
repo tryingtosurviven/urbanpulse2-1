@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "https://application-33.1abc2def3gh.au-syd.codeengine.appdomain.cloud/knowledge",
-      "description": "UrbanPulse Backend Server"
+      "url": "https://application-d2.25o6y46vlr1s.au-syd.codeengine.appdomain.cloud",
+      "description": "UrbanPulse Live Backend"
     }
   ],
   "paths": {
