@@ -1,0 +1,401 @@
+/* static/style.css */
+/* Professional dashboard styling for UrbanPulse demo */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+    padding: 20px;
+}
+
+header h1 {
+    font-size: 3em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+header p {
+    font-size: 1.2em;
+    opacity: 0.95;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.panel {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.control-panel {
+    grid-column: 1;
+}
+
+.status-panel {
+    grid-column: 2;
+}
+
+.log-panel {
+    grid-column: 1 / -1;
+    max-height: 600px;
+}
+
+h2 {
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+    font-size: 1.5em;
+}
+
+h3 {
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+/* Button Styles */
+.btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Info Box */
+.info-box {
+    background: #f3f4f6;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border-left: 4px solid #667eea;
+}
+
+.info-box h3 {
+    margin-top: 0;
+}
+
+.info-box p {
+    margin: 8px 0;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+/* Status Styles */
+#status {
+    padding: 20px;
+    border-radius: 8px;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.status-idle {
+    background: #e5e7eb;
+    color: #6b7280;
+    border: 2px solid #d1d5db;
+}
+
+.status-running {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 2px solid #3b82f6;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-ok {
+    background: #d1fae5;
+    color: #065f46;
+    border: 2px solid #10b981;
+}
+
+.status-alert {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 2px solid #ef4444;
+}
+
+.status-error {
+    background: #fecaca;
+    color: #7f1d1d;
+    border: 2px solid #dc2626;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Summary Boxes */
+.summary-box {
+    background: #f9fafb;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.summary-box p {
+    margin: 8px 0;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.summary-box strong {
+    color: #1f2937;
+}
+
+.error-box {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+}
+
+.error-box ul {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.error-box li {
+    color: #991b1b;
+    margin: 5px 0;
+}
+
+/* Risk Level Badges */
+.risk-low {
+    color: #065f46;
+    background: #d1fae5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.risk-moderate {
+    color: #92400e;
+    background: #fef3c7;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.risk-high {
+    color: #991b1b;
+    background: #fee2e2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.risk-critical {
+    color: #7f1d1d;
+    background: #fecaca;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.surge-value {
+    color: #dc2626;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* Log Container */
+.log-description {
+    color: #6b7280;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.log-container {
+    max-height: 500px;
+    overflow-y: auto;
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+/* Custom Scrollbar */
+.log-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+.log-container::-webkit-scrollbar-track {
+    background: #2d2d2d;
+    border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb:hover {
+    background: #764ba2;
+}
+
+/* Log Entry Styles */
+.log-entry {
+    margin-bottom: 20px;
+    border-left: 3px solid #667eea;
+    padding-left: 15px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.log-header {
+    margin-bottom: 8px;
+}
+
+.log-time {
+    color: #9ca3af;
+    font-size: 0.85em;
+}
+
+.log-agent {
+    color: #60a5fa;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.log-action {
+    color: #c084fc;
+    margin-left: 10px;
+}
+
+.log-data {
+    background: #2d2d2d;
+    color: #d4d4d4;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    line-height: 1.5;
+    border: 1px solid #3f3f3f;
+}
+
+.log-placeholder,
+.log-loading,
+.log-error {
+    color: #d4d4d4;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.log-error {
+    color: #ef4444;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    color: white;
+    margin-top: 30px;
+    padding: 20px;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+    
+    .control-panel,
+    .status-panel,
+    .log-panel {
+        grid-column: 1;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    header p {
+        font-size: 1em;
+    }
+}
