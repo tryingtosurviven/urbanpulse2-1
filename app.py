@@ -19,6 +19,14 @@ INSTANCE = {
 
 app = Flask(__name__)
 
+
+@app.before_request
+def make_watsonx_public():
+    # If the request is for our specific API, tell Flask to ignore login checks
+    if request.path == '/api/watsonx-scenario':
+        return None  # This tells Flask to proceed to the function normally
+
+
 # -----------------------------
 # Website routes (Dashboard)
 # -----------------------------
