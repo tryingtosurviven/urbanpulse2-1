@@ -91,31 +91,39 @@ def run_scenario(scenario_key: str):
     return jsonify(result)
 
 
-# NEW ENDPOINT FOR WATSONX ASSISTANT
+# UPDATED ENDPOINT FOR WATSONX ASSISTANT
 @app.post("/api/watsonx-scenario")
 def watsonx_scenario():
     global AGENT_SYSTEM
     from scenarios import DEMO_SCENARIOS
     
-    # Get key from JSON body instead of URL
+    # Get key from JSON body
     payload = request.get_json(silent=True) or {}
-    scenario_key = payload.get("scenario_key")
+    raw_key = payload.get("scenario_key", "")
     
+    # CLEANING LOGIC: This fixes the "Low Haze" vs "low_haze" issue
+    # .strip() removes extra spaces, .lower() ignores CAPS, .replace() fix spaces
+    scenario_key = raw_key.strip().lower().replace(" ", "_")
+    
+    # Check if the cleaned key exists in your scenarios.py (e.g., 'low_haze')
     if not scenario_key or scenario_key not in DEMO_SCENARIOS:
-        return jsonify({"error": "Invalid scenario key"}), 400
+        return jsonify({
+            "status": "error",
+            "message": f"Invalid scenario key: '{raw_key}'. Expected something like 'low_haze'."
+        }), 400
         
     if AGENT_SYSTEM is None:
         AGENT_SYSTEM = _build_agent_system()
         
-    # Execute the simulation
+    # Execute the simulation using the CLEANED key
     result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
     
     # RETURN FORMAT OPTIMIZED FOR AI
     return jsonify({
         "status": "success",
         "scenario": scenario_key,
-        "ai_summary": f"Scenario {scenario_key} executed. PSI: {result.get('psi_data', {}).get('value')}. System status: {result.get('decision')}",
-        "raw_data": result  # Keep the full data for the dashboard
+        "ai_summary": f"Simulation triggered for {raw_key}! PSI: {result.get('psi_data', {}).get('value')}. Status: {result.get('decision')}. Coordination summary: {result.get('summary', 'No specific report generated.')}",
+        "raw_data": result 
     })
 
 
