@@ -89,6 +89,34 @@ def run_scenario(scenario_key: str):
     return jsonify(result)
 
 
+# NEW ENDPOINT FOR WATSONX ASSISTANT
+@app.post("/api/watsonx-scenario")
+def watsonx_scenario():
+    global AGENT_SYSTEM
+    from scenarios import DEMO_SCENARIOS
+    
+    # Get key from JSON body instead of URL
+    payload = request.get_json(silent=True) or {}
+    scenario_key = payload.get("scenario_key")
+    
+    if not scenario_key or scenario_key not in DEMO_SCENARIOS:
+        return jsonify({"error": "Invalid scenario key"}), 400
+        
+    if AGENT_SYSTEM is None:
+        AGENT_SYSTEM = _build_agent_system()
+        
+    # Execute the simulation
+    result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
+    
+    # RETURN FORMAT OPTIMIZED FOR AI
+    return jsonify({
+        "status": "success",
+        "scenario": scenario_key,
+        "ai_summary": f"Scenario {scenario_key} executed. PSI: {result.get('psi_data', {}).get('value')}. System status: {result.get('decision')}",
+        "raw_data": result  # Keep the full data for the dashboard
+    })
+
+
 # -----------------------------
 # Existing live-data endpoints
 # -----------------------------
