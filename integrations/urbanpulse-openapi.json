@@ -1,0 +1,53 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "UrbanPulse Scenario API",
+    "version": "1.0.0",
+    "description": "API to trigger haze scenarios for the UrbanPulse demo."
+  },
+  "servers": [
+    {
+      "url": "https://urbanpulse.onrender.com"
+    }
+  ],
+  "paths": {
+    "/api/watsonx-scenario": {
+      "post": {
+        "summary": "Run a specific haze scenario",
+        "operationId": "runWatsonxScenario",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scenario_key": {
+                    "type": "string",
+                    "description": "The key for the scenario (e.g., moderate_haze, severe_haze)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ai_summary": { "type": "string" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
