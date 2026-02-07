@@ -78,8 +78,14 @@ class WatsonxBypassMiddleware:
                     # Run Simulation
                     result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
                     
-                    # Format Response
-                    ai_summary = f"Simulation triggered for {raw_key}! PSI: {result.get('psi_data', {}).get('value')}. Status: {result.get('decision')}. Coordination summary: {result.get('summary', 'No report.')}"
+                    # --- DYNAMIC SUMMARY GENERATION (UPDATED) ---
+                    # This extracts the REAL numbers from the agents to send back to Watsonx
+                    psi_val = result.get('risk_assessment', {}).get('current_psi', 'Unknown')
+                    po_id = result.get('supply_chain_actions', {}).get('po_id', 'No PO')
+                    clinics = result.get('healthcare_alerts', {}).get('total_clinics', 0)
+
+                    # Create a smart summary message for the AI to speak
+                    ai_summary = f"Simulation complete for {raw_key}. PSI Level: {psi_val}. Action: Alerted {clinics} clinics and created Supply Chain Order {po_id}."
                     
                     response_data = {
                         "status": "success",
@@ -87,6 +93,7 @@ class WatsonxBypassMiddleware:
                         "ai_summary": ai_summary,
                         "raw_data": result
                     }
+                    # -------------------------------------------
                     
                     status = '200 OK'
                     headers = [('Content-Type', 'application/json')]
