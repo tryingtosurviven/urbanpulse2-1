@@ -1,13 +1,13 @@
 import os
 import socket
 import time
-from flask import Flask, jsonify, Response, request, render_template, send_from_directory
+from flask import Flask, jsonify, Response, request, render_template, send_from_directory, url_for, redirect
+from flask_login import LoginManager
 
 # -----------------------------
 # Config / flags
 # -----------------------------
 def is_demo_mode() -> bool:
-    # Read DEMO_MODE at request time
     return os.getenv("DEMO_MODE", "false").strip().lower() in ("1", "true", "yes", "y", "on")
 
 INSTANCE = {
@@ -19,12 +19,29 @@ INSTANCE = {
 
 app = Flask(__name__)
 
-# THIS IS THE FIX
+# --- 1. INITIALIZE LOGIN MANAGER ---
+# This ensures @app.login_manager is recognized by the app
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# --- 2. EMERGENCY AUTH BYPASS ---
+@login_manager.unauthorized_handler
+def unauthorized():
+    # If watsonx is knocking, don't redirect to login!
+    # Returning a 401 JSON instead of an HTML redirect fixes the 422 error
+    if '/api/watsonx-scenario' in request.path:
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized: API access requires bypass."
+        }), 401
+    return redirect(url_for('login'))
+
+# --- 3. THE "HALL PASS" ---
 @app.before_request
-def make_watsonx_public():
-    # If the request is for our specific API, let it through!
+def force_public_api():
     if request.path == '/api/watsonx-scenario':
-        return None  
+        # Returning None tells Flask to skip any other auth checks for this path
+        return None
 
 # ... (rest of your code)
 
