@@ -19,12 +19,14 @@ INSTANCE = {
 
 app = Flask(__name__)
 
-
+# THIS IS THE FIX
 @app.before_request
 def make_watsonx_public():
-    # Use .startswith to catch any variation of the API path
-    if request.path.startswith('/api/watsonx-scenario'):
-        return None  # Force Flask to ignore other checks and proceed
+    # If the request is for our specific API, let it through!
+    if request.path == '/api/watsonx-scenario':
+        return None  
+
+# ... (rest of your code)
 
 
 # -----------------------------
