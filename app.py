@@ -19,48 +19,55 @@ INSTANCE = {
 app = Flask(__name__)
 
 # ==============================================================================
-# THE "NUCLEAR" BYPASS: PROCESS REQUEST HERE TO SKIP ALL AUTH
+# THE "TOTAL BLOCKADE" BYPASS
 # ==============================================================================
 @app.before_request
 def handle_watsonx_immediately():
-    # 1. Check if this is the AI trying to talk to us
-    if request.path == '/api/watsonx-scenario' and request.method == 'POST':
+    # 1. INTERCEPT EVERYTHING on this path (GET or POST)
+    if request.path == '/api/watsonx-scenario':
         
-        # 2. IMPORT LOGIC DIRECTLY (Bypassing global scope issues)
-        from scenarios import DEMO_SCENARIOS
-        # We need to access the global variable manually here
-        global AGENT_SYSTEM
-        
-        # 3. RUN THE SCENARIO LOGIC
-        try:
-            payload = request.get_json(silent=True) or {}
-            raw_key = payload.get("scenario_key", "")
-            scenario_key = raw_key.strip().lower().replace(" ", "_")
-
-            if not scenario_key or scenario_key not in DEMO_SCENARIOS:
-                return jsonify({
-                    "status": "error", 
-                    "message": f"Invalid key: '{raw_key}'"
-                }), 400
-
-            if AGENT_SYSTEM is None:
-                AGENT_SYSTEM = _build_agent_system()
-
-            result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
-
-            # 4. RETURN RESPONSE IMMEDIATELY (Stops Flask from running any other checks!)
+        # A. If you test in Browser (GET), show this JSON immediately
+        # This proves the Login Page is dead.
+        if request.method == 'GET':
             return jsonify({
-                "status": "success",
-                "scenario": scenario_key,
-                "ai_summary": f"Simulation triggered for {raw_key}! PSI: {result.get('psi_data', {}).get('value')}. Status: {result.get('decision')}. Coordination summary: {result.get('summary', 'No report.')}",
-                "raw_data": result 
-            })
+                "status": "bypass_active",
+                "message": "SUCCESS! The Login Wall is gone. You can now run the watsonx simulation."
+            }), 200
+
+        # B. If Watsonx calls (POST), run the actual logic
+        if request.method == 'POST':
+            # Import logic inside to avoid scope issues
+            from scenarios import DEMO_SCENARIOS
+            global AGENT_SYSTEM
             
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
+            try:
+                payload = request.get_json(silent=True) or {}
+                raw_key = payload.get("scenario_key", "")
+                scenario_key = raw_key.strip().lower().replace(" ", "_")
+
+                if not scenario_key or scenario_key not in DEMO_SCENARIOS:
+                    return jsonify({
+                        "status": "error", 
+                        "message": f"Invalid key: '{raw_key}'"
+                    }), 400
+
+                if AGENT_SYSTEM is None:
+                    AGENT_SYSTEM = _build_agent_system()
+
+                result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
+
+                # Return response immediately to stop any other checks
+                return jsonify({
+                    "status": "success",
+                    "scenario": scenario_key,
+                    "ai_summary": f"Simulation triggered for {raw_key}! PSI: {result.get('psi_data', {}).get('value')}. Status: {result.get('decision')}. Coordination summary: {result.get('summary', 'No report.')}",
+                    "raw_data": result 
+                })
+                
+            except Exception as e:
+                return jsonify({"status": "error", "message": str(e)}), 500
 
 # ==============================================================================
-
 
 # -----------------------------
 # Website routes (Dashboard)
@@ -124,8 +131,6 @@ def run_scenario(scenario_key: str):
     result["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
     return jsonify(result)
 
-# NOTE: The original @app.post("/api/watsonx-scenario") is no longer needed 
-# because the @app.before_request handles it entirely.
 
 # -----------------------------
 # Existing live-data endpoints
