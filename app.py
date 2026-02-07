@@ -1,6 +1,7 @@
 import os
 import socket
 import time
+import json
 from flask import Flask, jsonify, Response, request, render_template, send_from_directory
 
 # -----------------------------
@@ -19,55 +20,92 @@ INSTANCE = {
 app = Flask(__name__)
 
 # ==============================================================================
-# THE "TOTAL BLOCKADE" BYPASS
+# GOD MODE: WSGI MIDDLEWARE (The Ultimate Bypass)
+# This sits ABOVE Flask. It intercepts the request before any login checks occur.
 # ==============================================================================
-@app.before_request
-def handle_watsonx_immediately():
-    # 1. INTERCEPT EVERYTHING on this path (GET or POST)
-    if request.path == '/api/watsonx-scenario':
+class WatsonxBypassMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        path = environ.get('PATH_INFO', '')
         
-        # A. If you test in Browser (GET), show this JSON immediately
-        # This proves the Login Page is dead.
-        if request.method == 'GET':
-            return jsonify({
-                "status": "bypass_active",
-                "message": "SUCCESS! The Login Wall is gone. You can now run the watsonx simulation."
-            }), 200
-
-        # B. If Watsonx calls (POST), run the actual logic
-        if request.method == 'POST':
-            # Import logic inside to avoid scope issues
-            from scenarios import DEMO_SCENARIOS
-            global AGENT_SYSTEM
+        # 1. TRAP THE SPECIFIC URL
+        if path == '/api/watsonx-scenario':
             
-            try:
-                payload = request.get_json(silent=True) or {}
-                raw_key = payload.get("scenario_key", "")
-                scenario_key = raw_key.strip().lower().replace(" ", "_")
+            # A. HANDLE BROWSER TEST (GET) - Proves the tunnel is open
+            if environ['REQUEST_METHOD'] == 'GET':
+                status = '200 OK'
+                headers = [('Content-Type', 'application/json')]
+                start_response(status, headers)
+                return [b'{"status": "bypass_active", "message": "GOD MODE: Login Wall Destroyed. The tunnel is open."}']
 
-                if not scenario_key or scenario_key not in DEMO_SCENARIOS:
-                    return jsonify({
-                        "status": "error", 
-                        "message": f"Invalid key: '{raw_key}'"
-                    }), 400
+            # B. HANDLE AI REQUEST (POST) - Runs the logic manually
+            if environ['REQUEST_METHOD'] == 'POST':
+                try:
+                    # Read the JSON body manually
+                    try:
+                        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+                    except (ValueError):
+                        request_body_size = 0
+                    
+                    request_body = environ['wsgi.input'].read(request_body_size)
+                    
+                    # Parse JSON
+                    if not request_body:
+                        payload = {}
+                    else:
+                        payload = json.loads(request_body)
+                        
+                    raw_key = payload.get("scenario_key", "")
+                    scenario_key = raw_key.strip().lower().replace(" ", "_")
 
-                if AGENT_SYSTEM is None:
-                    AGENT_SYSTEM = _build_agent_system()
+                    # --- RUN LOGIC MANUALLY (No Flask Request Context needed) ---
+                    # We import here to ensure we have access to the latest data
+                    from scenarios import DEMO_SCENARIOS
+                    global AGENT_SYSTEM
+                    
+                    if AGENT_SYSTEM is None:
+                        AGENT_SYSTEM = _build_agent_system()
 
-                result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
+                    # Check key
+                    if not scenario_key or scenario_key not in DEMO_SCENARIOS:
+                        status = '400 Bad Request'
+                        headers = [('Content-Type', 'application/json')]
+                        start_response(status, headers)
+                        return [json.dumps({"status": "error", "message": f"Invalid key: {raw_key}"}).encode('utf-8')]
 
-                # Return response immediately to stop any other checks
-                return jsonify({
-                    "status": "success",
-                    "scenario": scenario_key,
-                    "ai_summary": f"Simulation triggered for {raw_key}! PSI: {result.get('psi_data', {}).get('value')}. Status: {result.get('decision')}. Coordination summary: {result.get('summary', 'No report.')}",
-                    "raw_data": result 
-                })
-                
-            except Exception as e:
-                return jsonify({"status": "error", "message": str(e)}), 500
+                    # Run Simulation
+                    result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
+                    
+                    # Format Response
+                    ai_summary = f"Simulation triggered for {raw_key}! PSI: {result.get('psi_data', {}).get('value')}. Status: {result.get('decision')}. Coordination summary: {result.get('summary', 'No report.')}"
+                    
+                    response_data = {
+                        "status": "success",
+                        "scenario": scenario_key,
+                        "ai_summary": ai_summary,
+                        "raw_data": result
+                    }
+                    
+                    status = '200 OK'
+                    headers = [('Content-Type', 'application/json')]
+                    start_response(status, headers)
+                    return [json.dumps(response_data).encode('utf-8')]
 
+                except Exception as e:
+                    status = '500 Server Error'
+                    headers = [('Content-Type', 'application/json')]
+                    start_response(status, headers)
+                    return [json.dumps({"status": "error", "message": str(e)}).encode('utf-8')]
+
+        # 2. IF NOT OUR URL, LET FLASK HANDLE IT (Login page, etc.)
+        return self.app(environ, start_response)
+
+# Apply the middleware to the app
+app.wsgi_app = WatsonxBypassMiddleware(app.wsgi_app)
 # ==============================================================================
+
 
 # -----------------------------
 # Website routes (Dashboard)
@@ -130,7 +168,6 @@ def run_scenario(scenario_key: str):
     result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
     result["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
     return jsonify(result)
-
 
 # -----------------------------
 # Existing live-data endpoints
