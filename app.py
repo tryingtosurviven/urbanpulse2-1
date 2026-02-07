@@ -1,7 +1,7 @@
 import os
 import socket
 import time
-from flask import Flask, jsonify, Response, request, render_template
+from flask import Flask, jsonify, Response, request, render_template, send_from_directory
 
 # -----------------------------
 # Config / flags
@@ -22,10 +22,12 @@ app = Flask(__name__)
 # -----------------------------
 # Website routes (Dashboard)
 # -----------------------------
+
+
 @app.get("/")
-def dashboard():
-    # Requires templates/dashboard.html
-    return render_template("dashboard.html")
+def home():
+    return send_from_directory("static", "index.html")
+
 
 
 @app.get("/config")
