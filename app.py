@@ -219,6 +219,55 @@ def alert():
     })
 
 # -----------------------------
+# CLINIC DEMO ROUTES
+# -----------------------------
+@app.route("/clinic")
+def clinic_dashboard():
+    # This serves the Clinic UI
+    return send_from_directory("static", "clinic.html")
+
+@app.get("/api/clinic-poll")
+def clinic_poll():
+    """
+    The Clinic Dashboard calls this every 2 seconds to see if an alert exists.
+    It checks the latest cycle from the Agent System.
+    """
+    global AGENT_SYSTEM
+    if AGENT_SYSTEM is None:
+        return jsonify({"status": "waiting"})
+
+    # Get the last memory/log from the agents
+    memory = AGENT_SYSTEM.memory
+    if not memory:
+        return jsonify({"status": "waiting"})
+
+    # Look for the latest Healthcare Alert
+    last_cycle = memory[-1]
+    alert_data = last_cycle.get("healthcare_alerts", {})
+    supply_data = last_cycle.get("supply_chain_actions", {})
+    
+    if not alert_data:
+        return jsonify({"status": "waiting"})
+        
+    # If we found an alert, send it to the frontend!
+    return jsonify({
+        "status": "alert_active",
+        "psi": last_cycle.get("risk_assessment", {}).get("current_psi", 0),
+        "risk_level": last_cycle.get("risk_assessment", {}).get("risk_level", "UNKNOWN"),
+        "recommended_masks": supply_data.get("order_details", {}).get("n95_masks", 0),
+        "alert_message": alert_data.get("alert_message", "No message")
+    })
+
+@app.post("/api/clinic-confirm-order")
+def confirm_order():
+    # This receives the FINAL confirmed amount from the Clinic UI
+    data = request.json
+    final_qty = data.get("confirmed_qty")
+    
+    print(f"✅ CLINIC CONFIRMED ORDER: {final_qty} Masks")
+    return jsonify({"status": "success", "message": f"Order for {final_qty} masks processed."})
+
+# -----------------------------
 # Local run
 # -----------------------------
 if __name__ == "__main__":
