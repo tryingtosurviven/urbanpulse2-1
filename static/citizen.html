@@ -8,13 +8,8 @@
   <link rel="stylesheet" href="/static/style.css" />
 
   <style>
-    /* ✅ Override global padding from style.css to fix layout */
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0; 
-    }
-
+    /* Layout Fixes */
+    html, body { height: 100%; margin: 0; padding: 0; }
     body {
       display: flex;
       height: 100vh;
@@ -38,22 +33,6 @@
       z-index: 1000;
     }
 
-    /* ✅ NEW: Image wrapper styling for a clean banner look */
-    .sidebar-image-wrapper {
-      width: 100%;
-      height: 160px;
-      border-radius: 16px;
-      overflow: hidden;
-      margin: 15px 0;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .sidebar-image-wrapper img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
     .main-content {
       flex: 1;
       height: 100vh;
@@ -73,13 +52,6 @@
       background: #fff;
     }
 
-    /* Leaflet rounded corner fixes */
-    #map .leaflet-container, #map .leaflet-pane, #map .leaflet-map-pane, 
-    #map .leaflet-tile-pane, #map .leaflet-overlay-pane, #map .leaflet-shadow-pane, 
-    #map .leaflet-marker-pane, #map .leaflet-tooltip-pane, #map .leaflet-popup-pane {
-      border-radius: 25px;
-    }
-
     .widget {
       background: #f8f9fa;
       padding: 15px;
@@ -89,10 +61,7 @@
       color: #333;
     }
 
-    #clock {
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
+    #clock { font-size: 1.5rem; font-weight: bold; }
 
     .psi-badge {
       display: inline-block;
@@ -109,7 +78,6 @@
   <div class="sidebar">
     <a href="/" style="text-decoration: none; color: #667eea; font-weight: bold;">← Back to Home</a>
     <h1 style="color: #2c3e50; margin-top: 20px;">UrbanPulse</h1>
-    
 
     <div class="widget">
       <div id="clock">00:00:00</div>
@@ -135,72 +103,81 @@
   <script>
     // 1. Map Setup
     const singaporeBounds = L.latLngBounds(L.latLng(1.15, 103.55), L.latLng(1.50, 104.15));
-
     const map = L.map('map', {
       center: [1.3521, 103.8198],
       zoom: 12,
       minZoom: 11,
       maxZoom: 17,
       maxBounds: singaporeBounds,
-      maxBoundsViscosity: 1.0,
-      preferCanvas: true,
-      zoomSnap: 0.25
+      maxBoundsViscosity: 1.0
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      noWrap: true,
-      bounds: singaporeBounds
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 2. Data Regions
+    // 2. Data Regions (Key names must match scenarios.py keys: central, west, north, east, south)
     const regions = [
-      { name: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493], psi: 215, risk: "Very Unhealthy" },
-      { name: "West (Jurong East)", pos: [1.3329, 103.7436], psi: 165, risk: "Unhealthy" },
-      { name: "North (Woodlands)", pos: [1.4361, 103.7865], psi: 45, risk: "Good" },
-      { name: "East (Tampines)", pos: [1.3525, 103.9447], psi: 88, risk: "Moderate" },
-      { name: "South (Harbourfront)", pos: [1.2653, 103.8210], psi: 52, risk: "Good" }
+      { id: "central", label: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493] },
+      { id: "west", label: "West (Jurong East)", pos: [1.3329, 103.7436] },
+      { id: "north", label: "North (Woodlands)", pos: [1.4361, 103.7865] },
+      { id: "east", label: "East (Tampines)", pos: [1.3525, 103.9447] },
+      { id: "south", label: "South (Harbourfront)", pos: [1.2653, 103.8210] }
     ];
 
-    // 3. Render Markers
+    // 3. Render Markers with Live Fetch
     regions.forEach(region => {
       const marker = L.circleMarker(region.pos, {
-        color: region.psi > 100 ? '#ef4444' : '#10b981',
-        fillColor: region.psi > 100 ? '#ef4444' : '#10b981',
+        color: '#667eea', 
+        fillColor: '#667eea',
         fillOpacity: 0.5,
         radius: 15
       }).addTo(map);
 
-      marker.bindPopup(`<b>${region.name}</b><br>PSI: ${region.psi}`);
-      marker.on('click', () => updateSidebar(region));
+      marker.on('click', async () => {
+        try {
+          // Fetch noisy data from your severe_haze scenario
+          const response = await fetch('/api/run-scenario/severe_haze', { method: 'POST' });
+          const result = await response.json();
+
+          // Extract noisy PSI for this specific region
+          // This assumes your result has result.raw_data.psi_data[region.id]
+          const currentPsi = result.raw_data.psi_data[region.id];
+          const riskLevel = result.risk_assessment.risk_level;
+
+          // Update Map Popup
+          marker.bindPopup(`<b>${region.label}</b><br>PSI: ${currentPsi}`).openPopup();
+
+          // Update Sidebar
+          updateSidebar({
+            name: region.label,
+            psi: currentPsi,
+            risk: riskLevel
+          });
+
+          // Update Marker Color based on current PSI
+          const newColor = currentPsi > 100 ? '#ef4444' : '#10b981';
+          marker.setStyle({ color: newColor, fillColor: newColor });
+
+        } catch (error) {
+          console.error("Error fetching live data:", error);
+        }
+      });
     });
 
-    // 4. Update Sidebar with Conditional Logic
+    // 4. Update Sidebar Logic
     function updateSidebar(data) {
       const panel = document.getElementById('info-panel');
       const color = data.psi > 150 ? '#ef4444' : (data.psi > 100 ? '#f59e0b' : '#10b981');
       
-      let advisoryText = "";
-      let healthTipHtml = "";
+      let advisoryText = data.psi > 100 
+        ? `Localized haze surge detected near MRT transport nodes. Our <b>SupplyChain Agent</b> has pre-routed N95 stocks.`
+        : `Air quality is safe. <b>UrbanPulse Agents</b> are maintaining background monitoring.`;
 
-      if (data.psi > 100) {
-        // 🚨 RED / ORANGE ZONE LOGIC
-        advisoryText = `Localized haze surge detected near MRT transport nodes. Our <b>SupplyChain Agent</b> has pre-routed N95 stocks to the nearest pharmacies.`;
-        healthTipHtml = `
-          <p style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; font-size: 0.9rem; border-left: 4px solid #ef4444;">
-            <b>Health Tip:</b> Minimize outdoor activity near open-air MRT platforms. Wear an N95 mask if outdoors.
-          </p>`;
-      } else {
-        // ✅ GREEN ZONE LOGIC
-        advisoryText = `Air quality is within safe limits. <b>UrbanPulse Agents</b> are maintaining standard background monitoring. No logistical alerts at this time.`;
-        healthTipHtml = `
-          <p style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; font-size: 0.9rem; border-left: 4px solid #10b981;">
-            <b>Health Tip:</b> Conditions are optimal for outdoor activities and exercise.
-          </p>`;
-      }
+      let healthTipHtml = data.psi > 100
+        ? `<p style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; border-left: 4px solid #ef4444;"><b>Health Tip:</b> Wear an N95 mask if outdoors.</p>`
+        : `<p style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; border-left: 4px solid #10b981;"><b>Health Tip:</b> Conditions are optimal for exercise.</p>`;
 
       panel.innerHTML = `
-        <h2 style="color: ${color}; margin-bottom: 5px;">${data.name}</h2>
+        <h2 style="color: ${color}">${data.name}</h2>
         <div class="psi-badge" style="background: ${color}">PSI: ${data.psi} - ${data.risk}</div>
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
         <h4>🤖 Agent Advisory:</h4>
@@ -209,7 +186,6 @@
       `;
     }
 
-    // 5. Utilities
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').innerText = now.toLocaleTimeString();
@@ -217,7 +193,6 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
-    setTimeout(() => map.invalidateSize(), 200);
   </script>
 </body>
 </html>
