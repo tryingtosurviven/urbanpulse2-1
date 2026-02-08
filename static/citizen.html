@@ -61,6 +61,7 @@
       font-weight: bold;
       color: white;
       margin-top: 10px;
+      text-transform: uppercase;
     }
   </style>
 </head>
@@ -107,15 +108,16 @@
       { id: "south", label: "South (Harbourfront)", pos: [1.2653, 103.8210], scenario: "low_haze" }
     ];
 
-    // Helper function to get color based on PSI
-    function getColor(psi) {
-      if (psi > 100) return '#ef4444'; // Red (Unhealthy/Critical)
-      if (psi > 50)  return '#f59e0b'; // Yellow/Orange (Moderate)
-      return '#10b981';                // Green (Good/Low)
+    // ✅ FIXED COLOR LOGIC: Based on your categories
+    function getStatusColor(risk) {
+      const r = risk.toUpperCase();
+      if (r.includes('CRITICAL') || r.includes('SEVERE') || r.includes('UNHEALTHY')) return '#ef4444'; // Red
+      if (r.includes('MODERATE')) return '#f59e0b'; // Yellow/Orange
+      if (r.includes('LOW') || r.includes('GOOD')) return '#10b981'; // Green
+      return '#667eea'; // Default Purple
     }
 
     regions.forEach(region => {
-      // Default initial color (will update on first click)
       const marker = L.circleMarker(region.pos, {
         color: '#667eea', 
         fillColor: '#667eea',
@@ -129,7 +131,7 @@
           const result = await response.json();
 
           const currentPsi = result.raw_data.psi_data[region.id];
-          const riskLevel = result.risk_assessment.risk_level;
+          const riskLevel = result.risk_assessment.risk_level; // e.g., "LOW", "MODERATE", "CRITICAL"
 
           marker.bindPopup(`<b>${region.label}</b><br>PSI: ${currentPsi}`).openPopup();
 
@@ -139,8 +141,8 @@
             risk: riskLevel
           });
 
-          // ✅ Fix: Use the getColor function to ensure map markers match sidebar
-          const newColor = getColor(currentPsi);
+          // ✅ Set marker color based on the risk level string
+          const newColor = getStatusColor(riskLevel);
           marker.setStyle({ color: newColor, fillColor: newColor });
 
         } catch (error) {
@@ -151,19 +153,19 @@
 
     function updateSidebar(data) {
       const panel = document.getElementById('info-panel');
-      const color = getColor(data.psi); // ✅ Use same color logic
+      const color = getStatusColor(data.risk);
       
-      let advisoryText = data.psi > 100 
-        ? `Localized haze surge detected near MRT transport nodes. Our <b>SupplyChain Agent</b> has pre-routed N95 stocks.`
+      let advisoryText = (data.risk.includes('CRITICAL') || data.risk.includes('MODERATE')) 
+        ? `Haze activity detected. Our <b>SupplyChain Agent</b> has pre-routed N95 stocks.`
         : `Air quality is safe. <b>UrbanPulse Agents</b> are maintaining background monitoring.`;
 
-      let healthTipHtml = data.psi > 100
+      let healthTipHtml = (data.risk.includes('CRITICAL'))
         ? `<p style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; border-left: 4px solid #ef4444;"><b>Health Tip:</b> Wear an N95 mask if outdoors.</p>`
         : `<p style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; border-left: 4px solid #10b981;"><b>Health Tip:</b> Conditions are optimal for exercise.</p>`;
 
       panel.innerHTML = `
         <h2 style="color: ${color}">${data.name}</h2>
-        <div class="psi-badge" style="background: ${color}">PSI: ${data.psi} - ${data.risk}</div>
+        <div class="psi-badge" style="background: ${color}">${data.risk} (PSI: ${data.psi})</div>
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
         <h4>🤖 Agent Advisory:</h4>
         <p>${advisoryText}</p>
