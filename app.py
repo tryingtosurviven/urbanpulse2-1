@@ -2,7 +2,7 @@ import os
 import socket
 import time
 import json
-# Force Render Rebuild
+# Force Render Rebuild - Final Fix
 from flask import Flask, jsonify, Response, request, render_template, send_from_directory
 
 # -----------------------------
@@ -64,15 +64,18 @@ class WatsonxBypassMiddleware:
                     # --- RUN LOGIC MANUALLY (No Flask Request Context needed) ---
                     # We import here to ensure we have access to the latest data
                     from scenarios import DEMO_SCENARIOS
-                    import random  # <--- IMPORT THIS
+                    import random 
                     global AGENT_SYSTEM
                     
                     if AGENT_SYSTEM is None:
                         AGENT_SYSTEM = _build_agent_system()
 
-                    # Check key
+                    # Check key - THIS WAS THE MISSING PART
                     if not scenario_key or scenario_key not in DEMO_SCENARIOS:
-                        # ... (error handling code) ...
+                        status = '400 Bad Request'
+                        headers = [('Content-Type', 'application/json')]
+                        start_response(status, headers)
+                        return [json.dumps({"status": "error", "message": f"Invalid key: {raw_key}"}).encode('utf-8')]
 
                     # GET THE BASE SCENARIO
                     base_scenario = DEMO_SCENARIOS[scenario_key]
