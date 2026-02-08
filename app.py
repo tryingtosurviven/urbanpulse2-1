@@ -221,7 +221,7 @@ def run_scenario(scenario_key: str):
     live_scenario["psi_data"] = live_psi
     # --------------------------
     
-    result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
+    result = AGENT_SYSTEM.run_cycle(live_scenario)
     result["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
     return jsonify(result)
 
