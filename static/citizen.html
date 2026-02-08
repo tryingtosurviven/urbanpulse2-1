@@ -206,18 +206,18 @@
     initDashboard();
   </script>
       <script>
-      window.watsonAssistantChatOptions = {
-        integrationID: "16b93be7-5249-4f25-a201-3584e0152718", // Your NEW confirmed ID
-        region: "aws-ap-southeast-1", 
-        serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d", // Your service instance ID
-        orchestrateUIAgentExtensions: false, 
-        onLoad: async (instance) => { await instance.render(); }
-      };
-      setTimeout(function(){
-        const t=document.createElement('script');
-        t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
-        document.head.appendChild(t);
-      });
-    </script>
+        window.watsonAssistantChatOptions = {
+          integrationID: "0d997ed0-451c-4329-a5c2-45a0a613f3f3", // The ID of this integration.
+          region: "aws-ap-southeast-1", // The region your integration is hosted in.
+          serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d", // The ID of your service instance.
+          orchestrateUIAgentExtensions: false, // If you wish to enable optional UI Agent extensions.
+          onLoad: async (instance) => { await instance.render(); }
+        };
+        setTimeout(function(){
+          const t=document.createElement('script');
+          t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+          document.head.appendChild(t);
+        });
+      </script>
 </body>
 </html>
