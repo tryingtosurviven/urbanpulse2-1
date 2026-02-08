@@ -201,16 +201,36 @@ def list_scenarios():
 def run_scenario(scenario_key: str):
     global AGENT_SYSTEM
     from scenarios import DEMO_SCENARIOS
+    import random
 
     if scenario_key not in DEMO_SCENARIOS:
         return jsonify({"error": f"Unknown scenario '{scenario_key}'"}), 404
 
     if AGENT_SYSTEM is None:
         AGENT_SYSTEM = _build_agent_system()
-
-    result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
-    result["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
-    return jsonify(result)
+        
+    # --- ADD THE NOISE HERE ---
+    base_scenario = DEMO_SCENARIOS[scenario_key]
+    live_scenario = base_scenario.copy()
+    live_psi = base_scenario["psi_data"].copy()
+    
+    for region in live_psi:
+        noise = random.randint(-4, 4) # This adds the jitter
+        live_psi[region] += noise
+    
+    live_scenario["psi_data"] = live_psi
+    # --------------------------
+    
+    result = AGENT_SYSTEM.run_cycle(live_scenario)
+    response_data = {
+        "status": "success",
+        "scenario": scenario_key,
+        "risk_assessment": result.get('risk_assessment', {}), # For the risk level
+        "raw_data": live_scenario, # This contains the noisy 'psi_data'
+    }
+    # Combine the metadata into your new response_data
+    response_data["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
+    return jsonify(response_data)
 
 # -----------------------------
 # Existing live-data endpoints
