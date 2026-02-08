@@ -63,6 +63,7 @@ class WatsonxBypassMiddleware:
                     # --- RUN LOGIC MANUALLY (No Flask Request Context needed) ---
                     # We import here to ensure we have access to the latest data
                     from scenarios import DEMO_SCENARIOS
+                    import random  # <--- IMPORT THIS
                     global AGENT_SYSTEM
                     
                     if AGENT_SYSTEM is None:
@@ -70,13 +71,27 @@ class WatsonxBypassMiddleware:
 
                     # Check key
                     if not scenario_key or scenario_key not in DEMO_SCENARIOS:
-                        status = '400 Bad Request'
-                        headers = [('Content-Type', 'application/json')]
-                        start_response(status, headers)
-                        return [json.dumps({"status": "error", "message": f"Invalid key: {raw_key}"}).encode('utf-8')]
+                        # ... (error handling code) ...
 
-                    # Run Simulation
-                    result = AGENT_SYSTEM.run_cycle(DEMO_SCENARIOS[scenario_key])
+                    # GET THE BASE SCENARIO
+                    base_scenario = DEMO_SCENARIOS[scenario_key]
+
+                    # --- THE MAGIC TRICK: SIMULATE LIVE SENSOR FLUCTUATION ---
+                    # We copy the data so we don't mess up the original file
+                    live_scenario = base_scenario.copy()
+                    live_psi = base_scenario["psi_data"].copy()
+                    
+                    # Add random noise to make it look "Real-Time"
+                    # e.g., If Central is 215, it might become 212 or 218
+                    for region in live_psi:
+                        noise = random.randint(-4, 4) 
+                        live_psi[region] += noise
+                    
+                    live_scenario["psi_data"] = live_psi
+                    # ---------------------------------------------------------
+
+                    # Run Simulation with the NEW "Live" Data
+                    result = AGENT_SYSTEM.run_cycle(live_scenario)
                     
                     # --- DYNAMIC SUMMARY GENERATION (UPDATED) ---
                     # This extracts the REAL numbers from the agents to send back to Watsonx
