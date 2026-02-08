@@ -3,12 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Citizen Portal | UrbanPulse</title>
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/static/style.css" />
-
   <style>
-    /* ✅ Layout Fixes */
     html, body { height: 100%; margin: 0; padding: 0; }
     body {
       display: flex;
@@ -18,7 +15,6 @@
       background-size: cover;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-
     .sidebar {
       width: 380px;
       min-width: 380px;
@@ -32,7 +28,6 @@
       box-shadow: 10px 0 30px rgba(0,0,0,0.1);
       z-index: 1000;
     }
-
     .main-content {
       flex: 1;
       height: 100vh;
@@ -41,7 +36,6 @@
       justify-content: center;
       padding: 40px;
     }
-
     #map {
       width: 90%;
       height: 80%;
@@ -51,14 +45,6 @@
       border: 5px solid white;
       background: #fff;
     }
-
-    /* Leaflet rounded corner fixes */
-    #map .leaflet-container, #map .leaflet-pane, #map .leaflet-map-pane, 
-    #map .leaflet-tile-pane, #map .leaflet-overlay-pane, #map .leaflet-shadow-pane, 
-    #map .leaflet-marker-pane, #map .leaflet-tooltip-pane, #map .leaflet-popup-pane {
-      border-radius: 25px;
-    }
-
     .widget {
       background: #f8f9fa;
       padding: 15px;
@@ -67,9 +53,7 @@
       border-left: 5px solid #667eea;
       color: #333;
     }
-
     #clock { font-size: 1.5rem; font-weight: bold; }
-
     .psi-badge {
       display: inline-block;
       padding: 10px 20px;
@@ -80,35 +64,29 @@
     }
   </style>
 </head>
-
 <body>
   <div class="sidebar">
     <a href="/" style="text-decoration: none; color: #667eea; font-weight: bold;">← Back to Home</a>
     <h1 style="color: #2c3e50; margin-top: 20px;">UrbanPulse</h1>
-
     <div class="widget">
       <div id="clock">00:00:00</div>
       <div id="date" style="font-size: 0.9rem; opacity: 0.7;"></div>
     </div>
-
     <div id="info-panel">
       <h3>📍 Live Monitoring</h3>
       <p>Select a region marker on the map to see localized health surge predictions and MRT-proximity advisories.</p>
     </div>
-
     <div style="margin-top: auto; font-size: 0.8rem; color: #7f8c8d;">
       Connected to Sentinel Agent Node #04<br />
       Data source: NEA Real-time API
     </div>
   </div>
-
   <div class="main-content">
     <div id="map"></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1. Map Setup
     const singaporeBounds = L.latLngBounds(L.latLng(1.15, 103.55), L.latLng(1.50, 104.15));
     const map = L.map('map', {
       center: [1.3521, 103.8198],
@@ -116,14 +94,11 @@
       minZoom: 11,
       maxZoom: 17,
       maxBounds: singaporeBounds,
-      maxBoundsViscosity: 1.0,
-      preferCanvas: true,
-      zoomSnap: 0.25
+      maxBoundsViscosity: 1.0
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 2. Data Regions with assigned scenarios
     const regions = [
       { id: "central", label: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493], scenario: "severe_haze" },
       { id: "west", label: "West (Jurong East)", pos: [1.3329, 103.7436], scenario: "moderate_haze" },
@@ -132,8 +107,15 @@
       { id: "south", label: "South (Harbourfront)", pos: [1.2653, 103.8210], scenario: "low_haze" }
     ];
 
-    // 3. Render Markers with Dynamic Scenario Fetching
+    // Helper function to get color based on PSI
+    function getColor(psi) {
+      if (psi > 100) return '#ef4444'; // Red (Unhealthy/Critical)
+      if (psi > 50)  return '#f59e0b'; // Yellow/Orange (Moderate)
+      return '#10b981';                // Green (Good/Low)
+    }
+
     regions.forEach(region => {
+      // Default initial color (will update on first click)
       const marker = L.circleMarker(region.pos, {
         color: '#667eea', 
         fillColor: '#667eea',
@@ -143,26 +125,22 @@
 
       marker.on('click', async () => {
         try {
-          // ✅ Use the specific scenario assigned to this region
           const response = await fetch(`/api/run-scenario/${region.scenario}`, { method: 'POST' });
           const result = await response.json();
 
-          // Get the noisy PSI from the backend
           const currentPsi = result.raw_data.psi_data[region.id];
           const riskLevel = result.risk_assessment.risk_level;
 
-          // Update Map Popup
           marker.bindPopup(`<b>${region.label}</b><br>PSI: ${currentPsi}`).openPopup();
 
-          // Update Sidebar
           updateSidebar({
             name: region.label,
             psi: currentPsi,
             risk: riskLevel
           });
 
-          // ✅ Dynamic Color Update based on new PSI
-          const newColor = currentPsi > 100 ? '#ef4444' : (currentPsi > 50 ? '#f59e0b' : '#10b981');
+          // ✅ Fix: Use the getColor function to ensure map markers match sidebar
+          const newColor = getColor(currentPsi);
           marker.setStyle({ color: newColor, fillColor: newColor });
 
         } catch (error) {
@@ -171,10 +149,9 @@
       });
     });
 
-    // 4. Update Sidebar Logic
     function updateSidebar(data) {
       const panel = document.getElementById('info-panel');
-      const color = data.psi > 150 ? '#ef4444' : (data.psi > 100 ? '#f59e0b' : '#10b981');
+      const color = getColor(data.psi); // ✅ Use same color logic
       
       let advisoryText = data.psi > 100 
         ? `Localized haze surge detected near MRT transport nodes. Our <b>SupplyChain Agent</b> has pre-routed N95 stocks.`
@@ -194,7 +171,6 @@
       `;
     }
 
-    // 5. Utilities
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').innerText = now.toLocaleTimeString();
@@ -202,7 +178,6 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
-    setTimeout(() => map.invalidateSize(), 200);
   </script>
 </body>
 </html>
