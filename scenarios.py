@@ -8,15 +8,16 @@ with PSI values for all 5 regions (central, east, north, south, west).
 """
 
 DEMO_SCENARIOS = {
-    "normal": {
+    "low_haze": {
         "psi_data": {
-            "central": 45,
-            "east": 52,
-            "north": 48,
-            "south": 50,
-            "west": 55
+            "central": 65,
+            "east": 60,
+            "north": 55,
+            "south": 62,
+            "west": 68
         },
-        "description": "Normal air quality - System monitoring"
+        "description": "Low haze detected - Early warning",
+
     },
     
     "moderate_haze": {
