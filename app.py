@@ -303,6 +303,22 @@ def confirm_order():
     print(f"✅ CLINIC CONFIRMED ORDER: {final_qty} Masks")
     return jsonify({"status": "success", "message": f"Order for {final_qty} masks processed."})
 
+@app.route("/")
+def landing():
+    # This serves the new selection page
+    return send_from_directory("static", "index.html")
+
+@app.route("/citizen")
+def citizen_portal():
+    # This serves the map page
+    return send_from_directory("static", "citizen.html")
+
+@app.route("/admin")
+def admin_portal():
+    # This serves your original scenario control panel
+    return send_from_directory("static", "admin.html")
+
+
 # -----------------------------
 # Local run
 # -----------------------------

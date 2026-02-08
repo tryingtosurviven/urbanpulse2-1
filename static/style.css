@@ -1,5 +1,4 @@
 /* static/style.css */
-/* Professional dashboard styling for UrbanPulse demo */
 
 * {
     margin: 0;
@@ -9,28 +8,61 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Use your image address here */
+    background: url('https://i.pinimg.com/1200x/96/72/03/9672036198a7ef5c027573d823296095.jpg');
+    background-size: 110% 110%; /* Make image slightly larger so it can move without showing edges */
+    background-position: center;
     min-height: 100vh;
     padding: 20px;
+    
+    /* The Animation */
+    animation: moveBackground 20s ease-in-out infinite alternate;
 }
 
-header {
+/* This creates a slow, drifting cloud effect */
+@keyframes moveBackground {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
+}
+
+/* Add this class to your Landing Page container in index.html if needed */
+.landing-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 85vh;
     text-align: center;
-    color: white;
-    margin-bottom: 30px;
-    padding: 20px;
+}
+
+/* Glassmorphism effect for panels so they pop against the sky */
+.panel, .role-card {
+    background: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
+    backdrop-filter: blur(10px); /* Blurs the sky behind the card */
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 header h1 {
     font-size: 3em;
     margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    color: white;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5); /* Helps white text stay readable */
 }
 
 header p {
     font-size: 1.2em;
-    opacity: 0.95;
+    color: white;
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
 }
+
+/* Keep the rest of your button and log styles the same... */
 
 .container {
     display: grid;
@@ -398,4 +430,74 @@ footer {
     header p {
         font-size: 1em;
     }
+}
+
+
+
+/* =========================
+   Leaflet zoom controls: transparent floating style
+   ========================= */
+
+/* Remove the default white container box */
+#map .leaflet-control-zoom {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Make each + / - button translucent, like it’s hovering */
+#map .leaflet-control-zoom a {
+  background: rgba(255, 255, 255, 0.20) !important;  /* transparent */
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: rgba(0, 0, 0, 0.75) !important;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;
+  border-radius: 12px !important;
+
+  width: 38px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  font-weight: 700 !important;
+
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+/* Remove the thin divider line between + and - */
+#map .leaflet-control-zoom a:first-child {
+  border-bottom: none !important;
+  margin-bottom: 8px;
+}
+
+/* Hover effect: still transparent but clearer */
+#map .leaflet-control-zoom a:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+/* Optional: keep it slightly inset from the rounded corner */
+#map .leaflet-top.leaflet-left {
+  margin-top: 12px;
+  margin-left: 12px;
+}
+
+
+.sidebar img {
+    max-width: 100%;
+    height: auto;
+    object-fit: cover; /* This keeps the image from looking stretched */
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* =========================
+   Citizen page layout override (prevents sidebar shifting)
+   ========================= */
+
+body.citizen-page {
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100vh;
+  overflow: hidden;
 }

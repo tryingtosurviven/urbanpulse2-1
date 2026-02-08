@@ -3,61 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrbanPulse Demo - Agentic AI for Healthcare Resilience</title>
+    <title>UrbanPulse | Singapore Health Resilience</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Landing page specific layout */
+        .landing-container { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 90vh; 
+            color: white; 
+            text-align: center; 
+        }
+
+        /* Typography enhancements for readability against the sky */
+        h1 { 
+            font-size: 4rem; 
+            margin-bottom: 5px; 
+            text-shadow: 2px 4px 10px rgba(0,0,0,0.3); 
+        }
+        
+        .subtitle { 
+            font-size: 1.4rem; 
+            margin-bottom: 40px; 
+            opacity: 0.9; 
+            text-shadow: 1px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .role-cards { 
+            display: flex; 
+            gap: 30px; 
+            margin-top: 20px; 
+        }
+
+        /* Glassmorphism Card Style */
+        .role-card { 
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(10px);
+            color: #2c3e50; 
+            padding: 50px 40px; 
+            border-radius: 20px; 
+            width: 340px; 
+            cursor: pointer; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .role-card:hover { 
+            transform: translateY(-15px); 
+            background: white; 
+            box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+        }
+
+        .role-card i { 
+            font-size: 60px; 
+            display: block; 
+            margin-bottom: 25px; 
+        }
+
+        .role-card h2 {
+            border-bottom: none;
+            margin-bottom: 15px;
+            color: #1a2a6c;
+            font-size: 1.8rem;
+        }
+
+        .role-card p {
+            color: #5d6d7e;
+            line-height: 1.5;
+        }
+
+        .admin-link { 
+            margin-top: 60px; 
+            font-size: 0.9rem;
+            opacity: 0.7; 
+            cursor: pointer; 
+            text-decoration: none;
+            color: white;
+            transition: 0.3s;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .admin-link:hover { 
+            opacity: 1; 
+            background: rgba(0,0,0,0.4);
+        }
+
+        /* Responsive tweak */
+        @media (max-width: 768px) {
+            .role-cards { flex-direction: column; }
+            .landing-container { height: auto; padding: 40px 0; }
+        }
+    </style>
 </head>
 <body>
-    <header>
+    <div class="landing-container">
         <h1>🏙️ UrbanPulse</h1>
-        <p>Agentic AI for Proactive Healthcare Resilience</p>
-    </header>
+        <p class="subtitle">National Agentic Framework for Health Resilience</p>
+        
+        <div class="role-cards">
+            <div class="role-card" onclick="window.location.href='/citizen'">
+                <i>👤</i>
+                <h2>I am a Citizen</h2>
+                <p>Check real-time air quality, PSI levels, and localized health advisories for your neighborhood.</p>
+            </div>
 
-    <div class="container">
-        <!-- Control Panel -->
-        <div class="panel control-panel">
-            <h2>🎮 Demo Controls</h2>
-            <p>Simulate different air quality scenarios:</p>
-            
-            <button class="btn btn-success" onclick="runScenario('normal')">
-                ✅ Normal Air Quality
-            </button>
-            
-            <button class="btn btn-warning" onclick="runScenario('moderate_haze')">
-                ⚠️ Moderate Haze Event
-            </button>
-            
-            <button class="btn btn-danger" onclick="runScenario('severe_haze')">
-                🚨 Severe Haze Crisis
-            </button>
-            
-            <div class="info-box">
-                <h3>About This Demo</h3>
-                <p>UrbanPulse demonstrates multi-agent AI coordination for predicting and responding to air quality health surges in Singapore.</p>
-                <p><strong>5 Agents:</strong> Environment Sentinel, Scalestack, Dynamiq Medical, Healthcare Preparedness, Supply Chain</p>
+            <div class="role-card" onclick="window.location.href='/clinic'">
+                <i>🏥</i>
+                <h2>I am a Clinic Manager</h2>
+                <p>Monitor respiratory surge predictions and authorize AI-driven medical supply replenishments.</p>
             </div>
         </div>
 
-        <!-- Status Panel -->
-        <div class="panel status-panel">
-            <h2>📊 System Status</h2>
-            <div id="status" class="status-idle">System Idle</div>
-            <div id="summary"></div>
-        </div>
-
-        <!-- Agent Log Panel -->
-        <div class="panel log-panel">
-            <h2>🤖 Agent Action Log</h2>
-            <p class="log-description">Real-time view of agent coordination and decision-making</p>
-            <div id="log" class="log-container">
-                <p class="log-placeholder">Click a scenario button to see agents in action...</p>
-            </div>
-        </div>
+        <a class="admin-link" onclick="window.location.href='/admin'">
+            ⚙️ Developer Access: Agent Orchestration Panel
+        </a>
     </div>
-
-    <footer>
-        <p>UrbanPulse - Round 2 Demo | Built with FLASK, Python Agents, and Real Singapore Data</p>
-    </footer>
-
-    <script src="/static/script.js"></script>
 </body>
 </html>

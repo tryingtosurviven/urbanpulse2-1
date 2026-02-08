@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanPulse Demo - Agentic AI for Healthcare Resilience</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🏙️ UrbanPulse</h1>
+        <p>Agentic AI for Proactive Healthcare Resilience</p>
+    </header>
+
+    <div class="container">
+        <!-- Control Panel -->
+        <div class="panel control-panel">
+            <h2>🎮 Demo Controls</h2>
+            <p>Simulate different air quality scenarios:</p>
+            
+            <button class="btn btn-success" onclick="runScenario('normal')">
+                ✅ Normal Air Quality
+            </button>
+            
+            <button class="btn btn-warning" onclick="runScenario('moderate_haze')">
+                ⚠️ Moderate Haze Event
+            </button>
+            
+            <button class="btn btn-danger" onclick="runScenario('severe_haze')">
+                🚨 Severe Haze Crisis
+            </button>
+            
+            <div class="info-box">
+                <h3>About This Demo</h3>
+                <p>UrbanPulse demonstrates multi-agent AI coordination for predicting and responding to air quality health surges in Singapore.</p>
+                <p><strong>5 Agents:</strong> Environment Sentinel, Scalestack, Dynamiq Medical, Healthcare Preparedness, Supply Chain</p>
+            </div>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="panel status-panel">
+            <h2>📊 System Status</h2>
+            <div id="status" class="status-idle">System Idle</div>
+            <div id="summary"></div>
+        </div>
+
+        <!-- Agent Log Panel -->
+        <div class="panel log-panel">
+            <h2>🤖 Agent Action Log</h2>
+            <p class="log-description">Real-time view of agent coordination and decision-making</p>
+            <div id="log" class="log-container">
+                <p class="log-placeholder">Click a scenario button to see agents in action...</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>UrbanPulse - Round 2 Demo | Built with FLASK, Python Agents, and Real Singapore Data</p>
+    </footer>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
