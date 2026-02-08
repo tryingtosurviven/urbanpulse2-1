@@ -3,18 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <title>Citizen Portal | UrbanPulse</title>
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/static/style.css" />
-
   <style>
-    /* ✅ Override global padding from style.css to fix layout */
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0; 
-    }
-
+    html, body { height: 100%; margin: 0; padding: 0; }
     body {
       display: flex;
       height: 100vh;
@@ -23,7 +15,6 @@
       background-size: cover;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-
     .sidebar {
       width: 380px;
       min-width: 380px;
@@ -37,23 +28,6 @@
       box-shadow: 10px 0 30px rgba(0,0,0,0.1);
       z-index: 1000;
     }
-
-    /* ✅ NEW: Image wrapper styling for a clean banner look */
-    .sidebar-image-wrapper {
-      width: 100%;
-      height: 160px;
-      border-radius: 16px;
-      overflow: hidden;
-      margin: 15px 0;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .sidebar-image-wrapper img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
     .main-content {
       flex: 1;
       height: 100vh;
@@ -62,7 +36,6 @@
       justify-content: center;
       padding: 40px;
     }
-
     #map {
       width: 90%;
       height: 80%;
@@ -72,14 +45,6 @@
       border: 5px solid white;
       background: #fff;
     }
-
-    /* Leaflet rounded corner fixes */
-    #map .leaflet-container, #map .leaflet-pane, #map .leaflet-map-pane, 
-    #map .leaflet-tile-pane, #map .leaflet-overlay-pane, #map .leaflet-shadow-pane, 
-    #map .leaflet-marker-pane, #map .leaflet-tooltip-pane, #map .leaflet-popup-pane {
-      border-radius: 25px;
-    }
-
     .widget {
       background: #f8f9fa;
       padding: 15px;
@@ -88,12 +53,7 @@
       border-left: 5px solid #667eea;
       color: #333;
     }
-
-    #clock {
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-
+    #clock { font-size: 1.5rem; font-weight: bold; }
     .psi-badge {
       display: inline-block;
       padding: 10px 20px;
@@ -101,32 +61,27 @@
       font-weight: bold;
       color: white;
       margin-top: 10px;
+      text-transform: uppercase;
     }
   </style>
 </head>
-
 <body>
   <div class="sidebar">
     <a href="/" style="text-decoration: none; color: #667eea; font-weight: bold;">← Back to Home</a>
     <h1 style="color: #2c3e50; margin-top: 20px;">UrbanPulse</h1>
-    
-
     <div class="widget">
       <div id="clock">00:00:00</div>
       <div id="date" style="font-size: 0.9rem; opacity: 0.7;"></div>
     </div>
-
     <div id="info-panel">
       <h3>📍 Live Monitoring</h3>
       <p>Select a region marker on the map to see localized health surge predictions and MRT-proximity advisories.</p>
     </div>
-
     <div style="margin-top: auto; font-size: 0.8rem; color: #7f8c8d;">
       Connected to Sentinel Agent Node #04<br />
       Data source: NEA Real-time API
     </div>
   </div>
-
   <div class="main-content">
     <div id="map"></div>
   </div>
@@ -135,73 +90,103 @@
   <script>
     // 1. Map Setup
     const singaporeBounds = L.latLngBounds(L.latLng(1.15, 103.55), L.latLng(1.50, 104.15));
-
     const map = L.map('map', {
       center: [1.3521, 103.8198],
       zoom: 12,
       minZoom: 11,
       maxZoom: 17,
       maxBounds: singaporeBounds,
-      maxBoundsViscosity: 1.0,
-      preferCanvas: true,
-      zoomSnap: 0.25
+      maxBoundsViscosity: 1.0
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      noWrap: true,
-      bounds: singaporeBounds
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 2. Data Regions
     const regions = [
-      { name: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493], psi: 215, risk: "Very Unhealthy" },
-      { name: "West (Jurong East)", pos: [1.3329, 103.7436], psi: 165, risk: "Unhealthy" },
-      { name: "North (Woodlands)", pos: [1.4361, 103.7865], psi: 45, risk: "Good" },
-      { name: "East (Tampines)", pos: [1.3525, 103.9447], psi: 88, risk: "Moderate" },
-      { name: "South (Harbourfront)", pos: [1.2653, 103.8210], psi: 52, risk: "Good" }
+      { id: "central", label: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493], scenario: "severe_haze" },
+      { id: "west", label: "West (Jurong East)", pos: [1.3329, 103.7436], scenario: "moderate_haze" },
+      { id: "north", label: "North (Woodlands)", pos: [1.4361, 103.7865], scenario: "low_haze" },
+      { id: "east", label: "East (Tampines)", pos: [1.3525, 103.9447], scenario: "moderate_haze" },
+      { id: "south", label: "South (Harbourfront)", pos: [1.2653, 103.8210], scenario: "low_haze" }
     ];
 
-    // 3. Render Markers
+    // ✅ FIXED COLOR LOGIC
+    function getStatusColor(risk) {
+      const r = risk.toUpperCase();
+      if (r.includes('CRITICAL') || r.includes('SEVERE') || r.includes('UNHEALTHY')) return '#ef4444'; 
+      if (r.includes('MODERATE')) return '#f59e0b'; 
+      if (r.includes('LOW') || r.includes('GOOD')) return '#10b981'; 
+      return '#667eea'; 
+    }
+
+    // Store markers in an object so we can access them by ID
+    const regionMarkers = {};
+
+    // 2. Render Markers
     regions.forEach(region => {
       const marker = L.circleMarker(region.pos, {
-        color: region.psi > 100 ? '#ef4444' : '#10b981',
-        fillColor: region.psi > 100 ? '#ef4444' : '#10b981',
+        color: '#667eea', 
+        fillColor: '#667eea',
         fillOpacity: 0.5,
         radius: 15
       }).addTo(map);
 
-      marker.bindPopup(`<b>${region.name}</b><br>PSI: ${region.psi}`);
-      marker.on('click', () => updateSidebar(region));
+      regionMarkers[region.id] = marker;
+
+      // Click event for manual refresh
+      marker.on('click', () => refreshRegion(region, true));
     });
 
-    // 4. Update Sidebar with Conditional Logic
+    // 3. Logic to Refresh a Region (Used for both Auto-Load and Click)
+    async function refreshRegion(region, updateSidebarFlag = false) {
+      try {
+        const marker = regionMarkers[region.id];
+        const response = await fetch(`/api/run-scenario/${region.scenario}`, { method: 'POST' });
+        const result = await response.json();
+
+        const currentPsi = result.raw_data.psi_data[region.id];
+        const riskLevel = result.risk_assessment.risk_level;
+
+        marker.bindPopup(`<b>${region.label}</b><br>PSI: ${currentPsi}`);
+        
+        const newColor = getStatusColor(riskLevel);
+        marker.setStyle({ color: newColor, fillColor: newColor });
+
+        if (updateSidebarFlag) {
+          updateSidebar({
+            name: region.label,
+            psi: currentPsi,
+            risk: riskLevel
+          });
+          marker.openPopup();
+        }
+      } catch (error) {
+        console.error(`Error loading ${region.id}:`, error);
+      }
+    }
+
+    // 4. Initial Dashboard Boot-up (Auto-colors everything)
+    async function initDashboard() {
+      // Loop through all regions and fetch their initial state
+      for (const region of regions) {
+        await refreshRegion(region, false);
+      }
+    }
+
     function updateSidebar(data) {
       const panel = document.getElementById('info-panel');
-      const color = data.psi > 150 ? '#ef4444' : (data.psi > 100 ? '#f59e0b' : '#10b981');
+      const color = getStatusColor(data.risk);
       
-      let advisoryText = "";
-      let healthTipHtml = "";
+      let advisoryText = (data.risk.includes('CRITICAL') || data.risk.includes('MODERATE')) 
+        ? `Haze activity detected. Our <b>SupplyChain Agent</b> has pre-routed N95 stocks.`
+        : `Air quality is safe. <b>UrbanPulse Agents</b> are maintaining background monitoring.`;
 
-      if (data.psi > 100) {
-        // 🚨 RED / ORANGE ZONE LOGIC
-        advisoryText = `Localized haze surge detected near MRT transport nodes. Our <b>SupplyChain Agent</b> has pre-routed N95 stocks to the nearest pharmacies.`;
-        healthTipHtml = `
-          <p style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; font-size: 0.9rem; border-left: 4px solid #ef4444;">
-            <b>Health Tip:</b> Minimize outdoor activity near open-air MRT platforms. Wear an N95 mask if outdoors.
-          </p>`;
-      } else {
-        // ✅ GREEN ZONE LOGIC
-        advisoryText = `Air quality is within safe limits. <b>UrbanPulse Agents</b> are maintaining standard background monitoring. No logistical alerts at this time.`;
-        healthTipHtml = `
-          <p style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; font-size: 0.9rem; border-left: 4px solid #10b981;">
-            <b>Health Tip:</b> Conditions are optimal for outdoor activities and exercise.
-          </p>`;
-      }
+      let healthTipHtml = (data.risk.includes('CRITICAL'))
+        ? `<p style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; border-left: 4px solid #ef4444;"><b>Health Tip:</b> Wear an N95 mask if outdoors.</p>`
+        : `<p style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; border-left: 4px solid #10b981;"><b>Health Tip:</b> Conditions are optimal for exercise.</p>`;
 
       panel.innerHTML = `
-        <h2 style="color: ${color}; margin-bottom: 5px;">${data.name}</h2>
-        <div class="psi-badge" style="background: ${color}">PSI: ${data.psi} - ${data.risk}</div>
+        <h2 style="color: ${color}">${data.name}</h2>
+        <div class="psi-badge" style="background: ${color}">${data.risk} (PSI: ${data.psi})</div>
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
         <h4>🤖 Agent Advisory:</h4>
         <p>${advisoryText}</p>
@@ -209,7 +194,6 @@
       `;
     }
 
-    // 5. Utilities
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').innerText = now.toLocaleTimeString();
@@ -217,7 +201,23 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
-    setTimeout(() => map.invalidateSize(), 200);
+
+    // Start the auto-load process
+    initDashboard();
   </script>
+      <script>
+        window.watsonAssistantChatOptions = {
+          integrationID: "0d997ed0-451c-4329-a5c2-45a0a613f3f3", // The ID of this integration.
+          region: "aws-ap-southeast-1", // The region your integration is hosted in.
+          serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d", // The ID of your service instance.
+          orchestrateUIAgentExtensions: false, // If you wish to enable optional UI Agent extensions.
+          onLoad: async (instance) => { await instance.render(); }
+        };
+        setTimeout(function(){
+          const t=document.createElement('script');
+          t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+          document.head.appendChild(t);
+        });
+      </script>
 </body>
 </html>
