@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/static/style.css" />
 
   <style>
-    /* Layout Fixes */
+    /* ✅ Layout Fixes */
     html, body { height: 100%; margin: 0; padding: 0; }
     body {
       display: flex;
@@ -50,6 +50,13 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.3);
       border: 5px solid white;
       background: #fff;
+    }
+
+    /* Leaflet rounded corner fixes */
+    #map .leaflet-container, #map .leaflet-pane, #map .leaflet-map-pane, 
+    #map .leaflet-tile-pane, #map .leaflet-overlay-pane, #map .leaflet-shadow-pane, 
+    #map .leaflet-marker-pane, #map .leaflet-tooltip-pane, #map .leaflet-popup-pane {
+      border-radius: 25px;
     }
 
     .widget {
@@ -109,21 +116,23 @@
       minZoom: 11,
       maxZoom: 17,
       maxBounds: singaporeBounds,
-      maxBoundsViscosity: 1.0
+      maxBoundsViscosity: 1.0,
+      preferCanvas: true,
+      zoomSnap: 0.25
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 2. Data Regions (Key names must match scenarios.py keys: central, west, north, east, south)
+    // 2. Data Regions with assigned scenarios
     const regions = [
-      { id: "central", label: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493] },
-      { id: "west", label: "West (Jurong East)", pos: [1.3329, 103.7436] },
-      { id: "north", label: "North (Woodlands)", pos: [1.4361, 103.7865] },
-      { id: "east", label: "East (Tampines)", pos: [1.3525, 103.9447] },
-      { id: "south", label: "South (Harbourfront)", pos: [1.2653, 103.8210] }
+      { id: "central", label: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493], scenario: "severe_haze" },
+      { id: "west", label: "West (Jurong East)", pos: [1.3329, 103.7436], scenario: "moderate_haze" },
+      { id: "north", label: "North (Woodlands)", pos: [1.4361, 103.7865], scenario: "low_haze" },
+      { id: "east", label: "East (Tampines)", pos: [1.3525, 103.9447], scenario: "moderate_haze" },
+      { id: "south", label: "South (Harbourfront)", pos: [1.2653, 103.8210], scenario: "low_haze" }
     ];
 
-    // 3. Render Markers with Live Fetch
+    // 3. Render Markers with Dynamic Scenario Fetching
     regions.forEach(region => {
       const marker = L.circleMarker(region.pos, {
         color: '#667eea', 
@@ -134,12 +143,11 @@
 
       marker.on('click', async () => {
         try {
-          // Fetch noisy data from your severe_haze scenario
-          const response = await fetch('/api/run-scenario/severe_haze', { method: 'POST' });
+          // ✅ Use the specific scenario assigned to this region
+          const response = await fetch(`/api/run-scenario/${region.scenario}`, { method: 'POST' });
           const result = await response.json();
 
-          // Extract noisy PSI for this specific region
-          // This assumes your result has result.raw_data.psi_data[region.id]
+          // Get the noisy PSI from the backend
           const currentPsi = result.raw_data.psi_data[region.id];
           const riskLevel = result.risk_assessment.risk_level;
 
@@ -153,8 +161,8 @@
             risk: riskLevel
           });
 
-          // Update Marker Color based on current PSI
-          const newColor = currentPsi > 100 ? '#ef4444' : '#10b981';
+          // ✅ Dynamic Color Update based on new PSI
+          const newColor = currentPsi > 100 ? '#ef4444' : (currentPsi > 50 ? '#f59e0b' : '#10b981');
           marker.setStyle({ color: newColor, fillColor: newColor });
 
         } catch (error) {
@@ -186,6 +194,7 @@
       `;
     }
 
+    // 5. Utilities
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').innerText = now.toLocaleTimeString();
@@ -193,6 +202,7 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
+    setTimeout(() => map.invalidateSize(), 200);
   </script>
 </body>
 </html>
