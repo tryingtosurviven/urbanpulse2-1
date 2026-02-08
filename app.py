@@ -222,8 +222,15 @@ def run_scenario(scenario_key: str):
     # --------------------------
     
     result = AGENT_SYSTEM.run_cycle(live_scenario)
-    result["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
-    return jsonify(result)
+    response_data = {
+        "status": "success",
+        "scenario": scenario_key,
+        "risk_assessment": result.get('risk_assessment', {}), # For the risk level
+        "raw_data": live_scenario, # This contains the noisy 'psi_data'
+    }
+    # Combine the metadata into your new response_data
+    response_data["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
+    return jsonify(response_data)
 
 # -----------------------------
 # Existing live-data endpoints
