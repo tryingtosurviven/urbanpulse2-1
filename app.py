@@ -97,14 +97,31 @@ class WatsonxBypassMiddleware:
                     # Run Simulation with the NEW "Live" Data
                     result = AGENT_SYSTEM.run_cycle(live_scenario)
                     
-                    # --- DYNAMIC SUMMARY GENERATION (UPDATED) ---
-                    # This extracts the REAL numbers from the agents to send back to Watsonx
-                    psi_val = result.get('risk_assessment', {}).get('current_psi', 'Unknown')
-                    po_id = result.get('supply_chain_actions', {}).get('po_id', 'No PO')
-                    clinics = result.get('healthcare_alerts', {}).get('total_clinics', 0)
+                    # --- DYNAMIC SUMMARY GENERATION (UPGRADED) ---
+                    # 1. Extract basic numbers
+                    risk_data = result.get('risk_assessment', {})
+                    psi_val = risk_data.get('current_psi', 'Unknown')
+                    risk_level = risk_data.get('risk_level', 'UNKNOWN')
+                    
+                    # 2. Extract Regions (Join them into a nice string like "Central, West")
+                    regions_list = risk_data.get('affected_regions', [])
+                    regions_str = ", ".join([r.capitalize() for r in regions_list]) if regions_list else "None"
 
-                    # Create a smart summary message for the AI to speak
-                    ai_summary = f"Simulation complete for {raw_key}. PSI Level: {psi_val}. Action: Alerted {clinics} clinics and created Supply Chain Order {po_id}."
+                    # 3. Extract Supply Chain Info
+                    supply_data = result.get('supply_chain_actions', {})
+                    po_id = supply_data.get('po_id', 'No PO')
+                    total_cost = supply_data.get('total_value', '$0')
+                    
+                    # 4. Extract Clinic Info
+                    clinics_count = result.get('healthcare_alerts', {}).get('total_clinics', 0)
+
+                    # 5. Create the "Intelligence Report" Message
+                    ai_summary = (
+                        f"🚨 REPORT: {scenario_key.replace('_', ' ').title()}. "
+                        f"Risk Level: {risk_level}. "
+                        f"Highest PSI: {psi_val} in {regions_str}. "
+                        f"ACTION: Alerted {clinics_count} clinics and authorized {total_cost} for supplies (PO: {po_id})."
+                    )
                     
                     response_data = {
                         "status": "success",
