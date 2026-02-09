@@ -2,66 +2,158 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Logistics Hub | UrbanPulse</title>
+    <title>Supply Chain Logistics | UrbanPulse</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="/static/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { display: flex; height: 100vh; margin: 0; background: #f0f2f5; font-family: sans-serif; }
-        .sidebar { width: 350px; background: white; padding: 25px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000; }
-        #map { flex: 1; height: 100vh; }
-        .truck-status { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-top: 20px; border-left: 5px solid #3498db; }
+        body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: 'Inter', sans-serif; }
+        
+        /* Sidebar */
+        .sidebar { width: 350px; background: white; padding: 30px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; }
+        .back-link { color: #3b82f6; text-decoration: none; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .back-link:hover { text-decoration: underline; }
+        
+        h1 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.8rem; }
+        .subtitle { color: #64748b; margin-bottom: 30px; }
+
+        /* Truck Status Card */
+        .status-card { background: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .status-card h3 { margin: 0 0 5px 0; color: #0c4a6e; }
+        .status-row { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.9rem; }
+        
+        /* Map Area */
+        #map { flex: 1; height: 100%; z-index: 1; }
+        
+        /* Custom Marker */
+        .truck-icon { font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); animation: bounce 1s infinite alternate; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
     </style>
 </head>
 <body>
+
     <div class="sidebar">
-        <a href="/clinic" style="color: #3498db; text-decoration: none;">← Back to Clinic Portal</a>
-        <h1 style="color: #2c3e50;">🚛 Supply Logistics</h1>
-        <p>AI-Orchestrated resupply in progress.</p>
-        <div class="truck-status">
-            <strong>N95 Resupply Truck #04</strong><br>
-            Status: En Route (TTSH)<br>
-            ETA: 12 Minutes
+        <a onclick="window.location.href='/clinic'" class="back-link">← Back to Clinic Portal</a>
+        
+        <h1>Supply Logistics</h1>
+        <p class="subtitle">AI-Orchestrated resupply in progress.</p>
+        
+        <div class="status-card">
+            <h3 id="truck-title">N95 Resupply Truck #04</h3>
+            <div style="font-size: 0.9rem; color: #555; margin-bottom: 15px;" id="dest-name">
+                En Route to: Tan Tock Seng Hospital
+            </div>
+            <div class="status-row">
+                <strong>Status:</strong> <span style="color:#0ea5e9">In Transit</span>
+            </div>
+            <div class="status-row">
+                <strong>ETA:</strong> <strong id="eta-timer">12 Minutes</strong>
+            </div>
+            <div class="status-row">
+                <strong>Cargo:</strong> <span>5,000 N95 Masks</span>
+            </div>
+        </div>
+
+        <div style="margin-top: auto; font-size: 0.8rem; color: #94a3b8;">
+            <p><strong>Route Optimization:</strong> Active</p>
+            <p><strong>Traffic Avoidance:</strong> Enabled</p>
+            <p><strong>AI Confidence:</strong> 98.4%</p>
         </div>
     </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script>
-        // 1. Setup the Map (Only once!)
-        const map = L.map('map').setView([1.3521, 103.8198], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        // --- 1. COORDINATE DATABASE ---
+        // These are the real(ish) coordinates for your 8 locations
+        const locations = {
+            'ttsh': { name: "Tan Tock Seng Hospital", lat: 1.321, lng: 103.845 },
+            'nuh':  { name: "National University Hosp.", lat: 1.294, lng: 103.783 },
+            'cgh':  { name: "Changi General Hospital", lat: 1.340, lng: 103.963 },
+            'ktph': { name: "Khoo Teck Puat Hospital", lat: 1.424, lng: 103.838 },
+            'amk':  { name: "Ang Mo Kio Polyclinic", lat: 1.374, lng: 103.845 },
+            'jurong': { name: "Jurong Polyclinic", lat: 1.349, lng: 103.743 },
+            'tamp':   { name: "Tampines Polyclinic", lat: 1.355, lng: 103.944 },
+            'woodlands': { name: "Woodlands Polyclinic", lat: 1.442, lng: 103.770 }
+        };
 
-        // 2. Add your custom Truck Icon
-        const truckEmojiIcon = L.divIcon({
-            html: '<div style="font-size: 30px;">🚛</div>',
-            className: 'dummy', // Leaflet needs a class name, but we don't need CSS
+        // --- 2. GET URL PARAMETERS ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const facilityId = urlParams.get('id') || 'ttsh'; // Default to TTSH if no ID
+        const target = locations[facilityId] || locations['ttsh'];
+
+        // Update Text in Sidebar
+        document.getElementById('dest-name').innerText = "En Route to: " + target.name;
+
+        // --- 3. INITIALIZE MAP ---
+        // Center the map on the selected target
+        var map = L.map('map').setView([target.lat, target.lng], 13);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap contributors & CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // --- 4. ADD MARKERS ---
+        // Destination Marker (Hospital)
+        var hospitalIcon = L.divIcon({
+            html: '<div style="font-size:30px;">🏥</div>',
+            className: 'dummy',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        
+        L.marker([target.lat, target.lng], {icon: hospitalIcon})
+            .addTo(map)
+            .bindPopup(`<b>${target.name}</b><br>Resupply Destination`)
+            .openPopup();
+
+        // Truck Marker (Start it slightly away to simulate "En Route")
+        // We just offset the lat/lng by 0.02 degrees to fake a start point
+        var startLat = target.lat - 0.02; 
+        var startLng = target.lng - 0.02;
+
+        var truckIcon = L.divIcon({
+            html: '<div class="truck-icon">🚛</div>',
+            className: 'dummy',
             iconSize: [40, 40],
             iconAnchor: [20, 20]
         });
+
+        var truckMarker = L.marker([startLat, startLng], {icon: truckIcon}).addTo(map);
         
-        // 3. Place the Truck Marker using the emoji
-        L.marker([1.3483, 103.8493], { icon: truckEmojiIcon }).addTo(map)
-            .bindPopup("<b>N95 Supply Truck #04</b>: 12 mins away")
-            .openPopup();
+        // Add a popup to the truck
+        truckMarker.bindTooltip("Truck #04<br>ETA: 12 mins", {permanent: true, direction: 'right', offset: [10, 0]});
+
+        // --- 5. ANIMATE TRUCK (Simple visual interpolation) ---
+        let step = 0;
+        const totalSteps = 200; // Animation smoothness
+        
+        function animateTruck() {
+            step++;
+            if (step > totalSteps) step = 0; // Loop animation
             
-        // 4. Also add a circle for the Clinic destination (TTSH)
-        L.circleMarker([1.3210, 103.8450], { color: '#e74c3c', radius: 10 }).addTo(map)
-            .bindPopup("<b>Destination:</b> Tan Tock Seng Hospital");
+            // Calculate position between Start and Target
+            const currentLat = startLat + ((target.lat - startLat) * (step / totalSteps));
+            const currentLng = startLng + ((target.lng - startLng) * (step / totalSteps));
+            
+            truckMarker.setLatLng([currentLat, currentLng]);
+            requestAnimationFrame(animateTruck);
+        }
+        
+        // Start animation
+        animateTruck();
+
+        // Simulate ETA Timer counting down
+        let eta = 12;
+        setInterval(() => {
+            if (eta > 0) {
+                eta--;
+                document.getElementById('eta-timer').innerText = eta + " Minutes";
+            }
+        }, 60000); // Reduce every minute
     </script>
 
-    <script>
-      window.watsonAssistantChatOptions = {
-        integrationID: "16b93be7-5249-4f25-a201-3584e0152718",
-        region: "aws-ap-southeast-1",
-        serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d",
-        onLoad: async (instance) => { await instance.render(); }
-      };
-      setTimeout(function(){
-        const t=document.createElement('script');
-        t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
-        document.head.appendChild(t);
-      });
-    </script>
 </body>
 </html>
