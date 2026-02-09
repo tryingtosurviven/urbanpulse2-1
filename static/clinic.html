@@ -225,9 +225,8 @@
         <div style="display:flex; justify-content:space-between;"><span>Status:</span><strong style="color:#0ea5e9">Dispatched</strong></div>
       </div>
 
-      <button class="po-track-btn" onclick="window.location.href='/logistics?id=ttsh'">🚚 Track Shipment (TTSH)</button>
       <br>
-      <button onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:15px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
+        <button id="po-close-btn" onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:15px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
     </div>
   </div>
 
@@ -336,11 +335,24 @@
       document.getElementById('success-overlay').style.display = 'flex';
 
       const trackBtn = document.querySelector('.po-track-btn');
-      trackBtn.style.background = "#7e22ce";
-      trackBtn.innerText = "⚡ Track Autonomous Unit";
-      trackBtn.onclick = function() {
+      if (trackBtn) {
+        trackBtn.style.background = "#7e22ce";
+        trackBtn.innerText = "⚡ Track Autonomous Unit";
+        trackBtn.onclick = function() {
+          window.location.href = '/logistics?id=ttsh&qty=' + qty;
+        };
+      }
+
+      // Automatically redirect to the logistics tracking page after 3 seconds
+      setTimeout(() => {
         window.location.href = '/logistics?id=ttsh&qty=' + qty;
-      };
+      }, 3000);
+
+      // Update modal message and hide the manual Close button for autonomous dispatch
+      const poParagraph = document.querySelector('.po-modal p');
+      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched. You will be redirected to tracking shortly.';
+      const closeBtn = document.getElementById('po-close-btn');
+      if (closeBtn) closeBtn.style.display = 'none';
 
       setTimeout(() => { isAutoOrdering = false; }, 5000);
     }
@@ -379,11 +391,19 @@
       document.getElementById('success-overlay').style.display = 'flex';
 
       const trackBtn = document.querySelector('.po-track-btn');
-      trackBtn.style.background = "#0f172a";
-      trackBtn.innerText = "🚚 Track Shipment (TTSH)";
-      trackBtn.onclick = function() {
-        window.location.href = '/logistics?id=ttsh&qty=' + newQty;
-      };
+      if (trackBtn) {
+        trackBtn.style.background = "#0f172a";
+        trackBtn.innerText = "🚚 Track Shipment (TTSH)";
+        trackBtn.onclick = function() {
+          window.location.href = '/logistics?id=ttsh&qty=' + newQty;
+        };
+      }
+
+      // Restore standard modal text and ensure Close button is visible for manual approvals
+      const poParagraph = document.querySelector('.po-modal p');
+      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched.';
+      const closeBtn = document.getElementById('po-close-btn');
+      if (closeBtn) closeBtn.style.display = 'inline-block';
     }
 
     async function rejectDraft() {
