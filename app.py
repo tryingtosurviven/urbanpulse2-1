@@ -18,11 +18,10 @@ INSTANCE = {
     "file": __file__,
 }
 
-# --- DEFINE STATE AT THE TOP SO MIDDLEWARE CAN SEE IT ---
+# --- DEFINE STATE AT THE TOP ---
 clinic_state = {
-    "view": "normal",      # 'normal', 'logistics', 'approved'
-    "protocol": "standard", # 'standard', 'autonomous'
-    # NEW: Store draft details so frontend can show them
+    "view": "normal",      
+    "protocol": "standard", 
     "draft": {
         "active": False,
         "id": "---",
@@ -41,9 +40,10 @@ class WatsonxBypassMiddleware:
         self.app = app
 
     def __call__(self, environ, start_response):
-        # --- FIX: DECLARE GLOBAL AT THE VERY START ---
+        # --- CRITICAL FIX: DECLARE GLOBAL ONCE AT THE TOP ---
         global clinic_state 
-        # ---------------------------------------------
+        global AGENT_SYSTEM
+        # ----------------------------------------------------
 
         path = environ.get('PATH_INFO', '')
         
@@ -77,77 +77,67 @@ class WatsonxBypassMiddleware:
                     scenario_key = raw_key.strip().lower().replace(" ", "_")
 
                     # ---------------------------------------------------------
-                    # [CRITICAL FIX] CHECK FOR CONTROL COMMANDS FIRST
+                    # CHECK FOR CONTROL COMMANDS
                     # ---------------------------------------------------------
-                    # (Global clinic_state is already declared at top)
                     
                     if scenario_key == 'logistics':
-                        clinic_state["view"] = 'logistics' # Redirect browser
+                        clinic_state["view"] = 'logistics'
                         print(f"🔄 AGENT COMMAND: Dashboard view switched to LOGISTICS")
-                        
                         status = '200 OK'
                         headers = [('Content-Type', 'application/json')]
                         start_response(status, headers)
                         return [json.dumps({"status": "success", "message": "View switched to logistics"}).encode('utf-8')]
 
                     if scenario_key == 'approved':
-                        clinic_state["view"] = 'approved' # Turn sidebar green
+                        clinic_state["view"] = 'approved'
                         print(f"✅ AGENT COMMAND: Order APPROVED")
-                        
                         status = '200 OK'
                         headers = [('Content-Type', 'application/json')]
                         start_response(status, headers)
                         return [json.dumps({"status": "success", "message": "Order approved"}).encode('utf-8')]
 
-                    # --- NEW: ESCALATION LOGIC ---
                     if scenario_key == 'escalated':
-                        clinic_state["protocol"] = "autonomous" # Flip the switch to Purple
+                        clinic_state["protocol"] = "autonomous"
                         print(f"⚡ AGENT COMMAND: Protocol escalated to AUTONOMOUS")
-                        
                         status = '200 OK'
                         headers = [('Content-Type', 'application/json')]
                         start_response(status, headers)
                         return [json.dumps({"status": "success", "message": "Protocol escalated"}).encode('utf-8')]
-                    # ---------------------------------------------------------
 
-                    # --- RUN SCENARIO LOGIC (Existing Haze Logic) ---
+                    # ---------------------------------------------------------
+                    # RUN SCENARIO LOGIC
+                    # ---------------------------------------------------------
                     from scenarios import DEMO_SCENARIOS
-                    global AGENT_SYSTEM
                     
                     if AGENT_SYSTEM is None:
                         AGENT_SYSTEM = _build_agent_system()
 
-                    # Check key
                     if not scenario_key or scenario_key not in DEMO_SCENARIOS:
                         status = '400 Bad Request'
                         headers = [('Content-Type', 'application/json')]
                         start_response(status, headers)
                         return [json.dumps({"status": "error", "message": f"Invalid key: {raw_key}"}).encode('utf-8')]
 
-                    # GET THE BASE SCENARIO & ADD NOISE
+                    # Run Simulation
                     base_scenario = DEMO_SCENARIOS[scenario_key]
                     live_scenario = base_scenario.copy()
                     live_psi = base_scenario["psi_data"].copy()
-                    
                     for region in live_psi:
-                        noise = random.randint(-4, 4) 
-                        live_psi[region] += noise
-                    
+                        live_psi[region] += random.randint(-4, 4) 
                     live_scenario["psi_data"] = live_psi
 
-                    # Run Simulation
                     result = AGENT_SYSTEM.run_cycle(live_scenario)
                     
-                    # Generate Summary
+                    # Process Results
                     risk_data = result.get('risk_assessment', {})
                     psi_val = risk_data.get('current_psi', 'Unknown')
                     risk_level = risk_data.get('risk_level', 'UNKNOWN')
                     supply_data = result.get('supply_chain_actions', {})
                     total_cost = supply_data.get('total_value', '$0')
                     po_id = supply_data.get('po_id', 'No PO')
-                    rec_qty = supply_data.get('order_details', {}).get("n95_masks", 500) # Default to 500
+                    rec_qty = supply_data.get('order_details', {}).get("n95_masks", 500)
 
-                    # --- NEW: SAVE DRAFT TO STATE ---
+                    # --- SAVE DRAFT TO STATE ---
                     clinic_state["draft"] = {
                         "active": True,
                         "id": po_id,
@@ -155,7 +145,7 @@ class WatsonxBypassMiddleware:
                         "cost": total_cost
                     }
                     
-                    # --- FIX: LOGIC FOR DRAFT VS AUTHORIZED ---
+                    # --- DETERMINE RESPONSE TEXT ---
                     if clinic_state["protocol"] == "autonomous":
                         action_text = f"ACTION: ⚡ AUTONOMOUSLY AUTHORIZED {total_cost} (PO: {po_id})."
                     else:
@@ -193,18 +183,73 @@ app.wsgi_app = WatsonxBypassMiddleware(app.wsgi_app)
 
 
 # -----------------------------
-# Website routes (Dashboard)
+# Website routes
 # -----------------------------
-@app.get("/")
+@app.route("/")
 def home():
     return send_from_directory("static", "index.html")
 
-@app.get("/config")
-def config():
-    return jsonify({"DEMO_MODE": is_demo_mode(), "instance": INSTANCE})
+@app.route("/clinic")
+def clinic_dashboard():
+    global clinic_state
+    clinic_state["view"] = "normal" 
+    clinic_state["protocol"] = "standard" 
+    return send_from_directory("static", "clinic.html")
+
+@app.get("/api/clinic-poll")
+def clinic_poll():
+    global AGENT_SYSTEM, clinic_state
+    
+    if clinic_state["view"] in ['logistics', 'approved']:
+         return jsonify({"status": "redirect", "current_view": clinic_state["view"]})
+
+    if AGENT_SYSTEM is None:
+        return jsonify({"status": "waiting", "current_view": "normal", "protocol": "standard"})
+
+    memory = AGENT_SYSTEM.memory
+    if not memory:
+        return jsonify({"status": "waiting", "current_view": "normal", "protocol": "standard"})
+
+    last_cycle = memory[-1]
+    alert_data = last_cycle.get("healthcare_alerts", {})
+    
+    return jsonify({
+        "status": "alert_active" if alert_data else "waiting",
+        "current_view": clinic_state["view"],
+        "protocol": clinic_state["protocol"],
+        "draft": clinic_state["draft"],
+        "psi": last_cycle.get("risk_assessment", {}).get("current_psi", 0),
+        "alert_message": alert_data.get("alert_message", "No message")
+    })
+
+@app.post("/api/clinic-confirm-order")
+def confirm_order():
+    global clinic_state
+    data = request.json
+    final_qty = data.get("confirmed_qty")
+    
+    print(f"✅ CLINIC CONFIRMED ORDER: {final_qty} Masks")
+    
+    # Update State to 'Approved'
+    clinic_state["view"] = "approved"
+    clinic_state["draft"]["active"] = False
+    
+    return jsonify({"status": "success", "message": f"Order for {final_qty} masks processed."})
+
+@app.route("/logistics")
+def logistics_portal():
+    return send_from_directory("static", "logistics.html")
+
+@app.route("/citizen")
+def citizen_portal():
+    return send_from_directory("static", "citizen.html")
+
+@app.route("/admin")
+def admin_portal():
+    return send_from_directory("static", "admin.html")
 
 # -----------------------------
-# Agent System Builder
+# System Builder
 # -----------------------------
 def _build_agent_system():
     from agents import (
@@ -214,4 +259,15 @@ def _build_agent_system():
     sentinel = EnvironmentSentinel()
     sentinel.register_agent(ScalestackAgent())
     sentinel.register_agent(DynamiqMedicalAgent())
-    sentinel.register
+    sentinel.register_agent(HealthcarePreparednessAgent())
+    sentinel.register_agent(SupplyChainAgent())
+    return sentinel
+
+AGENT_SYSTEM = None
+
+# -----------------------------
+# Local run
+# -----------------------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8080"))
+    app.run(host="0.0.0.0", port=port)
