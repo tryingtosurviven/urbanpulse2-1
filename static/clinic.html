@@ -39,7 +39,7 @@
         .logistics-btn:hover { background: #1d4ed8; }
 
         /* SUCCESS PO MODAL */
-        .po-modal { text-align: center; border: 4px solid transparent; transition: all 0.3s; }
+        .po-modal { text-align: center; transition: border 0.3s; }
         .po-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
         .po-track-btn { background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; transition: background 0.3s; }
         .po-track-btn:hover { background: #334155; }
@@ -198,41 +198,35 @@
                 if (data.protocol === 'autonomous') activateAutonomousMode();
 
                 if (data.draft && data.draft.active) {
-                    
                     // CHECK: Are we in Autonomous Mode (Purple)?
                     if (data.protocol === 'autonomous') {
                         // YES: Auto-Order immediately (Bypass Human)
-                        console.log("⚡ Autonomous Protocol Active: Auto-Approving...");
                         executeAutoOrder(data.draft.qty);
                     } else {
                         // NO: Show Manual Review Panel (Yellow)
                         showDraftPanel(data.draft);
                     }
-                    
                 } else {
                     document.getElementById('draft-panel').classList.remove('visible');
                 }
             } catch (e) { console.error("Polling error:", e); }
         }, 2000);
 
-        // --- ROBOT EXECUTION (Auto Mode) ---
+        // --- AUTO ORDER FUNCTION ---
         let isAutoOrdering = false; 
 
         async function executeAutoOrder(qty) {
             if (isAutoOrdering) return; 
             isAutoOrdering = true;
 
-            // 1. Send order
             await fetch('/api/clinic-confirm-order', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ confirmed_qty: qty })
             });
 
-            // 2. Show SPECIAL Purple Success Modal
+            // Show SPECIAL Purple Success Modal
             document.getElementById('confirmed-qty-disp').innerText = qty + " Units (N95)";
-            
-            // Re-style modal for AI
             const modal = document.querySelector('.po-modal');
             modal.style.border = "4px solid #a855f7"; // Purple border
             document.querySelector('.po-icon').innerText = "⚡";
@@ -241,7 +235,7 @@
             
             document.getElementById('success-overlay').style.display = 'flex';
 
-            // 3. Update Track Button
+            // Update Track Button to Purple
             const trackBtn = document.querySelector('.po-track-btn');
             trackBtn.style.background = "#7e22ce"; 
             trackBtn.innerText = "⚡ Track Autonomous Unit";
@@ -252,7 +246,6 @@
             setTimeout(() => { isAutoOrdering = false; }, 5000);
         }
 
-        // --- MANUAL REVIEW LOGIC ---
         function showDraftPanel(draft) {
             const panel = document.getElementById('draft-panel');
             if (!panel.classList.contains('visible')) {
@@ -274,21 +267,21 @@
 
             document.getElementById('draft-panel').classList.remove('visible');
             
-            // Standard Green Modal
+            // Show Standard Green Success Modal
             document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (N95)";
             
-            // Reset styles to Green (in case they were Purple)
+            // Reset modal style to Green
             const modal = document.querySelector('.po-modal');
-            modal.style.border = "4px solid transparent";
+            modal.style.border = "none";
             document.querySelector('.po-icon').innerText = "✅";
             document.querySelector('.po-modal h2').innerText = "Order Confirmed";
             document.querySelector('.po-modal h2').style.color = "#166534";
             
             document.getElementById('success-overlay').style.display = 'flex';
-        
-            // Update Track Button
+
+            // Reset Track Button to Black/Standard
             const trackBtn = document.querySelector('.po-track-btn');
-            trackBtn.style.background = "#0f172a"; 
+            trackBtn.style.background = "#0f172a";
             trackBtn.innerText = "🚚 Track Shipment (TTSH)";
             trackBtn.onclick = function() {
                 window.location.href = '/logistics?id=ttsh&qty=' + newQty;
