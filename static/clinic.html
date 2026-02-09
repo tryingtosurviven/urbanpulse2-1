@@ -228,6 +228,13 @@
             // Show Official Success Modal
             document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (N95)";
             document.getElementById('success-overlay').style.display = 'flex';
+        
+            // --- NEW: UPDATE THE TRACK BUTTON TO INCLUDE QUANTITY ---
+            // This passes ?id=ttsh AND &qty=200 to the map page
+            const trackBtn = document.querySelector('.po-track-btn');
+            trackBtn.onclick = function() {
+                window.location.href = '/logistics?id=ttsh&qty=' + newQty;
+            };
         }
 
         async function rejectDraft() {
