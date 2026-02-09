@@ -149,7 +149,11 @@
       </div>
 
       <div class="chat-box" id="assistant-chat">
-        <div class="chat-line"><span class="chat-label">UrbanPulse:</span> Select a scenario to generate a recommended order quantity and Draft PO.</div>
+        <div class="chat-line">
+          <span class="chat-label">UrbanPulse:</span>
+          Singapore Avg PSI (24-HR): <span id="sg-avg-psi">—</span>
+          (<span id="sg-avg-status">—</span>). Select a scenario to analyze hospital-specific resupply needs.
+        </div>
       </div>
     </div>
   </div>
@@ -476,7 +480,16 @@
       if (!box) return;
       box.innerHTML = '';
       lastStatusEl = null;
-      chatAdd("Select a scenario to generate a recommended order quantity and Draft PO.");
+      
+      // Restore the default "Singapore Avg PSI" header line
+      const line = document.createElement('div');
+      line.className = "chat-line";
+      line.innerHTML = `
+        <span class="chat-label">UrbanPulse:</span>
+        Singapore Avg PSI (24-HR): <span id="sg-avg-psi">—</span>
+        (<span id="sg-avg-status">—</span>). Select a scenario to analyze hospital-specific resupply needs.
+      `;
+      box.appendChild(line);
     }
 
     function setScenarioButtonsEnabled(enabled) {
@@ -498,6 +511,53 @@
       return 250;
     }
 
+    function psiCategory(psi) {
+      if (psi <= 50) return "Good";
+      if (psi <= 100) return "Moderate";
+      if (psi <= 200) return "Unhealthy";
+      if (psi <= 300) return "Very Unhealthy";
+      return "Hazardous";
+    }
+    
+    function extractPsiDict(result) {
+      // try the common places your app uses (matches citizen.html logic style)
+      const raw = result?.raw_data || result?.data || {};
+      return (
+        result?.environmental_data?.psi_by_region ||
+        raw?.psi_data ||
+        result?.psi_data ||
+        {}
+      );
+    }
+    
+    function computeAvgPsi(psiDict) {
+      if (!psiDict || typeof psiDict !== "object") return null;
+    
+      // scenario keys are central/east/north/south/west
+      const vals = Object.values(psiDict)
+        .map(v => Number(v))
+        .filter(v => Number.isFinite(v));
+    
+      if (!vals.length) return null;
+    
+      const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      return avg;
+    }
+    
+    function updateSingaporeAvgPsi(result) {
+      const psiDict = extractPsiDict(result);
+      const avg = computeAvgPsi(psiDict);
+      if (avg == null) return;
+    
+      const status = psiCategory(avg);
+    
+      const psiEl = document.getElementById("sg-avg-psi");
+      const statusEl = document.getElementById("sg-avg-status");
+    
+      if (psiEl) psiEl.innerText = String(avg);
+      if (statusEl) statusEl.innerText = status;
+    }
+
     async function runClinicAssistant(scenarioKey) {
       if (assistantIsRunning) return;
       assistantIsRunning = true;
@@ -507,6 +567,7 @@
 
       try {
         const result = await window.runScenario(scenarioKey);
+        updateSingaporeAvgPsi(result);
 
         const risk = result?.risk_assessment || {};
         const riskLevel = risk.risk_level || result?.risk_level || "N/A";
