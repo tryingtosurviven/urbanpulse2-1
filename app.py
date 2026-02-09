@@ -188,6 +188,10 @@ def _build_agent_system():
 # Build once at startup
 AGENT_SYSTEM = None
 
+clinic_state = {
+    "view": "normal", # Controls if the dashboard redirects to logistics or shows approved
+}
+
 @app.get("/api/scenarios")
 def list_scenarios():
     from scenarios import DEMO_SCENARIOS
@@ -288,14 +292,14 @@ def clinic_poll():
     The Clinic Dashboard calls this every 2 seconds to see if an alert exists.
     It checks the latest cycle from the Agent System.
     """
-    global AGENT_SYSTEM
+    global AGENT_SYSTEM, clinic_state
     if AGENT_SYSTEM is None:
-        return jsonify({"status": "waiting"})
+        return jsonify({"status": "waiting", "current_view": clinic_state["view"]})
 
     # Get the last memory/log from the agents
     memory = AGENT_SYSTEM.memory
     if not memory:
-        return jsonify({"status": "waiting"})
+        return jsonify({"status": "waiting", "current_view": clinic_state["view"]})
 
     # Look for the latest Healthcare Alert
     last_cycle = memory[-1]
@@ -307,12 +311,21 @@ def clinic_poll():
         
     # If we found an alert, send it to the frontend!
     return jsonify({
-        "status": "alert_active",
+        "status": "alert_active" if alert_data else "waiting",
+        "current_view": clinic_state["view"], # THIS IS THE KEY FOR REDIRECTION
         "psi": last_cycle.get("risk_assessment", {}).get("current_psi", 0),
         "risk_level": last_cycle.get("risk_assessment", {}).get("risk_level", "UNKNOWN"),
         "recommended_masks": supply_data.get("order_details", {}).get("n95_masks", 0),
         "alert_message": alert_data.get("alert_message", "No message")
     })
+
+@app.post("/api/set-view/<view_name>")
+def set_view(view_name: str):
+    global clinic_state
+    # view_name will be 'logistics', 'normal', or 'approved'
+    clinic_state["view"] = view_name
+    print(f"🔄 AGENT COMMAND: Dashboard view switched to {view_name}")
+    return jsonify({"success": True, "new_view": view_name})
 
 @app.post("/api/clinic-confirm-order")
 def confirm_order():
@@ -322,6 +335,11 @@ def confirm_order():
     
     print(f"✅ CLINIC CONFIRMED ORDER: {final_qty} Masks")
     return jsonify({"status": "success", "message": f"Order for {final_qty} masks processed."})
+
+@app.route("/logistics")
+def logistics_portal():
+    # This serves your new logistics map from the static folder
+    return send_from_directory("static", "logistics.html")
 
 @app.route("/")
 def landing():
