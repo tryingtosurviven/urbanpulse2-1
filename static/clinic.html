@@ -8,9 +8,9 @@
         body { background: #f8fafc; font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #0f172a; }
         
         /* Header */
-        .header { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
+        .header { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; transition: all 0.5s ease; }
         .logo { font-size: 1.25rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 10px; }
-        .status-badge { background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid #bbf7d0; }
+        .status-badge { background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid #bbf7d0; transition: all 0.5s ease; }
         .dot { height: 8px; width: 8px; background: #22c55e; border-radius: 50%; display: inline-block; }
 
         /* Main Container */
@@ -185,14 +185,11 @@
     </div>
 
     <script>
-        // Database of Facilities
         const facilityData = {
-            // Hospitals
             'ttsh': { name: "Tan Tock Seng Hospital", stock: "1,200 Units", staff: "342", wait: "1.5 Hrs", surge: "Normal" },
             'nuh': { name: "National University Hospital", stock: "950 Units", staff: "289", wait: "2.0 Hrs", surge: "Normal" },
             'cgh': { name: "Changi General Hospital", stock: "1,050 Units", staff: "310", wait: "1.2 Hrs", surge: "Normal" },
             'ktph': { name: "Khoo Teck Puat Hospital", stock: "890 Units", staff: "250", wait: "1.8 Hrs", surge: "Normal" },
-            // Polyclinics
             'amk': { name: "Ang Mo Kio Polyclinic", stock: "5,000 Masks", staff: "45", wait: "30 Mins", surge: "Normal" },
             'jurong': { name: "Jurong Polyclinic", stock: "4,200 Masks", staff: "38", wait: "45 Mins", surge: "Normal" },
             'tamp': { name: "Tampines Polyclinic", stock: "4,800 Masks", staff: "42", wait: "25 Mins", surge: "Normal" },
@@ -228,59 +225,54 @@
                 // 1. Handle Redirects
                 if (data.current_view === 'logistics') window.location.href = '/logistics';
                 
-                // 2. Handle Haze Alert
+                // 2. Handle Haze Alert (Red Mode)
                 if (data.status === 'alert_active') {
                     activateAlertMode();
-                } else {
-                    deactivateAlertMode();
+                }
+
+                // 3. Handle Escalation (Purple Mode) - THIS IS THE NEW PART
+                if (data.protocol === 'autonomous') {
+                    activateAutonomousMode();
                 }
 
             } catch (e) { console.error("Polling error:", e); }
         }, 2000);
 
         function activateAlertMode() {
-            // Header
             const badge = document.getElementById('global-status');
-            badge.className = 'status-badge critical';
-            badge.innerHTML = '<span class="dot"></span> ⚠️ HAZE EMERGENCY';
-
-            // Cards Visuals
-            document.querySelectorAll('.card').forEach(card => card.classList.add('critical'));
-            
-            // Text Updates
-            const criticalStock = "CRITICAL (Low)";
-            const criticalStatus = "Resupply Needed";
-            
-            // Update UI IDs
+            // Only turn Red if we are NOT already in Autonomous mode
+            if (!badge.innerText.includes('AUTONOMOUS')) {
+                badge.className = 'status-badge critical';
+                badge.innerHTML = '<span class="dot"></span> ⚠️ HAZE EMERGENCY';
+                document.querySelectorAll('.card').forEach(card => card.classList.add('critical'));
+            }
+            // Update numbers visually
             ['ttsh', 'nuh', 'cgh', 'ktph'].forEach(id => {
-                document.getElementById(id + '-stock').innerText = "⚠ 120"; // Simulated Drop
-                document.getElementById(id + '-status').innerText = criticalStatus;
-                // Update Modal Data
-                facilityData[id].stock = "CRITICAL (120)";
-                facilityData[id].surge = "OVERLOADED";
-            });
-
-            ['amk', 'jurong', 'tamp', 'woodlands'].forEach(id => {
-                document.getElementById(id + '-stock').innerText = "⚠ 500"; 
-                document.getElementById(id + '-status').innerText = criticalStatus;
-                facilityData[id].stock = "CRITICAL (500)";
-                facilityData[id].surge = "HIGH DEMAND";
+                document.getElementById(id + '-stock').innerText = "⚠ 120";
+                document.getElementById(id + '-status').innerText = "Resupply Needed";
             });
         }
 
-        function deactivateAlertMode() {
+        function activateAutonomousMode() {
             const badge = document.getElementById('global-status');
-            if(badge.innerText.includes('EMERGENCY')) {
-                badge.className = 'status-badge';
-                badge.innerHTML = '<span class="dot"></span> System Normal';
-                document.querySelectorAll('.card').forEach(card => card.classList.remove('critical'));
-            }
+            // Change style to "AI Purple"
+            badge.style.background = '#7e22ce'; // Purple
+            badge.style.color = '#ffffff';
+            badge.style.borderColor = '#a855f7';
+            badge.style.boxShadow = '0 0 15px rgba(126, 34, 206, 0.5)';
+            // Update Text
+            badge.innerHTML = '⚡ AI AUTONOMOUS PROTOCOL';
+            
+            // Optional: Add a subtle border glow to the cards
+            document.querySelectorAll('.card').forEach(card => {
+                card.style.borderColor = '#a855f7';
+            });
         }
     </script>
 
     <script>
       window.watsonAssistantChatOptions = {
-        integrationID: "16b93be7-5249-4f25-a201-3584e0152718", // Checked from your previous code
+        integrationID: "16b93be7-5249-4f25-a201-3584e0152718", 
         region: "aws-ap-southeast-1",
         serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d",
         onLoad: async (instance) => { await instance.render(); }
