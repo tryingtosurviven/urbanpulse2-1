@@ -65,7 +65,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // --- 1. COORDINATE DATABASE ---
-        // These are the real(ish) coordinates for your 8 locations
         const locations = {
             'ttsh': { name: "Tan Tock Seng Hospital", lat: 1.321, lng: 103.845 },
             'nuh':  { name: "National University Hosp.", lat: 1.294, lng: 103.783 },
@@ -77,16 +76,28 @@
             'woodlands': { name: "Woodlands Polyclinic", lat: 1.442, lng: 103.770 }
         };
 
-        // --- 2. GET URL PARAMETERS ---
+        // --- 2. GET URL PARAMETERS (ID and QTY) ---
         const urlParams = new URLSearchParams(window.location.search);
-        const facilityId = urlParams.get('id') || 'ttsh'; // Default to TTSH if no ID
+        const facilityId = urlParams.get('id') || 'ttsh'; 
+        const qty = urlParams.get('qty') || '5,000'; // Default to 5,000 if no specific order
+        
         const target = locations[facilityId] || locations['ttsh'];
 
-        // Update Text in Sidebar
+        // Update Sidebar Text
+        document.getElementById('truck-title').innerText = "N95 Resupply Truck #04";
         document.getElementById('dest-name').innerText = "En Route to: " + target.name;
+        
+        // --- NEW: Update Sidebar Cargo ---
+        // You need to find the element containing "Cargo:" text
+        // Let's find the specific 'span' inside the status card
+        const statusRows = document.querySelectorAll('.status-row');
+        // The 3rd row (index 2) is Cargo
+        if(statusRows[2]) {
+            const cargoSpan = statusRows[2].querySelector('span');
+            if(cargoSpan) cargoSpan.innerText = qty + " N95 Masks";
+        }
 
         // --- 3. INITIALIZE MAP ---
-        // Center the map on the selected target
         var map = L.map('map').setView([target.lat, target.lng], 13);
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -96,7 +107,7 @@
         }).addTo(map);
 
         // --- 4. ADD MARKERS ---
-        // Destination Marker (Hospital)
+        // Destination Marker
         var hospitalIcon = L.divIcon({
             html: '<div style="font-size:30px;">🏥</div>',
             className: 'dummy',
@@ -109,8 +120,7 @@
             .bindPopup(`<b>${target.name}</b><br>Resupply Destination`)
             .openPopup();
 
-        // Truck Marker (Start it slightly away to simulate "En Route")
-        // We just offset the lat/lng by 0.02 degrees to fake a start point
+        // Truck Marker
         var startLat = target.lat - 0.02; 
         var startLng = target.lng - 0.02;
 
@@ -123,37 +133,33 @@
 
         var truckMarker = L.marker([startLat, startLng], {icon: truckIcon}).addTo(map);
         
-        // Add a popup to the truck
-        truckMarker.bindTooltip("Truck #04<br>ETA: 12 mins", {permanent: true, direction: 'right', offset: [10, 0]});
+        // --- NEW: DYNAMIC TOOLTIP ---
+        truckMarker.bindTooltip(`Truck #04<br>Cargo: ${qty} Units`, {permanent: true, direction: 'right', offset: [10, 0]});
 
-        // --- 5. ANIMATE TRUCK (Simple visual interpolation) ---
+        // --- 5. ANIMATE TRUCK ---
         let step = 0;
-        const totalSteps = 200; // Animation smoothness
+        const totalSteps = 200; 
         
         function animateTruck() {
             step++;
-            if (step > totalSteps) step = 0; // Loop animation
+            if (step > totalSteps) step = 0; 
             
-            // Calculate position between Start and Target
             const currentLat = startLat + ((target.lat - startLat) * (step / totalSteps));
             const currentLng = startLng + ((target.lng - startLng) * (step / totalSteps));
             
             truckMarker.setLatLng([currentLat, currentLng]);
             requestAnimationFrame(animateTruck);
         }
-        
-        // Start animation
         animateTruck();
 
-        // Simulate ETA Timer counting down
+        // ETA Timer
         let eta = 12;
         setInterval(() => {
             if (eta > 0) {
                 eta--;
                 document.getElementById('eta-timer').innerText = eta + " Minutes";
             }
-        }, 60000); // Reduce every minute
+        }, 60000); 
     </script>
-
 </body>
 </html>
