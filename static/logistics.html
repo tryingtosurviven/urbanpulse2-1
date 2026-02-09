@@ -33,7 +33,8 @@
         /* History Log */
         .history-section { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
         .history-section h4 { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 0.85rem; color: #94a3b8; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 0.85rem; color: #94a3b8; border-bottom: 1px solid #f8fafc; }
+        .history-item strong { color: #64748b; font-weight: 600; }
 
         #map { flex: 1; height: 100%; z-index: 1; }
         .truck-icon { font-size: 35px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); animation: bounce 1s infinite alternate; }
@@ -53,10 +54,32 @@
             </div>
 
         <div class="history-section">
-            <h4>Earlier Today (Completed)</h4>
-            <div class="history-item"><span>Truck #03 (Ang Mo Kio)</span><span>✅ Delivered</span></div>
-            <div class="history-item"><span>Truck #02 (Changi Gen)</span><span>✅ Delivered</span></div>
-            <div class="history-item"><span>Truck #01 (Woodlands)</span><span>✅ Delivered</span></div>
+            <h4>Deliveries This Week (Completed)</h4>
+            
+            <div class="history-item">
+                <div>
+                    <strong>Truck #03 (Tan Tock Seng)</strong>
+                    <div style="font-size:0.75rem; margin-top:2px;">Received: Yesterday, 2:00 PM</div>
+                </div>
+                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
+            </div>
+
+            <div class="history-item">
+                <div>
+                    <strong>Truck #02 (Tan Tock Seng)</strong>
+                    <div style="font-size:0.75rem; margin-top:2px;">Received: Mon, 4:30 PM</div>
+                </div>
+                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
+            </div>
+
+            <div class="history-item">
+                <div>
+                    <strong>Truck #01 (Tan Tock Seng)</strong>
+                    <div style="font-size:0.75rem; margin-top:2px;">Received: Mon, 10:00 AM</div>
+                </div>
+                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
+            </div>
+            
         </div>
     </div>
 
