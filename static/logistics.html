@@ -1,0 +1,6 @@
+<script>
+    // Example of adding a supply truck marker
+    const truckIcon = L.icon({ iconUrl: '/static/truck.png', iconSize: [38, 38] });
+    L.marker([1.3521, 103.8198], {icon: truckIcon}).addTo(map)
+        .bindPopup("N95 Supply Truck: 12 mins away");
+</script>
