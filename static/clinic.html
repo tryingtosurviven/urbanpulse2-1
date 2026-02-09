@@ -149,7 +149,11 @@
       </div>
 
       <div class="chat-box" id="assistant-chat">
-        <div class="chat-line"><span class="chat-label">UrbanPulse:</span> Select a scenario to generate a recommended order quantity and Draft PO.</div>
+        <div class="chat-line">
+          <span class="chat-label">UrbanPulse:</span>
+          Singapore Avg PSI (24-HR): <span id="sg-avg-psi">—</span>
+          (<span id="sg-avg-status">—</span>). Select a scenario to analyze hospital-specific resupply needs.
+        </div>
       </div>
     </div>
   </div>
@@ -225,9 +229,8 @@
         <div style="display:flex; justify-content:space-between;"><span>Status:</span><strong style="color:#0ea5e9">Dispatched</strong></div>
       </div>
 
-      <button class="po-track-btn" onclick="window.location.href='/logistics?id=ttsh'">🚚 Track Shipment (TTSH)</button>
       <br>
-      <button onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:15px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
+        <button id="po-close-btn" onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:15px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
     </div>
   </div>
 
@@ -336,11 +339,24 @@
       document.getElementById('success-overlay').style.display = 'flex';
 
       const trackBtn = document.querySelector('.po-track-btn');
-      trackBtn.style.background = "#7e22ce";
-      trackBtn.innerText = "⚡ Track Autonomous Unit";
-      trackBtn.onclick = function() {
+      if (trackBtn) {
+        trackBtn.style.background = "#7e22ce";
+        trackBtn.innerText = "⚡ Track Autonomous Unit";
+        trackBtn.onclick = function() {
+          window.location.href = '/logistics?id=ttsh&qty=' + qty;
+        };
+      }
+
+      // Automatically redirect to the logistics tracking page after 3 seconds
+      setTimeout(() => {
         window.location.href = '/logistics?id=ttsh&qty=' + qty;
-      };
+      }, 3000);
+
+      // Update modal message and hide the manual Close button for autonomous dispatch
+      const poParagraph = document.querySelector('.po-modal p');
+      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched. You will be redirected to tracking shortly.';
+      const closeBtn = document.getElementById('po-close-btn');
+      if (closeBtn) closeBtn.style.display = 'none';
 
       setTimeout(() => { isAutoOrdering = false; }, 5000);
     }
@@ -379,11 +395,19 @@
       document.getElementById('success-overlay').style.display = 'flex';
 
       const trackBtn = document.querySelector('.po-track-btn');
-      trackBtn.style.background = "#0f172a";
-      trackBtn.innerText = "🚚 Track Shipment (TTSH)";
-      trackBtn.onclick = function() {
-        window.location.href = '/logistics?id=ttsh&qty=' + newQty;
-      };
+      if (trackBtn) {
+        trackBtn.style.background = "#0f172a";
+        trackBtn.innerText = "🚚 Track Shipment (TTSH)";
+        trackBtn.onclick = function() {
+          window.location.href = '/logistics?id=ttsh&qty=' + newQty;
+        };
+      }
+
+      // Restore standard modal text and ensure Close button is visible for manual approvals
+      const poParagraph = document.querySelector('.po-modal p');
+      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched.';
+      const closeBtn = document.getElementById('po-close-btn');
+      if (closeBtn) closeBtn.style.display = 'inline-block';
     }
 
     async function rejectDraft() {
@@ -456,7 +480,16 @@
       if (!box) return;
       box.innerHTML = '';
       lastStatusEl = null;
-      chatAdd("Select a scenario to generate a recommended order quantity and Draft PO.");
+      
+      // Restore the default "Singapore Avg PSI" header line
+      const line = document.createElement('div');
+      line.className = "chat-line";
+      line.innerHTML = `
+        <span class="chat-label">UrbanPulse:</span>
+        Singapore Avg PSI (24-HR): <span id="sg-avg-psi">—</span>
+        (<span id="sg-avg-status">—</span>). Select a scenario to analyze hospital-specific resupply needs.
+      `;
+      box.appendChild(line);
     }
 
     function setScenarioButtonsEnabled(enabled) {
@@ -478,6 +511,53 @@
       return 250;
     }
 
+    function psiCategory(psi) {
+      if (psi <= 50) return "Good";
+      if (psi <= 100) return "Moderate";
+      if (psi <= 200) return "Unhealthy";
+      if (psi <= 300) return "Very Unhealthy";
+      return "Hazardous";
+    }
+    
+    function extractPsiDict(result) {
+      // try the common places your app uses (matches citizen.html logic style)
+      const raw = result?.raw_data || result?.data || {};
+      return (
+        result?.environmental_data?.psi_by_region ||
+        raw?.psi_data ||
+        result?.psi_data ||
+        {}
+      );
+    }
+    
+    function computeAvgPsi(psiDict) {
+      if (!psiDict || typeof psiDict !== "object") return null;
+    
+      // scenario keys are central/east/north/south/west
+      const vals = Object.values(psiDict)
+        .map(v => Number(v))
+        .filter(v => Number.isFinite(v));
+    
+      if (!vals.length) return null;
+    
+      const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      return avg;
+    }
+    
+    function updateSingaporeAvgPsi(result) {
+      const psiDict = extractPsiDict(result);
+      const avg = computeAvgPsi(psiDict);
+      if (avg == null) return;
+    
+      const status = psiCategory(avg);
+    
+      const psiEl = document.getElementById("sg-avg-psi");
+      const statusEl = document.getElementById("sg-avg-status");
+    
+      if (psiEl) psiEl.innerText = String(avg);
+      if (statusEl) statusEl.innerText = status;
+    }
+
     async function runClinicAssistant(scenarioKey) {
       if (assistantIsRunning) return;
       assistantIsRunning = true;
@@ -487,6 +567,7 @@
 
       try {
         const result = await window.runScenario(scenarioKey);
+        updateSingaporeAvgPsi(result);
 
         const risk = result?.risk_assessment || {};
         const riskLevel = risk.risk_level || result?.risk_level || "N/A";
@@ -502,6 +583,8 @@
         // NOTE: For non-autonomous scenarios, this shows a draft.
         // Severe haze will be auto-dispatched via polling when backend sets protocol=autonomous.
         if (String(supply?.autonomous || "").toLowerCase() !== "true") {
+            
+            
           const draft = {
             active: true,
             id: supply?.po_id || `DRAFT-${Date.now().toString().slice(-6)}`,
@@ -519,6 +602,22 @@
       }
     }
   </script>
+
+  <script>
+    window.watsonAssistantChatOptions = {
+      integrationID: "16b93be7-5249-4f25-a201-3584e0152718", // The ID of this integration.
+      region: "aws-ap-southeast-1", // The region your integration is hosted in.
+      serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d", // The ID of your service instance.
+      orchestrateUIAgentExtensions: false, // If you wish to enable optional UI Agent extensions.
+      onLoad: async (instance) => { await instance.render(); }
+    };
+    setTimeout(function(){
+      const t=document.createElement('script');
+      t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+      document.head.appendChild(t);
+    });
+  </script>
+  
 
 </body>
 </html>
