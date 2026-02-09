@@ -135,11 +135,18 @@ class WatsonxBypassMiddleware:
                     total_cost = supply_data.get('total_value', '$0')
                     po_id = supply_data.get('po_id', 'No PO')
                     
+                    # --- FIX: LOGIC FOR DRAFT VS AUTHORIZED ---
+                    if clinic_state["protocol"] == "autonomous":
+                        action_text = f"ACTION: ⚡ AUTONOMOUSLY AUTHORIZED {total_cost} (PO: {po_id})."
+                    else:
+                        action_text = f"RECOMMENDATION: Draft PO {po_id} created for {total_cost}. Waiting for manager approval."
+
                     ai_summary = (
                         f"🚨 REPORT: {scenario_key.replace('_', ' ').title()}. "
                         f"Risk Level: {risk_level}. Highest PSI: {psi_val}. "
-                        f"ACTION: Authorized {total_cost} for supplies (PO: {po_id})."
+                        f"{action_text}"
                     )
+                    # ------------------------------------------
                     
                     response_data = {
                         "status": "success",
