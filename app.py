@@ -115,9 +115,9 @@ class WatsonxBypassMiddleware:
                     }
                     
                     if clinic_state["protocol"] == "autonomous":
-                        action_text = f"ACTION: ⚡ AUTONOMOUSLY AUTHORIZED {total_cost} (PO: {po_id})."
+                        action_text = f"ACTION: ⚡ AUTONOMOUSLY AUTHORIZED {rec_qty} Units (N95) (PO: {po_id})."
                     else:
-                        action_text = f"RECOMMENDATION: Draft PO {po_id} created for {total_cost}. Waiting for manager approval."
+                        action_text = f"RECOMMENDATION: Draft PO {po_id} created for {rec_qty} Units (N95). Waiting for manager approval."
 
                     ai_summary = (
                         f"🚨 REPORT: {scenario_key.replace('_', ' ').title()}. "
