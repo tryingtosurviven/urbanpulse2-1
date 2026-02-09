@@ -17,10 +17,20 @@
         .subtitle { color: #64748b; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
 
         /* DYNAMIC TRUCK CARDS */
-        .status-card { background: white; border: 1px solid #e2e8f0; border-left: 5px solid #cbd5e1; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.3s; }
+        .status-card { 
+            background: white; border: 1px solid #e2e8f0; border-left: 5px solid #cbd5e1; 
+            padding: 20px; border-radius: 8px; margin-bottom: 15px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s; cursor: pointer; position: relative;
+        }
         
-        /* Active Style */
-        .status-card.active-focus { background: #f0f9ff; border-left-color: #0ea5e9; box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1); transform: scale(1.02); border-color: #bae6fd; }
+        /* Hover Effect */
+        .status-card:hover { transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.1); }
+
+        /* Selected / Active Style */
+        .status-card.active-focus { 
+            background: #f0f9ff; border-left-color: #0ea5e9; 
+            border-color: #bae6fd; box-shadow: 0 8px 15px -3px rgba(14, 165, 233, 0.15); 
+        }
         
         .status-card h3 { margin: 0 0 5px 0; color: #0f172a; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
         .status-badge { background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
@@ -29,6 +39,15 @@
         .status-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.9rem; }
         .card-label { color: #64748b; font-size: 0.85rem; }
         
+        /* DELETE BUTTON */
+        .delete-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; color: #cbd5e1;
+            font-size: 1.2rem; cursor: pointer; padding: 0; line-height: 1;
+            transition: color 0.2s; z-index: 10;
+        }
+        .delete-btn:hover { color: #ef4444; }
+
         /* History Log */
         .history-section { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
         .history-section h4 { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; }
@@ -53,8 +72,7 @@
 
         <div class="history-section">
             <h4>Deliveries This Week (Completed)</h4>
-            <div id="history-list">
-                </div>
+            <div id="history-list"></div>
         </div>
     </div>
 
@@ -76,19 +94,14 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const facilityId = urlParams.get('id') || 'ttsh'; 
-        // IMPORTANT: We only capture 'qty' if it is explicitly in the URL
         const newOrderQty = urlParams.get('qty'); 
-        
         const target = locations[facilityId] || locations['ttsh'];
 
-        // --- 2. FACILITY-SPECIFIC DATA STORAGE ---
-        // We save a unique list for EACH facility (e.g., trucks_ttsh, trucks_cgh)
+        // --- 2. STORAGE & INITIALIZATION ---
         const storageKey = 'trucks_' + facilityId;
         let activeTrucks = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
-        // --- 3. SMART CREATION LOGIC ---
-        
-        // A. Initialization: If the list is completely empty, give it ONE base truck
+        // Initialize empty list if needed
         if (activeTrucks.length === 0) {
             activeTrucks.push({
                 idNum: 4, name: "Truck #04", qty: "5,000",
@@ -97,12 +110,11 @@
             localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
         }
 
-        // B. New Order: ONLY create a new truck if 'qty' is in the URL (from Approve button)
-        // AND it's different from the most recent truck (to prevent refresh duplication)
+        // Add New Order if Qty present and different
         if (newOrderQty) {
             const lastTruck = activeTrucks[0];
-            if (lastTruck.qty !== newOrderQty) {
-                const nextId = lastTruck.idNum + 1;
+            if (!lastTruck || lastTruck.qty !== newOrderQty) {
+                const nextId = (activeTrucks.length > 0) ? (activeTrucks[0].idNum + 1) : 5;
                 const newTruck = {
                     idNum: nextId,
                     name: "Truck #0" + nextId,
@@ -110,74 +122,91 @@
                     destination: target.name,
                     timestamp: Date.now()
                 };
-                activeTrucks.unshift(newTruck); // Add to top
+                activeTrucks.unshift(newTruck); 
                 localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
             }
         }
 
-        // --- 4. RENDER TRUCK CARDS ---
-        const container = document.getElementById('truck-list-container');
-        container.innerHTML = "";
+        // Selected Truck Index (Defaults to 0 / Top)
+        let selectedTruckIndex = 0; 
 
-        activeTrucks.forEach((truck, index) => {
-            const isFirst = index === 0; 
-            const card = document.createElement('div');
-            card.className = isFirst ? 'status-card active-focus' : 'status-card';
+        // --- 3. RENDER FUNCTION (Handles Display & Clicks) ---
+        function renderTrucks() {
+            const container = document.getElementById('truck-list-container');
+            container.innerHTML = "";
+
+            if (activeTrucks.length === 0) {
+                container.innerHTML = "<div style='color:#999; font-style:italic;'>No active shipments.</div>";
+                return;
+            }
+
+            activeTrucks.forEach((truck, index) => {
+                const isSelected = (index === selectedTruckIndex);
+                const card = document.createElement('div');
+                
+                // Style based on selection
+                card.className = isSelected ? 'status-card active-focus' : 'status-card';
+                
+                const badgeText = isSelected ? 'LIVE TRACKING' : 'EN ROUTE';
+                const statusColor = isSelected ? '#0ea5e9' : '#64748b';
+                const statusText = isSelected ? '⚡ Entering Last Mile' : '🚛 In Transit';
+                const eta = isSelected ? "~ 12 Minutes" : "~ 45 Minutes"; 
+
+                // HTML Content with Delete Button
+                card.innerHTML = `
+                    <button class="delete-btn" onclick="deleteTruck(event, ${index})">&times;</button>
+                    <h3>
+                        <span>${truck.name}</span> <span class="status-badge">${badgeText}</span>
+                    </h3>
+                    <div style="font-size: 0.85rem; color: #555; margin-bottom: 15px;">
+                        En Route to: ${target.name}
+                    </div>
+                    <div class="status-row">
+                        <span class="card-label">Status:</span> <strong style="color:${statusColor};">${statusText}</strong>
+                    </div>
+                    <div class="status-row">
+                        <span class="card-label">ETA:</span> <strong style="color:#d97706">${eta}</strong>
+                    </div>
+                    <div class="status-row">
+                        <span class="card-label">Payload:</span> <strong style="color:#0f172a">${truck.qty} Units (N95)</strong>
+                    </div>
+                `;
+                
+                // Click to Select Logic
+                card.onclick = () => selectTruck(index);
+                
+                container.appendChild(card);
+            });
             
-            const badgeText = isFirst ? 'LIVE TRACKING' : 'EN ROUTE';
-            const statusColor = isFirst ? '#0ea5e9' : '#64748b';
-            const statusText = isFirst ? '⚡ Entering Last Mile' : '🚛 In Transit';
-            const eta = isFirst ? "~ 12 Minutes" : "~ 45 Minutes"; 
+            updateMapTooltip();
+        }
 
-            card.innerHTML = `
-                <h3>
-                    <span>${truck.name}</span> <span class="status-badge">${badgeText}</span>
-                </h3>
-                <div style="font-size: 0.85rem; color: #555; margin-bottom: 15px;">
-                    En Route to: ${target.name}
-                </div>
-                <div class="status-row">
-                    <span class="card-label">Status:</span> <strong style="color:${statusColor};">${statusText}</strong>
-                </div>
-                <div class="status-row">
-                    <span class="card-label">ETA:</span> <strong style="color:#d97706">${eta}</strong>
-                </div>
-                <div class="status-row">
-                    <span class="card-label">Payload:</span> <strong style="color:#0f172a">${truck.qty} Units (N95)</strong>
-                </div>
-            `;
-            container.appendChild(card);
-        });
+        // --- 4. ACTION FUNCTIONS ---
 
-        // --- 5. RENDER DYNAMIC HISTORY ---
-        // Ensure history items match the CURRENT facility
-        const historyContainer = document.getElementById('history-list');
-        historyContainer.innerHTML = `
-            <div class="history-item">
-                <div>
-                    <strong>Truck #03 (${target.name})</strong>
-                    <div style="font-size:0.75rem; margin-top:2px;">Received: Yesterday, 2:00 PM</div>
-                </div>
-                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
-            </div>
-            <div class="history-item">
-                <div>
-                    <strong>Truck #02 (${target.name})</strong>
-                    <div style="font-size:0.75rem; margin-top:2px;">Received: Mon, 4:30 PM</div>
-                </div>
-                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
-            </div>
-            <div class="history-item">
-                <div>
-                    <strong>Truck #01 (${target.name})</strong>
-                    <div style="font-size:0.75rem; margin-top:2px;">Received: Mon, 10:00 AM</div>
-                </div>
-                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
-            </div>
-        `;
+        // Select a Truck
+        function selectTruck(index) {
+            selectedTruckIndex = index;
+            renderTrucks(); // Re-render to update highlighting
+        }
 
-        // --- 6. MAP ANIMATION ---
-        const primaryTruck = activeTrucks[0]; 
+        // Delete a Truck
+        window.deleteTruck = function(event, index) {
+            event.stopPropagation(); // Prevent triggering the "Select" click
+            
+            if (confirm("Cancel this shipment?")) {
+                activeTrucks.splice(index, 1);
+                localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
+                
+                // Adjust selection if needed
+                if (selectedTruckIndex >= activeTrucks.length) {
+                    selectedTruckIndex = Math.max(0, activeTrucks.length - 1);
+                }
+                
+                renderTrucks();
+            }
+        };
+
+        // --- 5. MAP SETUP ---
         var map = L.map('map').setView([target.lat, target.lng], 13);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap contributors & CARTO', subdomains: 'abcd', maxZoom: 19
@@ -190,8 +219,20 @@
         var truckIcon = L.divIcon({ html: '<div class="truck-icon">🚛</div>', className: 'dummy', iconSize: [40, 40], iconAnchor: [20, 20] });
         var truckMarker = L.marker([startLat, startLng], {icon: truckIcon}).addTo(map);
         
-        truckMarker.bindTooltip(`${primaryTruck.name}<br>Cargo: ${primaryTruck.qty}`, {permanent: true, direction: 'right', offset: [10, 0]});
+        // --- 6. DYNAMIC MAP UPDATER ---
+        function updateMapTooltip() {
+            if (activeTrucks.length > 0) {
+                const currentTruck = activeTrucks[selectedTruckIndex];
+                // Unbind old tooltip and bind new one to ensure text updates
+                truckMarker.unbindTooltip(); 
+                truckMarker.bindTooltip(`${currentTruck.name}<br>Cargo: ${currentTruck.qty}`, {permanent: true, direction: 'right', offset: [10, 0]});
+                truckMarker.setOpacity(1);
+            } else {
+                truckMarker.setOpacity(0); // Hide truck if no orders
+            }
+        }
 
+        // --- 7. ANIMATION ---
         let step = 0; const totalSteps = 400; 
         function animateTruck() {
             step++; if (step > totalSteps) step = 0; 
@@ -201,6 +242,23 @@
             requestAnimationFrame(animateTruck);
         }
         animateTruck();
+
+        // --- 8. INITIAL HISTORY RENDER ---
+        const historyContainer = document.getElementById('history-list');
+        historyContainer.innerHTML = `
+            <div class="history-item">
+                <div><strong>Truck #03 (${target.name})</strong><div style="font-size:0.75rem;">Received: Yesterday</div></div>
+                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
+            </div>
+            <div class="history-item">
+                <div><strong>Truck #02 (${target.name})</strong><div style="font-size:0.75rem;">Received: Mon</div></div>
+                <span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px;">✅ Delivered</span>
+            </div>
+        `;
+
+        // Start App
+        renderTrucks();
+
     </script>
 </body>
 </html>
