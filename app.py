@@ -83,11 +83,21 @@ class WatsonxBypassMiddleware:
 
                     # --- SCENARIO LOGIC ---
                     from scenarios import DEMO_SCENARIOS
-                    if AGENT_SYSTEM is None: AGENT_SYSTEM = _build_agent_system()
+                    
+                    if AGENT_SYSTEM is None:
+                        AGENT_SYSTEM = _build_agent_system()
 
                     if not scenario_key or scenario_key not in DEMO_SCENARIOS:
-                        start_response('400 Bad Request', [('Content-Type', 'application/json')])
-                        return [json.dumps({"error": "Invalid key"}).encode('utf-8')]
+                        status = '400 Bad Request'
+                        headers = [('Content-Type', 'application/json')]
+                        start_response(status, headers)
+                        return [json.dumps({"status": "error", "message": f"Invalid key: {raw_key}"}).encode('utf-8')]
+
+                    # --- NEW: AUTO-ESCALATE TRIGGER ---
+                    # If user chose "Severe Haze", instantly flip to Autonomous Mode
+                    if scenario_key == 'severe_haze':
+                        clinic_state["protocol"] = "autonomous"
+                        print("⚡ AUTO-ESCALATION TRIGGERED by Severe Haze")
 
                     base_scenario = DEMO_SCENARIOS[scenario_key]
                     live_scenario = base_scenario.copy()
