@@ -27,6 +27,7 @@
       flex-direction: column;
       box-shadow: 10px 0 30px rgba(0,0,0,0.1);
       z-index: 1000;
+      overflow-y: auto;
     }
     .main-content {
       flex: 1;
@@ -100,6 +101,22 @@
         The decision logic runs server-side (agent orchestration), not in the browser.
       </div>
     </div>
+    <div class="section-spacer"></div>
+    <!-- Scanning for IOT Devices -->
+    <h3 style="color: #2c3e50; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+      🔍 IoT Devices
+      <span id="reset-btn" style="font-size: 1.2rem; cursor: pointer; opacity: 0.6;" title="Reset Scan">🔄</span>
+    </h3>
+    <div class="iot-scanner">
+      <div class="scanner-title" id="scanning-status">Scanning for IOT devices nearby...</div>
+      <div id="scanning-loader" class="scanning-animation">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <div id="scan-timer" style="font-size: 0.8rem; margin-top: 8px; color: #667eea;">3s</div>
+      <div id="devices-list" class="devices-container"></div>
+    </div>
 
     <div style="margin-top: auto; font-size: 0.8rem; color: #7f8c8d;">
       Connected to Environment Sentinel<br />
@@ -131,11 +148,11 @@
 
     // Region marker set + scenarios
     const regions = [
-      { id: "central", label: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493], scenario: "severe_haze" },
-      { id: "west",    label: "West (Jurong East)",        pos: [1.3329, 103.7436], scenario: "moderate_haze" },
-      { id: "north",   label: "North (Woodlands)",         pos: [1.4361, 103.7865], scenario: "low_haze" },
-      { id: "east",    label: "East (Tampines)",           pos: [1.3525, 103.9447], scenario: "moderate_haze" },
-      { id: "south",   label: "South (Harbourfront)",      pos: [1.2653, 103.8210], scenario: "low_haze" }
+      { id: "central", label: "Central (Toa Payoh/Bishan)", pos: [1.3483, 103.8493], scenario: "severe_haze", color: '#ef4444' },
+      { id: "west", label: "West (Jurong East)", pos: [1.3329, 103.7436], scenario: "moderate_haze", color: '#f59e0b' },
+      { id: "north", label: "North (Woodlands)", pos: [1.4361, 103.7865], scenario: "low_haze", color: '#10b981' },
+      { id: "east", label: "East (Tampines)", pos: [1.3525, 103.9447], scenario: "moderate_haze", color: '#f59e0b' },
+      { id: "south", label: "South (Harbourfront)", pos: [1.2653, 103.8210], scenario: "low_haze", color: '#10b981' }
     ];
 
     function getStatusColor(risk) {
@@ -149,18 +166,22 @@
     // markers by region id
     const regionMarkers = {};
 
-    regions.forEach(region => {
+     regions.forEach(region => {
       const marker = L.circleMarker(region.pos, {
-        color: '#667eea',
-        fillColor: '#667eea',
-        fillOpacity: 0.5,
+        color: region.color || '#667eea', 
+        fillColor: region.color || '#667eea',
+        fillOpacity: 0.6,
         radius: 15
       }).addTo(map);
+
+      // Store original color in marker
+      marker.originalColor = region.color || '#667eea';
 
       regionMarkers[region.id] = marker;
 
       marker.on('click', () => refreshRegion(region, true));
       marker.bindPopup(`<b>${region.label}</b><br>Tap to load PSI...`);
+      
     });
 
     // 2) Core refresh flow
@@ -176,6 +197,7 @@
         const raw = result.raw_data || result.data || {};
 
         const psiDict =
+          (result.environmental_data?.psi_by_region) ||
           (raw.psi_data) ||
           (raw.psi) ||
           (result.psi_data) ||
@@ -184,13 +206,16 @@
 
         // psi could be dict (by region) or single number
         const currentPsi = (typeof psiDict === "object" && psiDict !== null)
-          ? (psiDict[region.id] ?? psiDict[region.id.toUpperCase()] ?? psiDict[region.label] ?? "N/A")
+          ? (psiDict[region.id] ?? psiDict[region.id.toUpperCase()] ?? psiDict[region.label] ?? risk.current_psi ?? "N/A")
           : (psiDict ?? "N/A");
 
         const riskLevel = risk.risk_level ?? result.risk_level ?? "N/A";
 
-        // Update marker popup + style
-        marker.setStyle({ color: getStatusColor(riskLevel), fillColor: getStatusColor(riskLevel) });
+        // Update marker popup and style only when user explicitly clicks (updateSidebarFlag = true)
+        // Keep region colors on initial load
+        if (updateSidebarFlag) {
+          marker.setStyle({ color: getStatusColor(riskLevel), fillColor: getStatusColor(riskLevel) });
+        }
         marker.bindPopup(`<b>${region.label}</b><br>PSI: ${currentPsi}<br>Risk: ${riskLevel}`);
 
         if (updateSidebarFlag) {
@@ -244,13 +269,41 @@
 
       panel.innerHTML = `
         <h2 style="color:${color}; margin-bottom: 8px;">${data.name}</h2>
-        <div class="psi-badge" style="background:${color}">${data.risk} (PSI: ${data.psi})</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div class="psi-badge" style="background:${color}">${data.risk} (PSI: ${data.psi})</div>
+          <button onclick="resetSidebarView()"
+            class="psi-badge"
+            style="background:${color}; color:white; border:none;
+            padding:10px 20px; border-radius:50px;
+            cursor:pointer; font-weight:bold;"> Back </button>
+          </div>
         <hr style="margin: 18px 0; border: 0; border-top: 1px solid #eee;">
         <h4 style="margin: 0 0 8px 0;">🤖 Agent Advisory</h4>
         <p style="margin-top:0;">${advisoryText}</p>
         ${healthTipHtml}
         ${proofLine}
       `;
+    }
+
+    // Reset sidebar to original state
+    function resetSidebarView() {
+      const panel = document.getElementById('info-panel');
+      panel.innerHTML = `
+        <h3>📍 Live Monitoring</h3>
+        <p class="hint">
+          Tap a region marker to view PSI and the citizen health advisory generated by UrbanPulse agents.
+        </p>
+        <div class="small-note">
+          <b>Automation proof:</b> When a haze scenario triggers, the advisory updates without manual calculation.
+          The decision logic runs server-side (agent orchestration), not in the browser.
+        </div>
+      `;
+      // Restore original colors to all markers
+      Object.values(regionMarkers).forEach(marker => {
+        if (marker.originalColor) {
+          marker.setStyle({ color: marker.originalColor, fillColor: marker.originalColor });
+        }
+      });
     }
 
     // 4) Clock
@@ -268,8 +321,235 @@
         await refreshRegion(region, false);
       }
     }
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').innerText = now.toLocaleTimeString();
+      document.getElementById('date').innerText = now.toDateString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // IoT Device Scanner — air-purifying devices
+    const smartDevices = [
+      { icon: '🌬️', name: 'Air Purifier', on: true },
+      { icon: '❄️', name: 'Air Conditioner', on: false },
+      { icon: '🌀', name: 'Exhaust Fan', on: false },
+      { icon: '🪟', name: 'Smart Vent', on: false },
+    ];
+
+    function randomizeDevices() {
+      // Randomize on/off state for each device so scan results vary
+      smartDevices.forEach(device => {
+        // heavier devices slightly less likely to be ON
+        const heavy = ['Washing Machine', 'Coffee Maker', 'Smart TV'];
+        const prob = heavy.includes(device.name) ? 0.35 : 0.6;
+        device.on = Math.random() < prob;
+        // assign a random timer (1-8 hours) for display
+        device.timerHours = Math.floor(Math.random() * 8) + 1;
+        // clear any scheduled overrides when randomizing
+        device.scheduledUntil = null;
+      });
+      console.log('randomizeDevices ->', smartDevices.map(d => ({ name: d.name, on: d.on, timerHours: d.timerHours })));
+    }
+
+    function toggleDevice(index) {
+      smartDevices[index].on = !smartDevices[index].on;
+      // manual toggle clears any scheduled override
+      smartDevices[index].scheduledUntil = null;
+      renderDevices();
+    }
+
+    function renderDevices() {
+      const devicesEl = document.getElementById('devices-list');
+      devicesEl.innerHTML = '';
+      smartDevices.forEach((device, index) => {
+        const card = document.createElement('div');
+        card.className = 'device-card';
+        const btnClass = device.on ? 'toggle-btn on' : 'toggle-btn off';
+        const btnText = device.on ? 'ON' : 'OFF';
+        const status = device.on ? 'Active' : 'Inactive';
+        const statusColor = device.on ? '#10b981' : '#ef4444';
+        // compute remaining time if a scheduledUntil exists
+        let remainingText = '';
+        if (device.scheduledUntil) {
+          const remMs = device.scheduledUntil - Date.now();
+          if (remMs > 0) remainingText = ` — ${formatRemaining(remMs)} left`;
+          else {
+            // expired
+            device.scheduledUntil = null;
+          }
+        }
+        const timerHours = device.timerHours || '-';
+        card.innerHTML = `
+          <div class="device-info">
+            <div class="device-icon">${device.icon}</div>
+            <div class="device-details">
+              <div class="device-name">${device.name}</div>
+              <div class="device-status" style="color: ${statusColor};">${status}</div>
+              <div class="device-timer">Timer: ${timerHours}h${remainingText}</div>
+            </div>
+          </div>
+          <button class="${btnClass}" onclick="toggleDevice(${index})">${btnText}</button>
+        `;
+        devicesEl.appendChild(card);
+      });
+    }
+
+    function formatRemaining(ms) {
+      if (!ms || ms <= 0) return '0m';
+      const totalMin = Math.ceil(ms / 60000);
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      if (h > 0) return `${h}h ${m}m`;
+      return `${m}m`;
+    }
+
+    function startIoTScan() {
+      let scanTime = 3;
+      const timerEl = document.getElementById('scan-timer');
+      const scannerEl = document.getElementById('scanning-loader');
+      const devicesEl = document.getElementById('devices-list');
+      const statusEl = document.getElementById('scanning-status');
+
+      const scanInterval = setInterval(() => {
+        scanTime--;
+        timerEl.innerText = scanTime + 's';
+
+        if (scanTime <= 0) {
+          clearInterval(scanInterval);
+          scannerEl.style.display = 'none';
+          timerEl.innerText = '✓ Complete';
+          // determine condition and display
+          const condition = determineHazeCondition();
+          const color = condition === 'Low' ? '#10b981' : (condition === 'Moderate' ? '#f59e0b' : '#ef4444');
+          statusEl.innerHTML = `<b>Haze Condition:</b> <span style="color:${color};">${condition}</span>`;
+          devicesEl.classList.add('show');
+          renderDevices();
+          console.log('IoT scan complete, condition:', condition, 'recommendations:', getRecommendations(condition));
+          if (condition === 'Moderate' || condition === 'Severe') showRecommendationModal(condition);
+        }
+      }, 1000);
+    }
+
+    function resetScan() {
+      const timerEl = document.getElementById('scan-timer');
+      const scannerEl = document.getElementById('scanning-loader');
+      const devicesEl = document.getElementById('devices-list');
+      const statusEl = document.getElementById('scanning-status');
+      
+      devicesEl.classList.remove('show');
+      devicesEl.innerHTML = '';
+      scannerEl.style.display = 'inline-block';
+      timerEl.innerText = '3s';
+      timerEl.style.color = '#667eea';
+      statusEl.textContent = 'Scanning for IOT devices nearby you...';
+      // Randomize device states so recommendations differ each scan
+      randomizeDevices();
+      startIoTScan();
+    }
+
+    function determineHazeCondition() {
+      const r = Math.random();
+      if (r < 0.6) return 'Low';
+      if (r < 0.9) return 'Moderate';
+      return 'Severe';
+    }
+
+    function getRecommendations(condition) {
+      // For Moderate/Severe haze, recommend turning ON purifying devices that are currently OFF
+      const recommendations = [];
+      if (condition !== 'Moderate' && condition !== 'Severe') return recommendations;
+      smartDevices.forEach((device, index) => {
+        if (!device.on) {
+          recommendations.push({ name: device.name, index: index });
+        }
+      });
+      return recommendations;
+    }
+
+    function showRecommendationModal(condition) {
+      const recommendations = getRecommendations(condition);
+      console.log('showRecommendationModal -> recommendations:', recommendations, 'condition:', condition);
+      if (recommendations.length === 0) return; // No recommendations needed
+
+      const modal = document.getElementById('recommendation-modal');
+      const itemsContainer = document.getElementById('recommendation-items');
+      if (!modal || !itemsContainer) {
+        console.warn('Recommendation modal elements not found');
+        return;
+      }
+      itemsContainer.innerHTML = '';
+
+      recommendations.forEach(rec => {
+        const item = document.createElement('div');
+        item.className = 'recommendation-item';
+        item.innerHTML = `✓ ${rec.name}`;
+        itemsContainer.appendChild(item);
+      });
+
+      // show duration suggestion
+      const durationEl = document.getElementById('recommendation-duration');
+      if (durationEl) {
+        if (condition === 'Severe') durationEl.innerText = 'Recommended runtime: 4 hours';
+        else if (condition === 'Moderate') durationEl.innerText = 'Recommended runtime: 2 hours';
+        else durationEl.innerText = '';
+      }
+
+      // auto-apply recommendations immediately to make it seem automatic
+      const hours = condition === 'Severe' ? 4 : 2;
+      const until = Date.now() + hours * 60 * 60 * 1000;
+      const applied = [];
+      recommendations.forEach(rec => {
+        const dev = smartDevices[rec.index];
+        applied.push({ index: rec.index, prevOn: dev.on, prevTimerHours: dev.timerHours || null, prevScheduledUntil: dev.scheduledUntil || null });
+        dev.on = true;
+        dev.scheduledUntil = until;
+        dev.timerHours = hours; // show the recommended runtime
+      });
+      // store applied data so user can undo
+      modal.dataset.applied = JSON.stringify(applied);
+      modal.dataset.recommendations = JSON.stringify(recommendations);
+      modal.dataset.condition = condition;
+      // update header to reflect automatic action
+      const headerEl = document.getElementById('recommendation-header');
+      if (headerEl) {
+        const names = recommendations.map(r => r.name).join(', ');
+        headerEl.innerText = `Turning on: ${names} for ${hours} hours.`;
+      }
+      renderDevices();
+      modal.classList.add('show');
+    }
+
+    // dismiss (just close the modal)
+    function dismissRecommendation() {
+      const modal = document.getElementById('recommendation-modal');
+      if (modal) modal.classList.remove('show');
+    }
+
+
+    document.getElementById('reset-btn').addEventListener('click', resetScan);
+
+    // Start the auto-load process
     initDashboard();
+    // Randomize devices and start IoT scan on page load
+    randomizeDevices();
+    startIoTScan();
   </script>
+
+    <!-- Recommendation Modal (moved to root for visibility) -->
+  <div id="recommendation-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-title">🫧 Air Purification in progress...</div>
+      <div class="recommendation-list">
+        <div id="recommendation-header" style="font-weight: bold; margin-bottom: 10px; color: #667eea;">It is recommended to turn on:</div>
+        <div id="recommendation-duration" style="font-size:0.9rem; margin-bottom:8px; color: #374151;"></div>
+        <div id="recommendation-items"></div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn accept" onclick="dismissRecommendation()">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ✅ Watson Assistant web chat removed (prevents “Connect to agent” error) -->
 </body>

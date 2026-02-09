@@ -501,3 +501,258 @@ body.citizen-page {
   height: 100vh;
   overflow: hidden;
 }
+
+#clock { font-size: 1.5rem; font-weight: bold; }
+.psi-badge {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-weight: bold;
+      color: white;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+    .section-spacer {
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .iot-scanner {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 12px;
+      color: #333;
+      background: #f8f9fa;
+    }
+    .scanner-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      color: #667eea;
+    }
+    .scanning-animation {
+      display: inline-block;
+      font-size: 1.5rem;
+      margin: 10px 0;
+    }
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: white;
+      margin: 0 3px;
+      animation: pulse 1.5s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    .devices-container {
+      display: none;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .devices-container.show {
+      display: flex;
+      flex-direction: column;
+    }
+    .device-card {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      color: #333;
+      font-size: 0.8rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #e0e0e0;
+    }
+    .device-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+    .device-icon {
+      font-size: 1.5rem;
+    }
+    .device-details {
+      text-align: left;
+    }
+    .device-name {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    .device-status {
+      color: #10b981;
+      font-size: 0.7rem;
+    }
+    .device-timer {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .toggle-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    .toggle-btn.on {
+      background: #10b981;
+      color: white;
+    }
+    .toggle-btn.off {
+      background: #e5e7eb;
+      color: #666;
+    }
+    .toggle-btn:hover {
+      opacity: 0.8;
+    }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.show {
+      display: flex;
+    }
+    .modal-dialog {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .recommendation-list {
+      background: #f0f4ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #667eea;
+    }
+    .recommendation-item {
+      padding: 8px 0;
+      color: #333;
+      font-size: 0.9rem;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .modal-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+    .modal-btn.accept {
+      background: #10b981;
+      color: white;
+    }
+    .modal-btn.accept:hover {
+      background: #059669;
+    }
+    .modal-btn.deny {
+      background: #e5e7eb;
+      color: #666;
+    }
+    .modal-btn.deny:hover {
+      background: #d1d5db;
+    }
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-overlay.show {
+        display: flex;
+      }
+      .modal-dialog {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+      .modal-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+      .recommendation-list {
+        background: #f0f4ff;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+      }
+      .recommendation-item {
+        padding: 8px 0;
+        color: #333;
+        font-size: 0.9rem;
+      }
+      .modal-buttons {
+        display: flex;
+        gap: 10px;
+      }
+      .modal-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+      }
+      .modal-btn.accept {
+        background: #10b981;
+        color: white;
+      }
+      .modal-btn.accept:hover {
+        background: #059669;
+      }
+      .modal-btn.deny {
+        background: #e5e7eb;
+        color: #666;
+      }
+      .modal-btn.deny:hover {
+        background: #d1d5db;
+      }
