@@ -7,3 +7,6 @@ numpy
 openpyxl
 openai
 python-dotenv
+ibm-watsonx-ai
+typing-extensions
+python-dotenv

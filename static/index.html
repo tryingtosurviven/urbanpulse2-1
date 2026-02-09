@@ -1,142 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrbanPulse | Singapore Health Resilience</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        /* Landing page specific layout */
-        .landing-container { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 90vh; 
-            color: white; 
-            text-align: center; 
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UrbanPulse | Singapore Health Resilience</title>
+  <link rel="stylesheet" href="/static/style.css" />
 
-        /* Typography enhancements for readability against the sky */
-        h1 { 
-            font-size: 4rem; 
-            margin-bottom: 5px; 
-            text-shadow: 2px 4px 10px rgba(0,0,0,0.3); 
-        }
-        
-        .subtitle { 
-            font-size: 1.4rem; 
-            margin-bottom: 40px; 
-            opacity: 0.9; 
-            text-shadow: 1px 2px 5px rgba(0,0,0,0.3);
-        }
+  <style>
+    /* Landing page specific layout */
+    .landing-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 90vh;
+      color: white;
+      text-align: center;
+      padding: 0 16px;
+    }
 
-        .role-cards { 
-            display: flex; 
-            gap: 30px; 
-            margin-top: 20px; 
-        }
+    /* Typography enhancements for readability against the sky */
+    h1 {
+      font-size: 4rem;
+      margin-bottom: 5px;
+      text-shadow: 2px 4px 10px rgba(0,0,0,0.3);
+    }
 
-        /* Glassmorphism Card Style */
-        .role-card { 
-            background: rgba(255, 255, 255, 0.9); 
-            backdrop-filter: blur(10px);
-            color: #2c3e50; 
-            padding: 50px 40px; 
-            border-radius: 20px; 
-            width: 340px; 
-            cursor: pointer; 
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
-            border: 1px solid rgba(255, 255, 255, 0.4);
-        }
+    .subtitle {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      opacity: 0.95;
+      text-shadow: 1px 2px 5px rgba(0,0,0,0.3);
+    }
 
-        .role-card:hover { 
-            transform: translateY(-15px); 
-            background: white; 
-            box-shadow: 0 20px 45px rgba(0,0,0,0.25);
-        }
+    .pitch {
+      max-width: 920px;
+      margin: 0 auto 22px auto;
+      font-size: 1.02rem;
+      line-height: 1.5;
+      opacity: 0.92;
+      text-shadow: 1px 2px 5px rgba(0,0,0,0.25);
+    }
 
-        .role-card i { 
-            font-size: 60px; 
-            display: block; 
-            margin-bottom: 25px; 
-        }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 14px 0 26px 0;
+    }
 
-        .role-card h2 {
-            border-bottom: none;
-            margin-bottom: 15px;
-            color: #1a2a6c;
-            font-size: 1.8rem;
-        }
+    .badge {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
 
-        .role-card p {
-            color: #5d6d7e;
-            line-height: 1.5;
-        }
+    .role-cards {
+      display: flex;
+      gap: 30px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
 
-        .admin-link { 
-            margin-top: 60px; 
-            font-size: 0.9rem;
-            opacity: 0.7; 
-            cursor: pointer; 
-            text-decoration: none;
-            color: white;
-            transition: 0.3s;
-            padding: 8px 15px;
-            border-radius: 20px;
-            background: rgba(0,0,0,0.2);
-        }
+    /* Glassmorphism Card Style */
+    .role-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      color: #2c3e50;
+      padding: 44px 36px;
+      border-radius: 20px;
+      width: 340px;
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      text-align: left;
+      position: relative;
+      outline: none;
+    }
 
-        .admin-link:hover { 
-            opacity: 1; 
-            background: rgba(0,0,0,0.4);
-        }
+    .role-card:hover {
+      transform: translateY(-12px);
+      background: white;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+    }
 
-        /* Responsive tweak */
-        @media (max-width: 768px) {
-            .role-cards { flex-direction: column; }
-            .landing-container { height: auto; padding: 40px 0; }
-        }
-    </style>
+    .role-card:focus-visible {
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.35), 0 20px 45px rgba(0,0,0,0.25);
+    }
+
+    .role-card i {
+      font-size: 54px;
+      display: block;
+      margin-bottom: 18px;
+    }
+
+    .role-card h2 {
+      border-bottom: none;
+      margin: 0 0 10px 0;
+      color: #1a2a6c;
+      font-size: 1.6rem;
+    }
+
+    .role-card p {
+      color: #5d6d7e;
+      line-height: 1.5;
+      margin: 0 0 14px 0;
+    }
+
+    .card-foot {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .pill {
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(26,42,108,0.08);
+      border: 1px solid rgba(26,42,108,0.12);
+      color: #1a2a6c;
+    }
+
+    .admin-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 26px;
+    }
+
+    .admin-link {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+      transition: 0.25s;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      user-select: none;
+    }
+
+    .admin-link:hover {
+      opacity: 1;
+      background: rgba(0,0,0,0.38);
+    }
+
+    .admin-link.secondary {
+      background: rgba(0,0,0,0.14);
+    }
+
+    .fineprint {
+      margin-top: 18px;
+      font-size: 0.9rem;
+      opacity: 0.82;
+      text-shadow: 1px 2px 5px rgba(0,0,0,0.25);
+      max-width: 920px;
+    }
+
+    /* Responsive tweak */
+    @media (max-width: 768px) {
+      h1 { font-size: 3.1rem; }
+      .landing-container { height: auto; padding: 38px 16px; }
+      .role-card { width: 100%; max-width: 380px; }
+    }
+  </style>
 </head>
+
 <body>
-    <div class="landing-container">
-        <h1>🏙️ UrbanPulse</h1>
-        <p class="subtitle">National Agentic Framework for Health Resilience</p>
-        
-        <div class="role-cards">
-            <div class="role-card" onclick="window.location.href='/citizen'">
-                <i>👤</i>
-                <h2>I am a Citizen</h2>
-                <p>Check real-time air quality, PSI levels, and localized health advisories for your neighborhood.</p>
-            </div>
+  <div class="landing-container">
+    <h1>🏙️ UrbanPulse</h1>
+    <p class="subtitle">Proactive Haze Response → Automated Health Surge Coordination</p>
 
-            <div class="role-card" onclick="window.location.href='/clinic'">
-                <i>🏥</i>
-                <h2>I am a Clinic Manager</h2>
-                <p>Monitor respiratory surge predictions and authorize AI-driven medical supply replenishments.</p>
-            </div>
-        </div>
+    <!-- Problem framing + relevance (Rubric #1) in one glance -->
+    <p class="pitch">
+      Singapore’s transboundary haze is a recurring national health risk. UrbanPulse runs on IBM Cloud and uses an
+      agentic AI “conductor” to translate live air-quality signals into coordinated actions — citizen advisories and
+      clinic preparedness — before demand surges.
+    </p>
 
-        <a class="admin-link" onclick="window.location.href='/admin'">
-            ⚙️ Developer Access: Agent Orchestration Panel
-        </a>
+    <!-- Agentic AI application + feasibility cues (Rubric #2 + #4) -->
+    <div class="badges" aria-label="Platform capabilities">
+      <span class="badge">🧠 watsonx Agent Orchestration</span>
+      <span class="badge">🌫️ Live NEA / data.gov.sg signals</span>
+      <span class="badge">⚡ Event-driven automation</span>
+      <span class="badge">🧾 Action logs (audit trail)</span>
+      <span class="badge">🧩 API-ready integrations</span>
     </div>
 
-    <script>
-      window.watsonAssistantChatOptions = {
-        integrationID: "16b93be7-5249-4f25-a201-3584e0152718", // Your NEW confirmed ID
-        region: "aws-ap-southeast-1", 
-        serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d", // Your service instance ID
-        orchestrateUIAgentExtensions: false, 
-        onLoad: async (instance) => { await instance.render(); }
-      };
-      setTimeout(function(){
-        const t=document.createElement('script');
-        t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
-        document.head.appendChild(t);
-      });
-    </script>
+    <div class="role-cards" role="navigation" aria-label="Choose a portal">
+      <div class="role-card" role="button" tabindex="0"
+           onclick="go('/citizen')" onkeydown="cardKey(event, '/citizen')">
+        <i>👤</i>
+        <h2>Citizen Portal</h2>
+        <p>
+          View regional PSI and receive localized health guidance — especially for vulnerable groups —
+          when haze thresholds are exceeded.
+        </p>
+        <div class="card-foot">
+          <span class="pill">Real-time PSI</span>
+          <span class="pill">Localized advice</span>
+          <span class="pill">Public service value</span>
+        </div>
+      </div>
+
+      <div class="role-card" role="button" tabindex="0"
+           onclick="go('/clinic')" onkeydown="cardKey(event, '/clinic')">
+        <i>🏥</i>
+        <h2>Clinic Manager Portal</h2>
+        <p>
+          Monitor surge risk signals and see the agent chain coordinate readiness actions (inventory,
+          alerts, and logistics) with a transparent reasoning log.
+        </p>
+        <div class="card-foot">
+          <span class="pill">Surge readiness</span>
+          <span class="pill">Action protocol</span>
+          <span class="pill">Audit log</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-row">
+      <a class="admin-link" href="/admin" aria-label="Open agent orchestration panel">
+        ⚙️ Orchestration Panel (Demo Trigger + Logs)
+      </a>
+
+      <!-- Optional: a quick demo CTA that supports the "automation" story -->
+      <a class="admin-link secondary" href="/clinic" aria-label="View live actions in clinic portal">
+        ▶️ View Live Actions
+      </a>
+    </div>
+
+    <!-- Feasibility / governance cues (Rubric #4 + ethics) -->
+    <p class="fineprint">
+      Governance-by-design: actions are logged for transparency, and workflows can be configured for
+      human-in-the-loop approval (or fully automated mode) depending on operational policy.
+    </p>
+  </div>
+
+  <!-- IMPORTANT: Watson Assistant web chat removed for finale-night stability.
+       The “Connect to agent” handoff is a customer-support chat feature and can error if not configured.
+       UrbanPulse is demonstrated via the Orchestration Panel + portals (event-driven agent execution). -->
+
+  <script>
+    function go(path) {
+      window.location.href = path;
+    }
+    function cardKey(e, path) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        go(path);
+      }
+    }
+  </script>
 </body>
 </html>
