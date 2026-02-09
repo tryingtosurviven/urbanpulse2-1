@@ -41,6 +41,10 @@ class WatsonxBypassMiddleware:
         self.app = app
 
     def __call__(self, environ, start_response):
+        # --- FIX: DECLARE GLOBAL AT THE VERY START ---
+        global clinic_state 
+        # ---------------------------------------------
+
         path = environ.get('PATH_INFO', '')
         
         # 1. TRAP THE SPECIFIC URL
@@ -75,7 +79,7 @@ class WatsonxBypassMiddleware:
                     # ---------------------------------------------------------
                     # [CRITICAL FIX] CHECK FOR CONTROL COMMANDS FIRST
                     # ---------------------------------------------------------
-                    global clinic_state
+                    # (Global clinic_state is already declared at top)
                     
                     if scenario_key == 'logistics':
                         clinic_state["view"] = 'logistics' # Redirect browser
@@ -137,13 +141,13 @@ class WatsonxBypassMiddleware:
                     # Generate Summary
                     risk_data = result.get('risk_assessment', {})
                     psi_val = risk_data.get('current_psi', 'Unknown')
+                    risk_level = risk_data.get('risk_level', 'UNKNOWN')
                     supply_data = result.get('supply_chain_actions', {})
                     total_cost = supply_data.get('total_value', '$0')
                     po_id = supply_data.get('po_id', 'No PO')
                     rec_qty = supply_data.get('order_details', {}).get("n95_masks", 500) # Default to 500
 
                     # --- NEW: SAVE DRAFT TO STATE ---
-                    global clinic_state
                     clinic_state["draft"] = {
                         "active": True,
                         "id": po_id,
@@ -162,7 +166,6 @@ class WatsonxBypassMiddleware:
                         f"Risk Level: {risk_level}. Highest PSI: {psi_val}. "
                         f"{action_text}"
                     )
-                    # ------------------------------------------
                     
                     response_data = {
                         "status": "success",
@@ -211,90 +214,4 @@ def _build_agent_system():
     sentinel = EnvironmentSentinel()
     sentinel.register_agent(ScalestackAgent())
     sentinel.register_agent(DynamiqMedicalAgent())
-    sentinel.register_agent(HealthcarePreparednessAgent())
-    sentinel.register_agent(SupplyChainAgent())
-    return sentinel
-
-AGENT_SYSTEM = None
-
-@app.get("/api/scenarios")
-def list_scenarios():
-    from scenarios import DEMO_SCENARIOS
-    scenarios = [
-        {"key": k, "description": v.get("description", ""), "psi_data": v.get("psi_data", {})}
-        for k, v in DEMO_SCENARIOS.items()
-    ]
-    return jsonify({"scenarios": scenarios})
-
-# -----------------------------
-# CLINIC DEMO ROUTES
-# -----------------------------
-@app.route("/clinic")
-def clinic_dashboard():
-    global clinic_state
-    # --- SAFETY RESET ---
-    clinic_state["view"] = "normal" 
-    clinic_state["protocol"] = "standard" # Reset to standard on reload
-    return send_from_directory("static", "clinic.html")
-
-@app.get("/api/clinic-poll")
-def clinic_poll():
-    global AGENT_SYSTEM, clinic_state
-    
-    # 1. Check for State Redirects
-    if clinic_state["view"] in ['logistics', 'approved']:
-         return jsonify({"status": "redirect", "current_view": clinic_state["view"]})
-
-    # 2. Check for Agent Alerts
-    if AGENT_SYSTEM is None:
-        return jsonify({"status": "waiting", "current_view": "normal", "protocol": "standard"})
-
-    memory = AGENT_SYSTEM.memory
-    if not memory:
-        return jsonify({"status": "waiting", "current_view": "normal", "protocol": "standard"})
-
-    last_cycle = memory[-1]
-    alert_data = last_cycle.get("healthcare_alerts", {})
-    
-    return jsonify({
-        "status": "alert_active" if alert_data else "waiting",
-        "current_view": clinic_state["view"],
-        "protocol": clinic_state["protocol"],
-        "draft": clinic_state["draft"],  # <--- SEND DRAFT DATA TO FRONTEND
-        "psi": last_cycle.get("risk_assessment", {}).get("current_psi", 0),
-        "alert_message": alert_data.get("alert_message", "No message")
-    })
-
-@app.post("/api/clinic-confirm-order")
-def confirm_order():
-    global clinic_state
-    data = request.json
-    final_qty = data.get("confirmed_qty")
-    
-    print(f"✅ CLINIC CONFIRMED ORDER: {final_qty} Masks")
-    
-    # Update State to 'Approved' so the sidebar turns Green
-    clinic_state["view"] = "approved"
-    clinic_state["draft"]["active"] = False # clear draft
-    
-    return jsonify({"status": "success", "message": f"Order for {final_qty} masks processed."})
-
-@app.route("/logistics")
-def logistics_portal():
-    return send_from_directory("static", "logistics.html")
-
-@app.route("/citizen")
-def citizen_portal():
-    return send_from_directory("static", "citizen.html")
-
-@app.route("/admin")
-def admin_portal():
-    return send_from_directory("static", "admin.html")
-
-# -----------------------------
-# Local run
-# -----------------------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8080"))
-    print(f"[UrbanPulse] Starting on 0.0.0.0:{port} | DEMO_MODE={is_demo_mode()}")
-    app.run(host="0.0.0.0", port=port)
+    sentinel.register
