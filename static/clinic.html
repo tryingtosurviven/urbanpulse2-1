@@ -543,21 +543,18 @@
       const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
       return avg;
     }
-    
-    function updateSingaporeAvgPsi(result) {
-      const psiDict = extractPsiDict(result);
-      const avg = computeAvgPsi(psiDict);
-      if (avg == null) return;
-    
-      const status = psiCategory(avg);
+
+    function setFakeSingaporeAvgPsi() {
+      const fakePsi = 68; // 👈 CHANGE THIS NUMBER FOR DEMO
+      const status = psiCategory(fakePsi);
     
       const psiEl = document.getElementById("sg-avg-psi");
       const statusEl = document.getElementById("sg-avg-status");
     
-      if (psiEl) psiEl.innerText = String(avg);
+      if (psiEl) psiEl.innerText = String(fakePsi);
       if (statusEl) statusEl.innerText = status;
     }
-
+    
     async function runClinicAssistant(scenarioKey) {
       if (assistantIsRunning) return;
       assistantIsRunning = true;
@@ -566,8 +563,8 @@
       chatAdd(`Running agent workflow for scenario: ${scenarioKey}...`, { status: true });
 
       try {
+        setFakeSingaporeAvgPsi(); // 👈 always fake PSI
         const result = await window.runScenario(scenarioKey);
-        updateSingaporeAvgPsi(result);
 
         const risk = result?.risk_assessment || {};
         const riskLevel = risk.risk_level || result?.risk_level || "N/A";
@@ -616,6 +613,7 @@
       t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
       document.head.appendChild(t);
     });
+    setFakeSingaporeAvgPsi();
   </script>
   
 
