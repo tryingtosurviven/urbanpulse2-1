@@ -2,8 +2,8 @@ import os
 import socket
 import time
 import json
-# Force Render Rebuild - Final Fix
-from flask import Flask, jsonify, Response, request, render_template, send_from_directory
+import random
+from flask import Flask, jsonify, Response, request, send_from_directory
 
 # -----------------------------
 # Config / flags
@@ -18,11 +18,15 @@ INSTANCE = {
     "file": __file__,
 }
 
+# --- DEFINE STATE AT THE TOP SO MIDDLEWARE CAN SEE IT ---
+clinic_state = {
+    "view": "normal",  # Controls: 'normal', 'logistics', 'approved'
+}
+
 app = Flask(__name__)
 
 # ==============================================================================
 # GOD MODE: WSGI MIDDLEWARE (The Ultimate Bypass)
-# This sits ABOVE Flask. It intercepts the request before any login checks occur.
 # ==============================================================================
 class WatsonxBypassMiddleware:
     def __init__(self, app):
@@ -34,14 +38,14 @@ class WatsonxBypassMiddleware:
         # 1. TRAP THE SPECIFIC URL
         if path == '/api/watsonx-scenario':
             
-            # A. HANDLE BROWSER TEST (GET) - Proves the tunnel is open
+            # A. HANDLE BROWSER TEST (GET)
             if environ['REQUEST_METHOD'] == 'GET':
                 status = '200 OK'
                 headers = [('Content-Type', 'application/json')]
                 start_response(status, headers)
-                return [b'{"status": "bypass_active", "message": "GOD MODE: Login Wall Destroyed. The tunnel is open."}']
+                return [b'{"status": "bypass_active", "message": "GOD MODE: Login Wall Destroyed."}']
 
-            # B. HANDLE AI REQUEST (POST) - Runs the logic manually
+            # B. HANDLE AI REQUEST (POST)
             if environ['REQUEST_METHOD'] == 'POST':
                 try:
                     # Read the JSON body manually
@@ -52,7 +56,6 @@ class WatsonxBypassMiddleware:
                     
                     request_body = environ['wsgi.input'].read(request_body_size)
                     
-                    # Parse JSON
                     if not request_body:
                         payload = {}
                     else:
@@ -61,66 +64,70 @@ class WatsonxBypassMiddleware:
                     raw_key = payload.get("scenario_key", "")
                     scenario_key = raw_key.strip().lower().replace(" ", "_")
 
-                    # --- RUN LOGIC MANUALLY (No Flask Request Context needed) ---
-                    # We import here to ensure we have access to the latest data
+                    # ---------------------------------------------------------
+                    # [CRITICAL FIX] CHECK FOR CONTROL COMMANDS FIRST
+                    # ---------------------------------------------------------
+                    global clinic_state
+                    
+                    if scenario_key == 'logistics':
+                        clinic_state["view"] = 'logistics' # Redirect browser
+                        print(f"🔄 AGENT COMMAND: Dashboard view switched to LOGISTICS")
+                        
+                        status = '200 OK'
+                        headers = [('Content-Type', 'application/json')]
+                        start_response(status, headers)
+                        return [json.dumps({"status": "success", "message": "View switched to logistics"}).encode('utf-8')]
+
+                    if scenario_key == 'approved':
+                        clinic_state["view"] = 'approved' # Turn sidebar green
+                        print(f"✅ AGENT COMMAND: Order APPROVED")
+                        
+                        status = '200 OK'
+                        headers = [('Content-Type', 'application/json')]
+                        start_response(status, headers)
+                        return [json.dumps({"status": "success", "message": "Order approved"}).encode('utf-8')]
+                    # ---------------------------------------------------------
+
+                    # --- RUN SCENARIO LOGIC (Existing Haze Logic) ---
                     from scenarios import DEMO_SCENARIOS
-                    import random 
                     global AGENT_SYSTEM
                     
                     if AGENT_SYSTEM is None:
                         AGENT_SYSTEM = _build_agent_system()
 
-                    # Check key - THIS WAS THE MISSING PART
+                    # Check key
                     if not scenario_key or scenario_key not in DEMO_SCENARIOS:
                         status = '400 Bad Request'
                         headers = [('Content-Type', 'application/json')]
                         start_response(status, headers)
                         return [json.dumps({"status": "error", "message": f"Invalid key: {raw_key}"}).encode('utf-8')]
 
-                    # GET THE BASE SCENARIO
+                    # GET THE BASE SCENARIO & ADD NOISE
                     base_scenario = DEMO_SCENARIOS[scenario_key]
-
-                    # --- THE MAGIC TRICK: SIMULATE LIVE SENSOR FLUCTUATION ---
-                    # We copy the data so we don't mess up the original file
                     live_scenario = base_scenario.copy()
                     live_psi = base_scenario["psi_data"].copy()
                     
-                    # Add random noise to make it look "Real-Time"
-                    # e.g., If Central is 215, it might become 212 or 218
                     for region in live_psi:
                         noise = random.randint(-4, 4) 
                         live_psi[region] += noise
                     
                     live_scenario["psi_data"] = live_psi
-                    # ---------------------------------------------------------
 
-                    # Run Simulation with the NEW "Live" Data
+                    # Run Simulation
                     result = AGENT_SYSTEM.run_cycle(live_scenario)
                     
-                    # --- DYNAMIC SUMMARY GENERATION (UPGRADED) ---
-                    # 1. Extract basic numbers
+                    # Generate Summary
                     risk_data = result.get('risk_assessment', {})
                     psi_val = risk_data.get('current_psi', 'Unknown')
                     risk_level = risk_data.get('risk_level', 'UNKNOWN')
-                    
-                    # 2. Extract Regions (Join them into a nice string like "Central, West")
-                    regions_list = risk_data.get('affected_regions', [])
-                    regions_str = ", ".join([r.capitalize() for r in regions_list]) if regions_list else "None"
-
-                    # 3. Extract Supply Chain Info
                     supply_data = result.get('supply_chain_actions', {})
-                    po_id = supply_data.get('po_id', 'No PO')
                     total_cost = supply_data.get('total_value', '$0')
+                    po_id = supply_data.get('po_id', 'No PO')
                     
-                    # 4. Extract Clinic Info
-                    clinics_count = result.get('healthcare_alerts', {}).get('total_clinics', 0)
-
-                    # 5. Create the "Intelligence Report" Message
                     ai_summary = (
                         f"🚨 REPORT: {scenario_key.replace('_', ' ').title()}. "
-                        f"Risk Level: {risk_level}. "
-                        f"Highest PSI: {psi_val} in {regions_str}. "
-                        f"ACTION: Alerted {clinics_count} clinics and authorized {total_cost} for supplies (PO: {po_id})."
+                        f"Risk Level: {risk_level}. Highest PSI: {psi_val}. "
+                        f"ACTION: Authorized {total_cost} for supplies (PO: {po_id})."
                     )
                     
                     response_data = {
@@ -129,7 +136,6 @@ class WatsonxBypassMiddleware:
                         "ai_summary": ai_summary,
                         "raw_data": result
                     }
-                    # -------------------------------------------
                     
                     status = '200 OK'
                     headers = [('Content-Type', 'application/json')]
@@ -142,12 +148,11 @@ class WatsonxBypassMiddleware:
                     start_response(status, headers)
                     return [json.dumps({"status": "error", "message": str(e)}).encode('utf-8')]
 
-        # 2. IF NOT OUR URL, LET FLASK HANDLE IT (Login page, etc.)
+        # 2. IF NOT OUR URL, LET FLASK HANDLE IT
         return self.app(environ, start_response)
 
-# Apply the middleware to the app
+# Apply the middleware
 app.wsgi_app = WatsonxBypassMiddleware(app.wsgi_app)
-# ==============================================================================
 
 
 # -----------------------------
@@ -159,25 +164,16 @@ def home():
 
 @app.get("/config")
 def config():
-    return jsonify({
-        "DEMO_MODE": is_demo_mode(),
-        "instance": INSTANCE,
-        "port_env": os.getenv("PORT", "8080"),
-    })
+    return jsonify({"DEMO_MODE": is_demo_mode(), "instance": INSTANCE})
 
 # -----------------------------
-# Scenario-based agent APIs
+# Agent System Builder
 # -----------------------------
 def _build_agent_system():
-    # Imports are inside so deployment won’t fail if you’re still adding files
     from agents import (
-        EnvironmentSentinel,
-        ScalestackAgent,
-        DynamiqMedicalAgent,
-        HealthcarePreparednessAgent,
-        SupplyChainAgent
+        EnvironmentSentinel, ScalestackAgent, DynamiqMedicalAgent,
+        HealthcarePreparednessAgent, SupplyChainAgent
     )
-
     sentinel = EnvironmentSentinel()
     sentinel.register_agent(ScalestackAgent())
     sentinel.register_agent(DynamiqMedicalAgent())
@@ -185,12 +181,7 @@ def _build_agent_system():
     sentinel.register_agent(SupplyChainAgent())
     return sentinel
 
-# Build once at startup
 AGENT_SYSTEM = None
-
-clinic_state = {
-    "view": "normal", # Controls if the dashboard redirects to logistics or shows approved
-}
 
 @app.get("/api/scenarios")
 def list_scenarios():
@@ -201,166 +192,65 @@ def list_scenarios():
     ]
     return jsonify({"scenarios": scenarios})
 
-@app.post("/api/run-scenario/<scenario_key>")
-def run_scenario(scenario_key: str):
-    global AGENT_SYSTEM
-    from scenarios import DEMO_SCENARIOS
-    import random
-
-    if scenario_key not in DEMO_SCENARIOS:
-        return jsonify({"error": f"Unknown scenario '{scenario_key}'"}), 404
-
-    if AGENT_SYSTEM is None:
-        AGENT_SYSTEM = _build_agent_system()
-        
-    # --- ADD THE NOISE HERE ---
-    base_scenario = DEMO_SCENARIOS[scenario_key]
-    live_scenario = base_scenario.copy()
-    live_psi = base_scenario["psi_data"].copy()
-    
-    for region in live_psi:
-        noise = random.randint(-4, 4) # This adds the jitter
-        live_psi[region] += noise
-    
-    live_scenario["psi_data"] = live_psi
-    # --------------------------
-    
-    result = AGENT_SYSTEM.run_cycle(live_scenario)
-    response_data = {
-        "status": "success",
-        "scenario": scenario_key,
-        "risk_assessment": result.get('risk_assessment', {}), # For the risk level
-        "raw_data": live_scenario, # This contains the noisy 'psi_data'
-    }
-    # Combine the metadata into your new response_data
-    response_data["_meta"] = {"demo_mode": is_demo_mode(), "instance": INSTANCE}
-    return jsonify(response_data)
-
-# -----------------------------
-# Existing live-data endpoints
-# -----------------------------
-@app.get("/health")
-def health():
-    return jsonify({"status": "ok", "demo_mode": is_demo_mode(), "instance": INSTANCE})
-
-@app.get("/snapshot")
-def snapshot():
-    from nea_agent import run_snapshot
-    data = run_snapshot()
-    return jsonify({"demo_mode": is_demo_mode(), "instance": INSTANCE, "data": data})
-
-@app.get("/log")
-def log():
-    from nea_agent import run_snapshot, format_like_colab
-    snap = run_snapshot()
-    text = format_like_colab(snap)
-    header = (
-        f"URBANPULSE LOG\n"
-        f"DEMO_MODE={is_demo_mode()}\n"
-        f"INSTANCE={INSTANCE}\n"
-        f"{'-'*60}\n"
-    )
-    return Response(header + text, mimetype="text/plain")
-
-@app.post("/alert")
-def alert():
-    payload = request.get_json(silent=True) or {}
-    if is_demo_mode():
-        return jsonify({
-            "status": "demo_mode_alert_logged",
-            "note": "No external systems were triggered",
-            "instance": INSTANCE,
-            "received": payload
-        })
-    return jsonify({
-        "status": "alert_triggered",
-        "instance": INSTANCE,
-        "received": payload
-    })
-
 # -----------------------------
 # CLINIC DEMO ROUTES
 # -----------------------------
 @app.route("/clinic")
 def clinic_dashboard():
-    # This serves the Clinic UI
     return send_from_directory("static", "clinic.html")
 
 @app.get("/api/clinic-poll")
 def clinic_poll():
-    """
-    The Clinic Dashboard calls this every 2 seconds to see if an alert exists.
-    It checks the latest cycle from the Agent System.
-    """
     global AGENT_SYSTEM, clinic_state
-    if AGENT_SYSTEM is None:
-        return jsonify({"status": "waiting", "current_view": clinic_state["view"]})
+    
+    # 1. Check for State Redirects (Logistics / Approved)
+    if clinic_state["view"] in ['logistics', 'approved']:
+         return jsonify({"status": "redirect", "current_view": clinic_state["view"]})
 
-    # Get the last memory/log from the agents
+    # 2. Check for Agent Alerts
+    if AGENT_SYSTEM is None:
+        return jsonify({"status": "waiting", "current_view": "normal"})
+
     memory = AGENT_SYSTEM.memory
     if not memory:
-        return jsonify({"status": "waiting", "current_view": clinic_state["view"]})
+        return jsonify({"status": "waiting", "current_view": "normal"})
 
-    # Look for the latest Healthcare Alert
     last_cycle = memory[-1]
     alert_data = last_cycle.get("healthcare_alerts", {})
     supply_data = last_cycle.get("supply_chain_actions", {})
     
-    if not alert_data:
-        return jsonify({"status": "waiting"})
-        
-    # If we found an alert, send it to the frontend!
     return jsonify({
         "status": "alert_active" if alert_data else "waiting",
-        "current_view": clinic_state["view"], # THIS IS THE KEY FOR REDIRECTION
+        "current_view": clinic_state["view"],
         "psi": last_cycle.get("risk_assessment", {}).get("current_psi", 0),
         "risk_level": last_cycle.get("risk_assessment", {}).get("risk_level", "UNKNOWN"),
         "recommended_masks": supply_data.get("order_details", {}).get("n95_masks", 0),
         "alert_message": alert_data.get("alert_message", "No message")
     })
 
-@app.post("/api/set-view/<view_name>")
-def set_view(view_name: str):
-    global clinic_state
-    # view_name will be 'logistics', 'normal', or 'approved'
-    clinic_state["view"] = view_name
-    print(f"🔄 AGENT COMMAND: Dashboard view switched to {view_name}")
-    return jsonify({"success": True, "new_view": view_name})
-
 @app.post("/api/clinic-confirm-order")
 def confirm_order():
-    # This receives the FINAL confirmed amount from the Clinic UI
     data = request.json
     final_qty = data.get("confirmed_qty")
-    
     print(f"✅ CLINIC CONFIRMED ORDER: {final_qty} Masks")
     return jsonify({"status": "success", "message": f"Order for {final_qty} masks processed."})
 
 @app.route("/logistics")
 def logistics_portal():
-    # This serves your new logistics map from the static folder
     return send_from_directory("static", "logistics.html")
-
-@app.route("/")
-def landing():
-    # This serves the new selection page
-    return send_from_directory("static", "index.html")
 
 @app.route("/citizen")
 def citizen_portal():
-    # This serves the map page
     return send_from_directory("static", "citizen.html")
 
 @app.route("/admin")
 def admin_portal():
-    # This serves your original scenario control panel
     return send_from_directory("static", "admin.html")
-
 
 # -----------------------------
 # Local run
 # -----------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
-    print(f"[UrbanPulse] Starting on 0.0.0.0:{port} | DEMO_MODE={is_demo_mode()} | FILE={__file__}")
+    print(f"[UrbanPulse] Starting on 0.0.0.0:{port} | DEMO_MODE={is_demo_mode()}")
     app.run(host="0.0.0.0", port=port)
