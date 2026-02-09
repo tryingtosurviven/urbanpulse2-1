@@ -207,6 +207,14 @@
             surgeElem.innerText = data.surge;
             surgeElem.style.color = data.surge.includes('CRITICAL') ? '#dc2626' : '#166534';
 
+            // 2. NEW: Update the "Track Supplies" Button Link
+            // This adds "?id=jurong" (or whatever ID) to the URL
+            const btn = document.querySelector('.logistics-btn');
+            btn.onclick = function() {
+                window.location.href = '/logistics?id=' + id;
+            };
+
+            // 3. Show Modal
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
