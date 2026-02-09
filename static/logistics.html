@@ -1,6 +1,65 @@
-<script>
-    // Example of adding a supply truck marker
-    const truckIcon = L.icon({ iconUrl: '/static/truck.png', iconSize: [38, 38] });
-    L.marker([1.3521, 103.8198], {icon: truckIcon}).addTo(map)
-        .bindPopup("N95 Supply Truck: 12 mins away");
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Logistics Hub | UrbanPulse</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        body { display: flex; height: 100vh; margin: 0; background: #f0f2f5; font-family: sans-serif; }
+        .sidebar { width: 350px; background: white; padding: 25px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000; }
+        #map { flex: 1; height: 100vh; }
+        .truck-status { background: #e8f4fd; padding: 15px; border-radius: 10px; margin-top: 20px; border-left: 5px solid #3498db; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="/clinic" style="color: #3498db; text-decoration: none;">← Back to Clinic Portal</a>
+        <h1 style="color: #2c3e50;">🚛 Supply Logistics</h1>
+        <p>AI-Orchestrated resupply in progress.</p>
+        <div class="truck-status">
+            <strong>N95 Resupply Truck #04</strong><br>
+            Status: En Route (TTSH)<br>
+            ETA: 12 Minutes
+        </div>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // 1. Setup the Map (Only once!)
+        const map = L.map('map').setView([1.3521, 103.8198], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // 2. Add your custom Truck Icon
+        const truckIcon = L.icon({ 
+            iconUrl: '/static/truck.png', // Ensure this file exists in your static folder!
+            iconSize: [38, 38] 
+        });
+
+        // 3. Place the Truck Marker
+        L.marker([1.3483, 103.8493], {icon: truckIcon}).addTo(map)
+            .bindPopup("<b>N95 Supply Truck #04</b>: 12 mins away")
+            .openPopup();
+            
+        // 4. Also add a circle for the Clinic destination (TTSH)
+        L.circleMarker([1.3210, 103.8450], { color: '#e74c3c', radius: 10 }).addTo(map)
+            .bindPopup("<b>Destination:</b> Tan Tock Seng Hospital");
+    </script>
+
+    <script>
+      window.watsonAssistantChatOptions = {
+        integrationID: "16b93be7-5249-4f25-a201-3584e0152718",
+        region: "aws-ap-southeast-1",
+        serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d",
+        onLoad: async (instance) => { await instance.render(); }
+      };
+      setTimeout(function(){
+        const t=document.createElement('script');
+        t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+        document.head.appendChild(t);
+      });
+    </script>
+</body>
+</html>
