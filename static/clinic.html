@@ -502,6 +502,8 @@
         // NOTE: For non-autonomous scenarios, this shows a draft.
         // Severe haze will be auto-dispatched via polling when backend sets protocol=autonomous.
         if (String(supply?.autonomous || "").toLowerCase() !== "true") {
+            
+            
           const draft = {
             active: true,
             id: supply?.po_id || `DRAFT-${Date.now().toString().slice(-6)}`,
