@@ -7,7 +7,7 @@
     <style>
         body { background: #f8fafc; font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #0f172a; padding-bottom: 120px; }
         
-        /* Header & Grid (Same as before) */
+        /* Header & Grid */
         .header { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 1.25rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 10px; }
         .status-badge { background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid #bbf7d0; }
@@ -38,14 +38,13 @@
         .logistics-btn { display: block; width: 100%; margin-top: 20px; background: #2563eb; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; transition: background 0.2s; }
         .logistics-btn:hover { background: #1d4ed8; }
 
-        /* ALERT STATE */
-        .card.critical { border-left: 5px solid #ef4444; background: #fef2f2; }
-        .card.critical .stock-indicator { background: #fee2e2; color: #991b1b; }
-        .card.critical .stat-val { color: #b91c1c; }
-        .status-badge.critical { background: #fee2e2; color: #991b1b; border-color: #fecaca; animation: pulse 2s infinite; }
-        .status-badge.critical .dot { background: #ef4444; }
+        /* SUCCESS PO MODAL */
+        .po-modal { text-align: center; }
+        .po-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .po-track-btn { background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; }
+        .po-track-btn:hover { background: #334155; }
 
-        /* --- NEW: DRAFT ORDER PANEL (STICKY FOOTER) --- */
+        /* DRAFT PANEL */
         #draft-panel {
             position: fixed; bottom: -200px; left: 0; width: 100%;
             background: white; border-top: 4px solid #f59e0b;
@@ -57,17 +56,28 @@
         #draft-panel.visible { bottom: 0; }
         
         .draft-content {
-            max-width: 1000px; width: 100%; display: flex; 
+            max-width: 1100px; width: 100%; display: flex; 
             align-items: center; justify-content: space-between; gap: 30px;
         }
         .draft-info h3 { margin: 0 0 5px 0; color: #b45309; display: flex; align-items: center; gap: 10px; }
-        .draft-info p { margin: 0; color: #78350f; font-size: 0.9rem; }
+        .draft-facility { font-size: 0.9rem; color: #1e293b; font-weight: 600; margin-top: 4px; display: block; }
         
-        .draft-action { display: flex; align-items: center; gap: 15px; background: #fffbeb; padding: 10px 20px; border-radius: 8px; border: 1px solid #fcd34d; }
-        .qty-input { width: 80px; padding: 8px; border: 1px solid #d97706; border-radius: 5px; font-weight: 700; font-size: 1.1rem; text-align: center; color: #b45309; }
+        .draft-action { display: flex; align-items: center; gap: 10px; }
+        .qty-wrapper { display: flex; align-items: center; gap: 10px; background: #fffbeb; padding: 8px 15px; border-radius: 8px; border: 1px solid #fcd34d; margin-right: 10px; }
+        .qty-input { width: 70px; padding: 8px; border: 1px solid #d97706; border-radius: 5px; font-weight: 700; font-size: 1.1rem; text-align: center; color: #b45309; }
         
-        .approve-btn { background: #16a34a; color: white; border: none; padding: 10px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .approve-btn { background: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; gap: 5px; }
         .approve-btn:hover { background: #15803d; }
+        
+        .reject-btn { background: white; color: #64748b; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; gap: 5px; }
+        .reject-btn:hover { background: #f1f5f9; color: #ef4444; border-color: #fca5a5; }
+
+        /* ALERT STATE */
+        .card.critical { border-left: 5px solid #ef4444; background: #fef2f2; }
+        .card.critical .stock-indicator { background: #fee2e2; color: #991b1b; }
+        .card.critical .stat-val { color: #b91c1c; }
+        .status-badge.critical { background: #fee2e2; color: #991b1b; border-color: #fecaca; animation: pulse 2s infinite; }
+        .status-badge.critical .dot { background: #ef4444; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
         @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -101,17 +111,18 @@
         <div class="draft-content">
             <div class="draft-info">
                 <h3>⚠️ ACTION REQUIRED: Draft PO Generated</h3>
-                <p>AI Recommendation based on Haze Risk Level. <strong>Please verify quantity before approval.</strong></p>
-                <div style="font-size:0.8rem; color:#999; margin-top:5px;">PO ID: <span id="draft-id">---</span></div>
+                <span id="draft-facility" class="draft-facility">---</span>
+                <div style="font-size:0.8rem; color:#999; margin-top:2px;">PO ID: <span id="draft-id">---</span></div>
             </div>
             <div class="draft-action">
-                <span style="font-weight:600; color:#b45309;">Rec. Qty:</span>
-                <input type="number" id="draft-qty" class="qty-input" value="0">
-                <span style="font-size:0.9rem; color:#b45309;">Units (N95)</span>
+                <div class="qty-wrapper">
+                    <span style="font-weight:600; color:#b45309;">Rec. Qty:</span>
+                    <input type="number" id="draft-qty" class="qty-input" value="0">
+                    <span style="font-size:0.9rem; color:#b45309;">Units</span>
+                </div>
+                <button onclick="rejectDraft()" class="reject-btn">❌ Reject</button>
+                <button onclick="approveDraft()" class="approve-btn">✅ Approve & Order</button>
             </div>
-            <button onclick="approveDraft()" class="approve-btn">
-                ✅ Approve & Order
-            </button>
         </div>
     </div>
 
@@ -126,6 +137,26 @@
             </div>
             <button class="logistics-btn">🚚 Track Incoming Supplies</button>
             <div style="margin-top:15px; font-size:0.85rem; color:#64748b; background:#f1f5f9; padding:10px; border-radius:6px;">📡 <strong>Live Agent Feed:</strong> Data synchronized with National Stockpile Sentinel Agent.</div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="success-overlay" style="display:none;">
+        <div class="modal po-modal">
+            <span class="po-icon">✅</span>
+            <h2 style="margin:0 0 10px 0; color:#166534">Order Confirmed</h2>
+            <p style="color:#64748b; margin-bottom:20px;">Official PO has been generated and dispatched.</p>
+            
+            <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; text-align:left; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Facility:</span><strong>Tan Tock Seng Hospital</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Quantity:</span><strong id="confirmed-qty-disp">---</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Status:</span><strong style="color:#0ea5e9">Dispatched</strong></div>
+            </div>
+
+            <button class="po-track-btn" onclick="window.location.href='/logistics?id=ttsh'">
+                🚚 Track Shipment (TTSH)
+            </button>
+            <br>
+            <button onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:15px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
         </div>
     </div>
 
@@ -150,14 +181,12 @@
             const surgeElem = document.getElementById('modal-surge');
             surgeElem.innerText = data.surge;
             surgeElem.style.color = data.surge.includes('CRITICAL') ? '#dc2626' : '#166534';
-            
             document.querySelector('.logistics-btn').onclick = function() { window.location.href = '/logistics?id=' + id; };
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
         function closeModal(e) { if(e.target.id === 'modal-overlay') e.target.style.display = 'none'; }
 
-        // --- POLLING & DRAFT LOGIC ---
         setInterval(async () => {
             try {
                 const res = await fetch('/api/clinic-poll');
@@ -167,22 +196,20 @@
                 if (data.status === 'alert_active') activateAlertMode();
                 if (data.protocol === 'autonomous') activateAutonomousMode();
 
-                // NEW: Show Draft Panel if active
                 if (data.draft && data.draft.active) {
                     showDraftPanel(data.draft);
                 } else {
                     document.getElementById('draft-panel').classList.remove('visible');
                 }
-
             } catch (e) { console.error("Polling error:", e); }
         }, 2000);
 
         function showDraftPanel(draft) {
             const panel = document.getElementById('draft-panel');
             if (!panel.classList.contains('visible')) {
-                // Only populate if opening for first time to avoid overwriting user edits
                 document.getElementById('draft-id').innerText = draft.id;
-                document.getElementById('draft-qty').value = draft.qty; // Load recommended
+                document.getElementById('draft-facility').innerText = "📍 For: " + (draft.facility || "Tan Tock Seng Hospital");
+                document.getElementById('draft-qty').value = draft.qty; 
                 panel.classList.add('visible');
             }
         }
@@ -190,18 +217,22 @@
         async function approveDraft() {
             const newQty = document.getElementById('draft-qty').value;
             
-            // Send updated quantity to backend
             await fetch('/api/clinic-confirm-order', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ confirmed_qty: newQty })
             });
 
-            // Hide panel instantly
             document.getElementById('draft-panel').classList.remove('visible');
             
-            // Optional: Show success alert
-            alert("✅ Order Confirmed for " + newQty + " Units!");
+            // Show Official Success Modal
+            document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (N95)";
+            document.getElementById('success-overlay').style.display = 'flex';
+        }
+
+        async function rejectDraft() {
+            await fetch('/api/clinic-reject-order', { method: 'POST' });
+            document.getElementById('draft-panel').classList.remove('visible');
         }
 
         function activateAlertMode() {
