@@ -47,6 +47,15 @@
         .detail-box small { display: block; color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; margin-bottom: 5px; }
         .detail-box strong { font-size: 1.1rem; color: #0f172a; }
 
+        /* NAV BUTTON INSIDE MODAL */
+        .logistics-btn {
+            display: block; width: 100%; margin-top: 20px; 
+            background: #2563eb; color: white; padding: 12px; 
+            border: none; border-radius: 8px; font-weight: 600; 
+            cursor: pointer; text-align: center; transition: background 0.2s;
+        }
+        .logistics-btn:hover { background: #1d4ed8; }
+
         /* ALERT STATE (Red) */
         .card.critical { border-left: 5px solid #ef4444; background: #fef2f2; }
         .card.critical .stock-indicator { background: #fee2e2; color: #991b1b; }
@@ -164,7 +173,12 @@
                     <strong id="modal-wait">---</strong>
                 </div>
             </div>
-            <div style="margin-top: 20px; font-size: 0.85rem; color: #64748b; background: #f1f5f9; padding: 10px; border-radius: 6px;">
+            
+            <button onclick="window.location.href='/logistics'" class="logistics-btn">
+                🚚 Track Incoming Supplies (Logistics Map)
+            </button>
+
+            <div style="margin-top: 15px; font-size: 0.85rem; color: #64748b; background: #f1f5f9; padding: 10px; border-radius: 6px;">
                 📡 <strong>Live Agent Feed:</strong> Data synchronized with National Stockpile Sentinel Agent.
             </div>
         </div>
@@ -260,13 +274,23 @@
                 badge.className = 'status-badge';
                 badge.innerHTML = '<span class="dot"></span> System Normal';
                 document.querySelectorAll('.card').forEach(card => card.classList.remove('critical'));
-                // Note: In a real app, we'd reset numbers here, but for demo, reload works best.
             }
         }
     </script>
 
     <script>
       window.watsonAssistantChatOptions = {
-        integrationID: "16b93be7-5249-4f25-a201-3584e0152718", // Your Live ID
+        integrationID: "16b93be7-5249-4f25-a201-3584e0152718", // Checked from your previous code
         region: "aws-ap-southeast-1",
-        serviceInstanceID: "20260127-1515-5797-5009-
+        serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d",
+        onLoad: async (instance) => { await instance.render(); }
+      };
+      setTimeout(function(){
+        const t=document.createElement('script');
+        t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+        document.head.appendChild(t);
+      });
+    </script>
+
+</body>
+</html>
