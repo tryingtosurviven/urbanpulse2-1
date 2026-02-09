@@ -33,13 +33,15 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         // 2. Add your custom Truck Icon
-        const truckIcon = L.icon({ 
-            iconUrl: '/static/truck.png', // Ensure this file exists in your static folder!
-            iconSize: [38, 38] 
+        const truckEmojiIcon = L.divIcon({
+            html: '<div style="font-size: 30px;">🚛</div>',
+            className: 'dummy', // Leaflet needs a class name, but we don't need CSS
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
         });
-
-        // 3. Place the Truck Marker
-        L.marker([1.3483, 103.8493], {icon: truckIcon}).addTo(map)
+        
+        // 3. Place the Truck Marker using the emoji
+        L.marker([1.3483, 103.8493], { icon: truckEmojiIcon }).addTo(map)
             .bindPopup("<b>N95 Supply Truck #04</b>: 12 mins away")
             .openPopup();
             
