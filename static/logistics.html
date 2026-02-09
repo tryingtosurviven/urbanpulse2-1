@@ -9,23 +9,31 @@
         body { margin: 0; padding: 0; display: flex; height: 100vh; font-family: 'Inter', sans-serif; }
         
         /* Sidebar */
-        .sidebar { width: 350px; background: white; padding: 30px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; }
+        .sidebar { width: 380px; background: white; padding: 30px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; overflow-y: auto; }
         .back-link { color: #3b82f6; text-decoration: none; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 5px; cursor: pointer; }
         .back-link:hover { text-decoration: underline; }
         
         h1 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.8rem; }
-        .subtitle { color: #64748b; margin-bottom: 30px; }
+        .subtitle { color: #64748b; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
 
-        /* Truck Status Card */
-        .status-card { background: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .status-card h3 { margin: 0 0 5px 0; color: #0c4a6e; }
+        /* Truck Status Card (Active) */
+        .status-card { background: #f0f9ff; border-left: 5px solid #0ea5e9; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .status-card h3 { margin: 0 0 5px 0; color: #0c4a6e; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { background: #0ea5e9; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        
         .status-row { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.9rem; }
         
+        /* History Log */
+        .history-section h4 { color: #64748b; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; color: #94a3b8; }
+        .history-item strong { color: #475569; display: block; }
+        .history-tag { font-size: 0.75rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; }
+
         /* Map Area */
         #map { flex: 1; height: 100%; z-index: 1; }
         
         /* Custom Marker */
-        .truck-icon { font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); animation: bounce 1s infinite alternate; }
+        .truck-icon { font-size: 30px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); animation: bounce 1s infinite alternate; }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
     </style>
 </head>
@@ -35,28 +43,65 @@
         <a onclick="window.location.href='/clinic'" class="back-link">← Back to Clinic Portal</a>
         
         <h1>Supply Logistics</h1>
-        <p class="subtitle">AI-Orchestrated resupply in progress.</p>
+        <p class="subtitle">Real-time Autonomous Delivery Network</p>
         
         <div class="status-card">
-            <h3 id="truck-title">N95 Resupply Truck #04</h3>
-            <div style="font-size: 0.9rem; color: #555; margin-bottom: 15px;" id="dest-name">
-                En Route to: Tan Tock Seng Hospital
+            <h3>
+                <span id="truck-title">Truck #--</span> 
+                <span class="status-badge">ACTIVE</span>
+            </h3>
+            <div style="font-size: 0.85rem; color: #555; margin-bottom: 15px;" id="dest-name">
+                En Route to: ---
             </div>
             <div class="status-row">
-                <strong>Status:</strong> <span style="color:#0ea5e9">In Transit</span>
+                <strong>Status:</strong> <span style="color:#0ea5e9; font-weight:600;">⚡ In Transit</span>
             </div>
             <div class="status-row">
-                <strong>ETA:</strong> <strong id="eta-timer">12 Minutes</strong>
+                <strong>ETA:</strong> <strong id="eta-timer" style="color:#d97706">Calculating...</strong>
             </div>
             <div class="status-row">
-                <strong>Cargo:</strong> <span>5,000 N95 Masks</span>
+                <strong>Payload:</strong> <span id="cargo-val" style="font-weight:bold; color:#0f172a">---</span>
             </div>
         </div>
 
-        <div style="margin-top: auto; font-size: 0.8rem; color: #94a3b8;">
-            <p><strong>Route Optimization:</strong> Active</p>
+        <div class="history-section">
+            <h4>Recent Dispatches (Today)</h4>
+            <div class="history-item">
+                <div>
+                    <strong>Truck #03</strong>
+                    <span style="font-size:0.8rem">To: Ang Mo Kio Polyclinic</span>
+                </div>
+                <div style="text-align:right">
+                    <span class="history-tag">Delivered</span>
+                    <div style="font-size:0.8rem; margin-top:2px;">5,000 N95</div>
+                </div>
+            </div>
+            <div class="history-item">
+                <div>
+                    <strong>Truck #02</strong>
+                    <span style="font-size:0.8rem">To: Changi General Hosp.</span>
+                </div>
+                <div style="text-align:right">
+                    <span class="history-tag">Delivered</span>
+                    <div style="font-size:0.8rem; margin-top:2px;">1,200 N95</div>
+                </div>
+            </div>
+            <div class="history-item">
+                <div>
+                    <strong>Truck #01</strong>
+                    <span style="font-size:0.8rem">To: Woodlands Polyclinic</span>
+                </div>
+                <div style="text-align:right">
+                    <span class="history-tag">Delivered</span>
+                    <div style="font-size:0.8rem; margin-top:2px;">3,900 N95</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: auto; font-size: 0.8rem; color: #94a3b8; border-top:1px solid #e2e8f0; padding-top:20px;">
+            <p><strong>Optimization Algo:</strong> Dijkstra-A* Hybrid</p>
             <p><strong>Traffic Avoidance:</strong> Enabled</p>
-            <p><strong>AI Confidence:</strong> 98.4%</p>
+            <p><strong>AI Confidence:</strong> 99.2%</p>
         </div>
     </div>
 
@@ -76,90 +121,72 @@
             'woodlands': { name: "Woodlands Polyclinic", lat: 1.442, lng: 103.770 }
         };
 
-        // --- 2. GET URL PARAMETERS (ID and QTY) ---
+        // --- 2. GET URL PARAMETERS & GENERATE ID ---
         const urlParams = new URLSearchParams(window.location.search);
         const facilityId = urlParams.get('id') || 'ttsh'; 
-        const qty = urlParams.get('qty') || '5,000'; // Default to 5,000 if no specific order
-        
+        const qty = urlParams.get('qty') || '5,000'; 
         const target = locations[facilityId] || locations['ttsh'];
 
-        // Update Sidebar Text
-        document.getElementById('truck-title').innerText = "N95 Resupply Truck #04";
+        // GENERATE RANDOM TRUCK ID (Between #05 and #99)
+        // This ensures every new order looks like a NEW truck!
+        const randomId = Math.floor(Math.random() * (99 - 5 + 1)) + 5;
+        const truckName = "Truck #0" + randomId; // e.g., "Truck #012"
+
+        // Update Sidebar
+        document.getElementById('truck-title').innerText = truckName;
         document.getElementById('dest-name').innerText = "En Route to: " + target.name;
-        
-        // --- NEW: Update Sidebar Cargo ---
-        // You need to find the element containing "Cargo:" text
-        // Let's find the specific 'span' inside the status card
-        const statusRows = document.querySelectorAll('.status-row');
-        // The 3rd row (index 2) is Cargo
-        if(statusRows[2]) {
-            const cargoSpan = statusRows[2].querySelector('span');
-            if(cargoSpan) cargoSpan.innerText = qty + " N95 Masks";
-        }
+        document.getElementById('cargo-val').innerText = qty + " Units (N95)";
 
         // --- 3. INITIALIZE MAP ---
         var map = L.map('map').setView([target.lat, target.lng], 13);
-
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap contributors & CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
+            attribution: '© OpenStreetMap contributors & CARTO', subdomains: 'abcd', maxZoom: 19
         }).addTo(map);
 
-        // --- 4. ADD MARKERS ---
-        // Destination Marker
+        // --- 4. MARKERS ---
+        // Destination
         var hospitalIcon = L.divIcon({
             html: '<div style="font-size:30px;">🏥</div>',
-            className: 'dummy',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
+            className: 'dummy', iconSize: [30, 30], iconAnchor: [15, 15]
         });
-        
-        L.marker([target.lat, target.lng], {icon: hospitalIcon})
-            .addTo(map)
-            .bindPopup(`<b>${target.name}</b><br>Resupply Destination`)
-            .openPopup();
+        L.marker([target.lat, target.lng], {icon: hospitalIcon}).addTo(map)
+            .bindPopup(`<b>${target.name}</b><br>Drop-off Point`).openPopup();
 
-        // Truck Marker
+        // Truck
         var startLat = target.lat - 0.02; 
         var startLng = target.lng - 0.02;
-
         var truckIcon = L.divIcon({
             html: '<div class="truck-icon">🚛</div>',
-            className: 'dummy',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
+            className: 'dummy', iconSize: [40, 40], iconAnchor: [20, 20]
         });
-
         var truckMarker = L.marker([startLat, startLng], {icon: truckIcon}).addTo(map);
         
-        // --- NEW: DYNAMIC TOOLTIP ---
-        truckMarker.bindTooltip(`Truck #04<br>Cargo: ${qty} Units`, {permanent: true, direction: 'right', offset: [10, 0]});
+        // Tooltip now shows the Random ID + Exact Quantity
+        truckMarker.bindTooltip(`${truckName}<br>Cargo: ${qty}`, {permanent: true, direction: 'right', offset: [10, 0]});
 
-        // --- 5. ANIMATE TRUCK ---
-        let step = 0;
-        const totalSteps = 200; 
-        
+        // --- 5. ANIMATION ---
+        let step = 0; const totalSteps = 400; // Slower animation for realism
         function animateTruck() {
             step++;
             if (step > totalSteps) step = 0; 
-            
             const currentLat = startLat + ((target.lat - startLat) * (step / totalSteps));
             const currentLng = startLng + ((target.lng - startLng) * (step / totalSteps));
-            
             truckMarker.setLatLng([currentLat, currentLng]);
             requestAnimationFrame(animateTruck);
         }
         animateTruck();
 
         // ETA Timer
-        let eta = 12;
+        let eta = 14;
         setInterval(() => {
             if (eta > 0) {
                 eta--;
                 document.getElementById('eta-timer').innerText = eta + " Minutes";
+            } else {
+                document.getElementById('eta-timer').innerText = "Arriving Now";
+                document.getElementById('eta-timer').style.color = "#16a34a";
             }
-        }, 60000); 
+        }, 3000); // Speed up time for demo purposes (3s = 1 min)
     </script>
 </body>
 </html>
