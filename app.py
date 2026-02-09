@@ -20,8 +20,15 @@ INSTANCE = {
 
 # --- DEFINE STATE AT THE TOP SO MIDDLEWARE CAN SEE IT ---
 clinic_state = {
-    "view": "normal",      # Controls: 'normal', 'logistics', 'approved'
-    "protocol": "standard" # Controls: 'standard' (Green/Red), 'autonomous' (Purple)
+    "view": "normal",      # 'normal', 'logistics', 'approved'
+    "protocol": "standard", # 'standard', 'autonomous'
+    # NEW: Store draft details so frontend can show them
+    "draft": {
+        "active": False,
+        "id": "---",
+        "qty": 0,
+        "cost": "$0"
+    }
 }
 
 app = Flask(__name__)
@@ -130,10 +137,19 @@ class WatsonxBypassMiddleware:
                     # Generate Summary
                     risk_data = result.get('risk_assessment', {})
                     psi_val = risk_data.get('current_psi', 'Unknown')
-                    risk_level = risk_data.get('risk_level', 'UNKNOWN')
                     supply_data = result.get('supply_chain_actions', {})
                     total_cost = supply_data.get('total_value', '$0')
                     po_id = supply_data.get('po_id', 'No PO')
+                    rec_qty = supply_data.get('order_details', {}).get("n95_masks", 500) # Default to 500
+
+                    # --- NEW: SAVE DRAFT TO STATE ---
+                    global clinic_state
+                    clinic_state["draft"] = {
+                        "active": True,
+                        "id": po_id,
+                        "qty": rec_qty,
+                        "cost": total_cost
+                    }
                     
                     # --- FIX: LOGIC FOR DRAFT VS AUTHORIZED ---
                     if clinic_state["protocol"] == "autonomous":
@@ -225,7 +241,7 @@ def clinic_dashboard():
 def clinic_poll():
     global AGENT_SYSTEM, clinic_state
     
-    # 1. Check for State Redirects (Logistics / Approved)
+    # 1. Check for State Redirects
     if clinic_state["view"] in ['logistics', 'approved']:
          return jsonify({"status": "redirect", "current_view": clinic_state["view"]})
 
@@ -239,24 +255,28 @@ def clinic_poll():
 
     last_cycle = memory[-1]
     alert_data = last_cycle.get("healthcare_alerts", {})
-    supply_data = last_cycle.get("supply_chain_actions", {})
     
-    # --- FINAL RETURN WITH PROTOCOL FIELD ---
     return jsonify({
         "status": "alert_active" if alert_data else "waiting",
         "current_view": clinic_state["view"],
-        "protocol": clinic_state["protocol"], # <--- UPDATED HERE
+        "protocol": clinic_state["protocol"],
+        "draft": clinic_state["draft"],  # <--- SEND DRAFT DATA TO FRONTEND
         "psi": last_cycle.get("risk_assessment", {}).get("current_psi", 0),
-        "risk_level": last_cycle.get("risk_assessment", {}).get("risk_level", "UNKNOWN"),
-        "recommended_masks": supply_data.get("order_details", {}).get("n95_masks", 0),
         "alert_message": alert_data.get("alert_message", "No message")
     })
 
 @app.post("/api/clinic-confirm-order")
 def confirm_order():
+    global clinic_state
     data = request.json
     final_qty = data.get("confirmed_qty")
+    
     print(f"✅ CLINIC CONFIRMED ORDER: {final_qty} Masks")
+    
+    # Update State to 'Approved' so the sidebar turns Green
+    clinic_state["view"] = "approved"
+    clinic_state["draft"]["active"] = False # clear draft
+    
     return jsonify({"status": "success", "message": f"Order for {final_qty} masks processed."})
 
 @app.route("/logistics")
