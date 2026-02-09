@@ -197,6 +197,8 @@ def list_scenarios():
 # -----------------------------
 @app.route("/clinic")
 def clinic_dashboard():
+    global clinic_state
+    clinic_state["view"] = "normal"  # Force system back to "Normal"
     return send_from_directory("static", "clinic.html")
 
 @app.get("/api/clinic-poll")
