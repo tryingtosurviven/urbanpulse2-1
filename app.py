@@ -477,7 +477,7 @@ def watsonx_scenario():
     raw_key = payload.get("scenario_key", "")
     scenario_key = raw_key.strip().lower().replace(" ", "_")
     try:
-        result = run_scenario_with_watsonx_first(scenario_key)
+        result = run_scenario_with_watsonx_first(scenario_key, source="chat")
         return jsonify(result)
     except Exception as e:
         return jsonify({"status": "error", "error": str(e), "instance": INSTANCE}), 400
