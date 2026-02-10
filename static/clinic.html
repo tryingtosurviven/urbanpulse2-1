@@ -607,15 +607,7 @@
         const supply = result?.supply_chain_actions;
         if (supply?.po_id) chatAdd(`Draft created: ${supply.po_id}`);
 
-        if (String(supply?.autonomous || "").toLowerCase() !== "true") {
-          const draft = {
-            active: true,
-            id: supply?.po_id || `DRAFT-${Date.now().toString().slice(-6)}`,
-            facility: "Tan Tock Seng Hospital",
-            qty: qty
-          };
-          showDraftPanel(draft);
-        }
+        if (String(supply?.autonomous || "").toLowerCase() !== "true") {}
 
       } catch (e) {
         chatAdd(`Error: ${e.message || e}`, { status: true });
