@@ -569,7 +569,12 @@
       chatAdd(`Running agent workflow for scenario: ${scenarioKey}...`, { status: true });
 
       try {
-        const result = await window.runScenario(scenarioKey);
+        const res = await fetch(`/api/run-scenario/${encodeURIComponent(scenarioKey)}?source=ui`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const result = await res.json();
+        
         updateSingaporeAvgPsi(result);
 
         const risk = result?.risk_assessment || {};
