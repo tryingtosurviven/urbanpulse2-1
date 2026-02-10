@@ -113,7 +113,7 @@ async function callScenarioBackend(scenarioName) {
       "Content-Type": "application/json",
       Accept: "application/json",
     },
-    body: JSON.stringify({ scenario_key: scenarioName }),
+    body: JSON.stringify({ scenario_key: scenarioName, source: "ui"}),
   });
 
   const data2 = await safeJson(res2);
