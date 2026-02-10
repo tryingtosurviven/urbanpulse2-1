@@ -231,6 +231,7 @@
 
       <br>
         <button id="po-close-btn" onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:15px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
+        <button id="track-logistics-btn" class="po-track-btn" style="justify-content:center; width:100%;" > 🚚 Track on Logistics Map</button>
     </div>
   </div>
 
@@ -335,7 +336,8 @@
       document.querySelector('.po-icon').innerText = "⚡";
       document.querySelector('.po-modal h2').innerText = "AI Auto-Dispatch";
       document.querySelector('.po-modal h2').style.color = "#7e22ce";
-
+      
+      setLogisticsButtonLink({ id: "ttsh", qty });
       document.getElementById('success-overlay').style.display = 'flex';
 
       const trackBtn = document.querySelector('.po-track-btn');
@@ -391,7 +393,8 @@
       document.querySelector('.po-icon').innerText = "✅";
       document.querySelector('.po-modal h2').innerText = "Order Confirmed";
       document.querySelector('.po-modal h2').style.color = "#166534";
-
+      
+      setLogisticsButtonLink({ id: "ttsh", qty: newQty });
       document.getElementById('success-overlay').style.display = 'flex';
 
       const trackBtn = document.querySelector('.po-track-btn');
@@ -429,6 +432,15 @@
       badge.style.color = '#ffffff';
       badge.style.borderColor = '#a855f7';
       badge.innerHTML = '⚡ AI AUTONOMOUS PROTOCOL';
+    }
+
+    function setLogisticsButtonLink({ id = "ttsh", qty = 0 } = {}) {
+      const btn = document.getElementById("track-logistics-btn");
+      if (!btn) return;
+    
+      btn.onclick = () => {
+        window.location.href = `/logistics?id=${encodeURIComponent(id)}&qty=${encodeURIComponent(qty)}`;
+      };
     }
 
     /* -------------------------
