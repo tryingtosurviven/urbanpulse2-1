@@ -44,7 +44,7 @@
     /* SUCCESS PO MODAL */
     .po-modal { text-align: center; border: 4px solid transparent; transition: all 0.3s; }
     .po-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
-    .po-track-btn { background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; transition: background 0.3s; }
+    .po-track-btn { background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 12px; display: inline-flex; align-items: center; gap: 8px; transition: background 0.3s; justify-content:center; width:100%; }
     .po-track-btn:hover { background: #334155; }
 
     /* DRAFT PANEL */
@@ -104,7 +104,7 @@
     .ai-btn.mod { border-left: 6px solid #f59e0b; }
     .ai-btn.sev { border-left: 6px solid #ef4444; }
 
-    /* ✅ Chat box fixed height so it never expands the page */
+    /* Chat box */
     .chat-box {
       background: #0b1220; color: #e2e8f0; border-radius: 14px; padding: 14px;
       height: 160px; max-height: 160px;
@@ -130,7 +130,7 @@
     <div id="global-status" class="status-badge"><span class="dot"></span> System Normal</div>
   </div>
 
-  <!-- ✅ AI Order Assistant (Clinic Manager chatbot) -->
+  <!-- AI Order Assistant -->
   <div class="ai-panel">
     <div class="ai-card">
       <div>
@@ -223,25 +223,22 @@
       <h2 style="margin:0 0 10px 0; color:#166534">Order Confirmed</h2>
       <p style="color:#64748b; margin-bottom:20px;">Official PO has been generated and dispatched.</p>
 
-      <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; text-align:left; margin-bottom:20px;">
+      <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; text-align:left; margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Facility:</span><strong>Tan Tock Seng Hospital</strong></div>
         <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Quantity:</span><strong id="confirmed-qty-disp">---</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>Status:</span><strong style="color:#0ea5e9">Dispatched</strong></div>
       </div>
 
-      <br>
-        <button id="po-close-btn" onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:15px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
-        <button id="track-logistics-btn" class="po-track-btn" style="justify-content:center; width:100%;" > 🚚 Track on Logistics Map</button>
+      <button id="track-logistics-btn" class="po-track-btn">🚚 Track on Logistics Map</button>
+      <button id="po-close-btn" onclick="document.getElementById('success-overlay').style.display='none'" style="margin-top:10px; background:none; border:none; color:#64748b; cursor:pointer;">Close</button>
     </div>
   </div>
 
-  <!-- ✅ Unified frontend controller that calls your backend watsonx endpoint -->
+  <!-- Unified frontend controller -->
   <script src="/static/script.js"></script>
 
   <script>
-    /* -------------------------
-       Facility modal logic (unchanged)
-    -------------------------- */
+    /* Facility modal logic */
     const facilityData = {
       'ttsh': { name: "Tan Tock Seng Hospital", stock: "1,200", staff: "342", wait: "1.5 Hrs", surge: "Normal" },
       'nuh': { name: "National University Hosp.", stock: "950", staff: "289", wait: "2.0 Hrs", surge: "Normal" },
@@ -259,30 +256,30 @@
       document.getElementById('modal-stock').innerText = data.stock;
       document.getElementById('modal-staff').innerText = data.staff;
       document.getElementById('modal-wait').innerText = data.wait;
+
       const surgeElem = document.getElementById('modal-surge');
       surgeElem.innerText = data.surge;
       surgeElem.style.color = data.surge.includes('CRITICAL') ? '#dc2626' : '#166534';
-      document.querySelector('.logistics-btn').onclick = function() { window.location.href = '/logistics?id=' + id; };
+
+      document.querySelector('.logistics-btn').onclick = function() {
+        window.location.href = '/logistics?id=' + id;
+      };
+
       document.getElementById('modal-overlay').style.display = 'flex';
     }
     function closeModal(e) { if (e.target.id === 'modal-overlay') e.target.style.display = 'none'; }
 
-    /* -------------------------
-       Polling & Remote Control (FIXED)
-    -------------------------- */
-
-    // ✅ Once draft is shown, keep it visible until user Approve/Reject
+    /* Polling & Remote Control */
     let userDraftVisible = false;
+    let suppressDraftPopupUntil = 0;
 
     function deactivateAlertMode() {
       const badge = document.getElementById('global-status');
-
       badge.className = 'status-badge';
       badge.style.background = '';
       badge.style.color = '';
       badge.style.borderColor = '';
       badge.innerHTML = '<span class="dot"></span> System Normal';
-
       document.querySelectorAll('.card').forEach(card => card.classList.remove('critical'));
     }
 
@@ -291,7 +288,6 @@
         const res = await fetch('/api/clinic-poll');
         const data = await res.json();
 
-        // ✅ Only go "red" when severe/autonomous
         const psi = Number(data.psi || 0);
         const protocol = (data.protocol || "").toLowerCase();
         const isSevere = protocol === "autonomous" || psi >= 200;
@@ -299,7 +295,6 @@
         if (isSevere) activateAlertMode();
         else deactivateAlertMode();
 
-        // ✅ Fully autonomous dispatch ONLY for severe haze (protocol=autonomous)
         if (protocol === 'autonomous' && data.draft && data.draft.active) {
           activateAutonomousMode();
           executeAutoOrder(data.draft.qty);
@@ -309,8 +304,13 @@
           window.location.href = '/logistics';
         }
 
-        // ✅ Show draft ONLY when NOT autonomous
-        if (!userDraftVisible && data.draft && data.draft.active && protocol !== 'autonomous') {
+        if (
+          Date.now() > suppressDraftPopupUntil &&
+          !userDraftVisible &&
+          data.draft &&
+          data.draft.active &&
+          protocol !== 'autonomous'
+        ) {
           showDraftPanel(data.draft);
         }
 
@@ -318,6 +318,14 @@
     }, 2000);
 
     let isAutoOrdering = false;
+
+    function setLogisticsButtonLink({ id = "ttsh", qty = 0 } = {}) {
+      const btn = document.getElementById("track-logistics-btn");
+      if (!btn) return;
+      btn.onclick = () => {
+        window.location.href = `/logistics?id=${encodeURIComponent(id)}&qty=${encodeURIComponent(qty)}`;
+      };
+    }
 
     async function executeAutoOrder(qty) {
       if (isAutoOrdering) return;
@@ -336,36 +344,25 @@
       document.querySelector('.po-icon').innerText = "⚡";
       document.querySelector('.po-modal h2').innerText = "AI Auto-Dispatch";
       document.querySelector('.po-modal h2').style.color = "#7e22ce";
-      
+
       setLogisticsButtonLink({ id: "ttsh", qty });
       document.getElementById('success-overlay').style.display = 'flex';
 
-      const trackBtn = document.querySelector('.po-track-btn');
-      if (trackBtn) {
-        trackBtn.style.background = "#7e22ce";
-        trackBtn.innerText = "⚡ Track Autonomous Unit";
-        trackBtn.onclick = function() {
-          window.location.href = '/logistics?id=ttsh&qty=' + qty;
-        };
-      }
+      const poParagraph = document.querySelector('.po-modal p');
+      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched. You will be redirected to tracking shortly.';
 
-      // Automatically redirect to the logistics tracking page after 3 seconds
+      const closeBtn = document.getElementById('po-close-btn');
+      if (closeBtn) closeBtn.style.display = 'none';
+
       setTimeout(() => {
         window.location.href = '/logistics?id=ttsh&qty=' + qty;
       }, 3000);
-
-      // Update modal message and hide the manual Close button for autonomous dispatch
-      const poParagraph = document.querySelector('.po-modal p');
-      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched. You will be redirected to tracking shortly.';
-      const closeBtn = document.getElementById('po-close-btn');
-      if (closeBtn) closeBtn.style.display = 'none';
 
       setTimeout(() => { isAutoOrdering = false; }, 5000);
     }
 
     function showDraftPanel(draft) {
       const panel = document.getElementById('draft-panel');
-
       document.getElementById('draft-id').innerText = draft.id;
       document.getElementById('draft-facility').innerText = "📍 For: " + (draft.facility || "Tan Tock Seng Hospital");
       document.getElementById('draft-qty').value = draft.qty;
@@ -384,7 +381,8 @@
       });
 
       document.getElementById('draft-panel').classList.remove('visible');
-      userDraftVisible = false;
+      suppressDraftPopupUntil = Date.now() + 8000;
+      userDraftVisible = true;
 
       document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (N95)";
 
@@ -393,22 +391,13 @@
       document.querySelector('.po-icon').innerText = "✅";
       document.querySelector('.po-modal h2').innerText = "Order Confirmed";
       document.querySelector('.po-modal h2').style.color = "#166534";
-      
+
       setLogisticsButtonLink({ id: "ttsh", qty: newQty });
       document.getElementById('success-overlay').style.display = 'flex';
 
-      const trackBtn = document.querySelector('.po-track-btn');
-      if (trackBtn) {
-        trackBtn.style.background = "#0f172a";
-        trackBtn.innerText = "🚚 Track Shipment (TTSH)";
-        trackBtn.onclick = function() {
-          window.location.href = '/logistics?id=ttsh&qty=' + newQty;
-        };
-      }
-
-      // Restore standard modal text and ensure Close button is visible for manual approvals
       const poParagraph = document.querySelector('.po-modal p');
       if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched.';
+
       const closeBtn = document.getElementById('po-close-btn');
       if (closeBtn) closeBtn.style.display = 'inline-block';
     }
@@ -434,19 +423,7 @@
       badge.innerHTML = '⚡ AI AUTONOMOUS PROTOCOL';
     }
 
-    function setLogisticsButtonLink({ id = "ttsh", qty = 0 } = {}) {
-      const btn = document.getElementById("track-logistics-btn");
-      if (!btn) return;
-    
-      btn.onclick = () => {
-        window.location.href = `/logistics?id=${encodeURIComponent(id)}&qty=${encodeURIComponent(qty)}`;
-      };
-    }
-
-    /* -------------------------
-       ✅ Clinic "Chatbot" actions
-    -------------------------- */
-
+    /* Chat actions */
     let assistantIsRunning = false;
     let lastStatusEl = null;
 
@@ -492,8 +469,7 @@
       if (!box) return;
       box.innerHTML = '';
       lastStatusEl = null;
-      
-      // Restore the default "Singapore Avg PSI" header line
+
       const line = document.createElement('div');
       line.className = "chat-line";
       line.innerHTML = `
@@ -530,9 +506,21 @@
       if (psi <= 300) return "Very Unhealthy";
       return "Hazardous";
     }
-    
+
+    /* Predictive burn-rate mapping */
+    function predictBurnRateHours(psi, scenarioKey) {
+      const p = Number(psi);
+      if (Number.isFinite(p)) {
+        if (p >= 200) return 4;
+        if (p >= 101) return 14;
+        return 72;
+      }
+      if (scenarioKey === 'severe_haze') return 4;
+      if (scenarioKey === 'moderate_haze') return 14;
+      return 72;
+    }
+
     function extractPsiDict(result) {
-      // try the common places your app uses (matches citizen.html logic style)
       const raw = result?.raw_data || result?.data || {};
       return (
         result?.environmental_data?.psi_by_region ||
@@ -541,31 +529,33 @@
         {}
       );
     }
-    
+
     function computeAvgPsi(psiDict) {
       if (!psiDict || typeof psiDict !== "object") return null;
-    
-      // scenario keys are central/east/north/south/west
-      const vals = Object.values(psiDict)
-        .map(v => Number(v))
-        .filter(v => Number.isFinite(v));
-    
+      const vals = Object.values(psiDict).map(v => Number(v)).filter(v => Number.isFinite(v));
       if (!vals.length) return null;
-    
-      const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-      return avg;
+      return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
     }
-    
+
+    function setFakeSingaporeAvgPsi() {
+      const fakePsi = 68; // demo fallback
+      const status = psiCategory(fakePsi);
+      const psiEl = document.getElementById("sg-avg-psi");
+      const statusEl = document.getElementById("sg-avg-status");
+      if (psiEl) psiEl.innerText = String(fakePsi);
+      if (statusEl) statusEl.innerText = status;
+    }
+
     function updateSingaporeAvgPsi(result) {
       const psiDict = extractPsiDict(result);
       const avg = computeAvgPsi(psiDict);
-      if (avg == null) return;
-    
+      if (avg == null) {
+        setFakeSingaporeAvgPsi();
+        return;
+      }
       const status = psiCategory(avg);
-    
       const psiEl = document.getElementById("sg-avg-psi");
       const statusEl = document.getElementById("sg-avg-status");
-    
       if (psiEl) psiEl.innerText = String(avg);
       if (statusEl) statusEl.innerText = status;
     }
@@ -587,16 +577,23 @@
 
         const qty = extractRecommendedQty(result, scenarioKey);
 
-        chatAdd(`Assessment: PSI ${highestPsi} → ${riskLevel}. Recommended N95 order quantity: ${qty}.`, { status: true });
+        const burnRateFromApi =
+          result?.predictive_analytics?.burn_rate_hours ??
+          result?.burn_rate_hours;
+
+        const burnHours = Number.isFinite(Number(burnRateFromApi))
+          ? Number(burnRateFromApi)
+          : predictBurnRateHours(highestPsi, scenarioKey);
+
+        chatAdd(
+          `Assessment: PSI ${highestPsi} → ${riskLevel}. Predicted burn rate: current stock lasts ~${burnHours} hours. Recommended N95 order quantity: ${qty}.`,
+          { status: true }
+        );
 
         const supply = result?.supply_chain_actions;
         if (supply?.po_id) chatAdd(`Draft created: ${supply.po_id}`);
 
-        // NOTE: For non-autonomous scenarios, this shows a draft.
-        // Severe haze will be auto-dispatched via polling when backend sets protocol=autonomous.
         if (String(supply?.autonomous || "").toLowerCase() !== "true") {
-            
-            
           const draft = {
             active: true,
             id: supply?.po_id || `DRAFT-${Date.now().toString().slice(-6)}`,
@@ -617,10 +614,10 @@
 
   <script>
     window.watsonAssistantChatOptions = {
-      integrationID: "16b93be7-5249-4f25-a201-3584e0152718", // The ID of this integration.
-      region: "aws-ap-southeast-1", // The region your integration is hosted in.
-      serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d", // The ID of your service instance.
-      orchestrateUIAgentExtensions: false, // If you wish to enable optional UI Agent extensions.
+      integrationID: "16b93be7-5249-4f25-a201-3584e0152718",
+      region: "aws-ap-southeast-1",
+      serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d",
+      orchestrateUIAgentExtensions: false,
       onLoad: async (instance) => { await instance.render(); }
     };
     setTimeout(function(){
@@ -628,8 +625,10 @@
       t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
       document.head.appendChild(t);
     });
+
+    // initial fallback PSI for demo
+    setFakeSingaporeAvgPsi();
   </script>
-  
 
 </body>
 </html>
