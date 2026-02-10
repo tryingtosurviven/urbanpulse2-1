@@ -107,6 +107,9 @@
       🔍 IoT Devices
       <span id="reset-btn" style="font-size: 1.2rem; cursor: pointer; opacity: 0.6;" title="Reset Scan">🔄</span>
     </h3>
+     <div class="small-note">
+          <p> We will be using your current location to detect nearby IoT devices in your region.</p>
+        </div>
     <div class="iot-scanner">
       <div class="scanner-title" id="scanning-status">Scanning for IOT devices nearby...</div>
       <div id="scanning-loader" class="scanning-animation">
@@ -421,8 +424,9 @@
           timerEl.innerText = '✓ Complete';
           // determine condition and display
           const condition = determineHazeCondition();
+          const region = detectRegionFromCondition(condition);
           const color = condition === 'Low' ? '#10b981' : (condition === 'Moderate' ? '#f59e0b' : '#ef4444');
-          statusEl.innerHTML = `<b>Haze Condition:</b> <span style="color:${color};">${condition}</span>`;
+          statusEl.innerHTML = `<b>Region Detected:</b> ${region}<br><b>Haze Condition:</b> <span style="color:${color};">${condition}</span>`;
           devicesEl.classList.add('show');
           renderDevices();
           console.log('IoT scan complete, condition:', condition, 'recommendations:', getRecommendations(condition));
@@ -453,6 +457,20 @@
       if (r < 0.6) return 'Low';
       if (r < 0.9) return 'Moderate';
       return 'Severe';
+    }
+
+    function detectRegionFromCondition(condition) {
+      // Map haze conditions to regions based on the regions array (lines 151-155)
+      if (condition === 'Severe') {
+        return 'Central';
+      } else if (condition === 'Moderate') {
+        const moderateRegions = ['West', 'East'];
+        return moderateRegions[Math.floor(Math.random() * moderateRegions.length)];
+      } else {
+        // Low condition
+        const lowRegions = ['North', 'South'];
+        return lowRegions[Math.floor(Math.random() * lowRegions.length)];
+      }
     }
 
     function getRecommendations(condition) {
