@@ -368,18 +368,22 @@ def run_scenario_with_watsonx_first(scenario_key: str, source: str = "ui") -> Di
     po_id = f"PO-{int(time.time())}"
 
     # Update clinic draft state (this is what clinic.html consumes)
-    clinic_state["draft"] = {
-        "active": True,
-        "facility": "Tan Tock Seng Hospital (HQ)",
-        "id": po_id,
-        "qty": recommended_qty,
-        "cost": "$—",
-        "reason": decision.get("justification", ""),
-        "autonomous": autonomous,
-        "psi": highest_psi,   # ✅ IMPORTANT: so the UI can detect severity
-        "risk_level": risk_level,
-    
-    }
+    # ✅ ONLY Watsonx Assistant (chat) should create Draft PO banners
+    if source != "ui":
+        clinic_state["draft"] = {
+            "active": True,
+            "facility": "Tan Tock Seng Hospital (HQ)",
+            "id": po_id,
+            "qty": recommended_qty,
+            "cost": "$—",
+            "reason": decision.get("justification", ""),
+            "autonomous": autonomous,
+            "psi": highest_psi,
+            "risk_level": risk_level,
+        }
+    else:
+        # Ensure UI runs never leave an old draft active
+        clinic_state["draft"]["active"] = False
 
     # Add agentic logs (judge-friendly)
     agent_logs.extend([
