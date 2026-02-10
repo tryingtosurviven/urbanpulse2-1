@@ -226,7 +226,7 @@ Rules:
 """
 
 
-def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
+def run_scenario_with_watsonx_first(scenario_key: str, source: str = "ui") -> Dict[str, Any]:
     """
     Main function: tries live watsonx reasoning first, falls back to local MAS if needed.
     """
@@ -360,6 +360,8 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
 
     # Governance: your requested policy
     autonomous = _policy_autonomous_only_for_severe(scenario_key, risk_level, highest_psi)
+    if source == "ui":
+        autonomous = False
     clinic_state["protocol"] = "autonomous" if autonomous else "standard"
 
     # PO id (demo)
@@ -458,7 +460,9 @@ def logistics_portal():
 @app.post("/api/run-scenario/<scenario_key>")
 def api_run_scenario(scenario_key):
     try:
-        result = run_scenario_with_watsonx_first(scenario_key.strip().lower())
+        source = request.args.get("source", "ui").strip().lower()
+        result = run_scenario_with_watsonx_first(scenario_key.strip().lower(), source=source)
+        
         return jsonify(result)
     except Exception as e:
         return jsonify({"status": "error", "error": str(e), "instance": INSTANCE}), 400
