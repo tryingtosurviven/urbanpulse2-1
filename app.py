@@ -325,6 +325,18 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
             "method": "demo_forecast_agent_v1"
         }
 
+    elif scenario_key == "low_haze":
+        horizon_hours = 6  # low haze tends to be slower-moving
+        # small drift, mostly stable
+        predicted_psi = min(100, max(30, highest_psi + random.randint(-5, 12)))
+        forecast = {
+            "horizon_hours": horizon_hours,
+            "predicted_psi": predicted_psi,
+            "predicted_risk_level": "GOOD" if predicted_psi <= 50 else "MODERATE",
+            "confidence": 0.88,
+            "method": "demo_forecast_agent_v1"
+        }
+
     # Governance: your requested policy
     autonomous = _policy_autonomous_only_for_severe(scenario_key, risk_level, highest_psi)
     clinic_state["protocol"] = "autonomous" if autonomous else "standard"
