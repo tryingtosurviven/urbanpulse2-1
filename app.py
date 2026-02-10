@@ -46,6 +46,7 @@ app = Flask(__name__)
 # ==============================================================================
 # GLOBAL STATE (Demo-friendly, judge-visible)
 # ==============================================================================
+active_orders = []  # <--- ADD THIS LINE HERE
 clinic_state = {
     "view": "normal",
     "protocol": "standard",  # standard | autonomous
@@ -450,15 +451,32 @@ def clinic_poll():
 def confirm_order():
     data = request.json or {}
     confirmed = int(data.get("confirmed_qty") or 0)
+    
+    # Create a real order object to show on the logistics map
+    new_order = {
+        "id": clinic_state["draft"].get("id", f"PO-{int(time.time())}"),
+        "facility": clinic_state["draft"].get("facility", "Tan Tock Seng Hospital (HQ)"),
+        "qty": confirmed_qty,
+        "status": "Dispatched",
+        "timestamp": time.time()
+    }
+    active_orders.append(new_order) # Store it in our global list so logistics.html can see it
+
+    # Return the flags the frontend needs to show the "View Logistics" button
     clinic_state["view"] = "approved"
     clinic_state["draft"]["active"] = False
-    return jsonify({"status": "success", "confirmed_qty": confirmed})
-
-
+    
+    return jsonify({"status": "success", "confirmed_qty": confirmed, "show_logistics_button": True, "redirect_url": "/logistics", "order": new_order})
+    
 @app.post("/api/clinic-reject-order")
 def reject_order():
     clinic_state["draft"]["active"] = False
     return jsonify({"status": "success"})
+
+# 3. Add a new route so logistics.html can fetch these orders
+@app.get("/api/get-active-orders")
+def get_active_orders():
+    return jsonify({"orders": active_orders})
 
 
 # ==============================================================================
