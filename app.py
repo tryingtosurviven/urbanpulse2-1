@@ -46,6 +46,7 @@ app = Flask(__name__)
 # ==============================================================================
 # GLOBAL STATE (Demo-friendly, judge-visible)
 # ==============================================================================
+active_orders = [] # Add this line
 clinic_state = {
     "view": "normal",
     "protocol": "standard",  # standard | autonomous
@@ -450,10 +451,27 @@ def clinic_poll():
 def confirm_order():
     data = request.json or {}
     confirmed = int(data.get("confirmed_qty") or 0)
+
+    # This creates the data for the Logistics Map
+    new_order = {
+        "id": clinic_state["draft"].get("id", f"PO-{int(time.time())}"),
+        "facility": clinic_state["draft"].get("facility", "Tan Tock Seng Hospital (HQ)"),
+        "qty": confirmed_qty,
+        "status": "Dispatched",
+        "timestamp": time.time()
+    }
+
+    # Saves it so other pages can see it
+    active_orders.append(new_order)
+    
     clinic_state["view"] = "approved"
     clinic_state["draft"]["active"] = False
-    return jsonify({"status": "success", "confirmed_qty": confirmed})
+    
+    return jsonify({"status": "success", "confirmed_qty": confirmed, "show_logistics_button": True, "redirect_url": "/logistics", "order": new_order})
 
+@app.get("/api/get-active-orders")
+def get_active_orders():
+    return jsonify({"orders": active_orders})
 
 @app.post("/api/clinic-reject-order")
 def reject_order():
