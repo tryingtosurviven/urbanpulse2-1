@@ -273,6 +273,7 @@
 
     // ✅ Once draft is shown, keep it visible until user Approve/Reject
     let userDraftVisible = false;
+    let suppressDraftPopupUntil = 0;    
 
     function deactivateAlertMode() {
       const badge = document.getElementById('global-status');
@@ -310,7 +311,13 @@
         }
 
         // ✅ Show draft ONLY when NOT autonomous
-        if (!userDraftVisible && data.draft && data.draft.active && protocol !== 'autonomous') {
+        if (
+          Date.now() > suppressDraftPopupUntil &&
+          !userDraftVisible &&
+          data.draft &&
+          data.draft.active &&
+          protocol !== 'autonomous'
+        ) {
           showDraftPanel(data.draft);
         }
 
@@ -383,7 +390,8 @@
       });
 
       document.getElementById('draft-panel').classList.remove('visible');
-      userDraftVisible = false;
+      suppressDraftPopupUntil = Date.now() + 8000; // 8 seconds buffer (adjust if you want)
+      userDraftVisible = true;
 
       document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (N95)";
 
