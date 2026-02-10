@@ -396,6 +396,7 @@ def run_scenario_with_watsonx_first(scenario_key: str, source: str = "ui") -> Di
     return {
         "status": "success",
         "scenario": scenario_key,
+        "meta": {"source": source}, 
         "watsonx": {
             "enabled": watsonx_enabled(),
             "used": used_watsonx,
