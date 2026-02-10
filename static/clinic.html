@@ -585,6 +585,14 @@
         const burnHours = Number.isFinite(Number(burnRateFromApi))
           ? Number(burnRateFromApi)
           : predictBurnRateHours(highestPsi, scenarioKey);
+        
+        const forecast = result?.predictive_analytics;
+        if (forecast?.predicted_psi) {
+          chatAdd(
+            `Forecast Agent: In ~${forecast.horizon_hours} hrs, PSI may rise to ${forecast.predicted_psi} (${forecast.predicted_risk_level}). Confidence ${(forecast.confidence*100).toFixed(0)}%.`,
+            { status: false }
+          );
+        }
 
         chatAdd(
           `Assessment: PSI ${highestPsi} → ${riskLevel}. Predicted burn rate: current stock lasts ~${burnHours} hours. Recommended N95 order quantity: ${qty}.`,
