@@ -399,6 +399,17 @@ def admin_portal():
 def logistics_portal():
     return send_from_directory("static", "logistics.html")
 
+@app.route('/api/scenario/<scenario_key>')
+def get_scenario(scenario_key):
+    from scenarios import DEMO_SCENARIOS
+    if scenario_key not in DEMO_SCENARIOS:
+        return jsonify({"error": "Scenario not found"}), 404
+
+    # Apply the same jitter/noise logic you already have
+    base_scenario = DEMO_SCENARIOS[scenario_key]
+    live_scenario = _scenario_with_jitter(base_scenario)
+    
+    return jsonify(live_scenario)
 
 # ==============================================================================
 # API: SCENARIO EXECUTION (primary endpoint used by your frontend)
