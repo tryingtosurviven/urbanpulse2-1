@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanPulse | City Ops Console</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        .ops-card { background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; margin-bottom: 20px; }
+        .urgent-border { border-left: 5px solid #ef4444; }
+        .log-feed { max-height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; color: #94a3b8; }
+        .navbar { background-color: #020617; border-bottom: 1px solid #334155; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg px-4 py-3 mb-4">
+    <a href="/" class="btn btn-outline-light btn-sm me-3">← Back to Main</a>
+    <span class="navbar-brand fw-bold text-white mb-0">🟢 UrbanPulse // City Ops Console</span>
+    <span class="ms-auto badge bg-danger">LIVE: Haze Protocol Active</span>
+</nav>
+
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-md-7">
+            <div class="ops-card p-3" style="height: 350px;">
+                <h5 class="fw-bold text-warning">Live District Risk Map</h5>
+                <div id="sg-map" class="h-100 rounded border border-secondary" style="min-height: 280px; width: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="ops-card p-3" style="height: 350px;">
+                <h5 class="fw-bold text-info">PM2.5 Predictive Forecast</h5>
+                <ul class="list-group list-group-flush mt-3">
+                    <li class="list-group-item bg-transparent text-white border-secondary">+1 Hour: <span class="badge bg-warning text-dark float-end">110 (Moderate)</span></li>
+                    <li class="list-group-item bg-transparent text-white border-secondary">+3 Hours: <span class="badge bg-danger float-end">155 (Unhealthy)</span></li>
+                    <li class="list-group-item bg-transparent text-white border-secondary">+6 Hours: <span class="badge bg-danger float-end">180 (High Risk)</span></li>
+                </ul>
+                <p class="mt-3 small text-muted">Model Confidence: 87% (Cross-referenced with NEA wind data)</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <h5 class="fw-bold mb-3">Pending AI Actions (Authorization Required)</h5>
+            
+            <div class="ops-card p-3 urgent-border">
+                <div class="d-flex justify-content-between">
+                    <h6 class="fw-bold text-danger">⚠️ Polyclinic Surge Warning: Clementi</h6>
+                    <small class="text-muted">Triggered 2 mins ago</small>
+                </div>
+                <p class="mb-2"><strong>AI Assessment:</strong> PM2.5 predicted to exceed 150 in Clementi within 3 hours. High elderly population detected.</p>
+                <p class="mb-3"><strong>Proposed Action:</strong> Dispatch automated SMS alert to vulnerable residents and notify Clementi Polyclinic of potential 15% surge.</p>
+                <div>
+                    <button class="btn btn-success btn-sm me-2 fw-bold">AUTHORIZE ACTION</button>
+                    <button class="btn btn-outline-danger btn-sm">OVERRIDE / REJECT</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <h5 class="fw-bold mb-3">System Audit Log</h5>
+            <div class="ops-card p-3 log-feed">
+                <p>[14:03:22] - SYSTEM: Ingested NEA live data. PM2.5 baseline established.</p>
+                <p>[14:05:10] - AGENT_WATSONX: Identified anomaly in Western sector wind patterns.</p>
+                <p>[14:08:45] - ADMIN_USER: <span class="text-success">Authorized</span> HVAC Recycle Mode for Building ID #4401.</p>
+                <p>[14:15:00] - SYSTEM: Successfully dispatched 4,200 automated SMS nudges to District 22.</p>
+                <p>[14:22:11] - AGENT_WATSONX: Awaiting human confirmation for Polyclinic alert...</p>
+            </div>
+        </div>
+
+        <div class="col-md-12 mt-4">
+            <div class="ops-card p-3 border-info">
+                <h5 class="fw-bold text-info">⚖️ Governance & Equity Logic</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Priority Groups</small>
+                        <span class="badge bg-outline-info border border-info me-1">Elderly (65+)</span>
+                        <span class="badge bg-outline-info border border-info me-1">Schools/CCs</span>
+                        <span class="badge bg-outline-info border border-info">Outdoor Workers</span>
+                    </div>
+                    <div class="col-md-8">
+                        <p class="small mb-0 mt-2">
+                            <strong>Equity Rule:</strong> AI automatically increases alert sensitivity by 20% for districts with higher concentrations of rental flats and CHAS card holders to ensure protective measures reach those with less indoor air filtration.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 1. Initialize the map and center it on Singapore coordinates
+    var map = L.map('sg-map').setView([1.3521, 103.8198], 11);
+
+    // 2. Load a Dark Mode map skin (CartoDB Dark Matter)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        maxZoom: 19
+    }).addTo(map);
+
+    // 3. Draw a live interactive "Risk Zone" over Clementi
+    var hazardZone = L.circle([1.3150, 103.7650], {
+        color: '#ef4444',      // Bootstrap danger red
+        fillColor: '#ef4444',
+        fillOpacity: 0.4,
+        radius: 2500           // 2.5km radius
+    }).addTo(map);
+
+    // Add a popup when clicked
+    hazardZone.bindPopup("<b>⚠️ Clementi Sector</b><br>PM2.5 Predicted: 155<br>Surge Risk: HIGH");
+</script>
+
+</body>
+</html>
