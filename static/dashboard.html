@@ -15,12 +15,31 @@
         .urgent-border { border-left: 5px solid #ef4444; }
         .log-feed { max-height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; color: #94a3b8; }
         .navbar { background-color: #020617; border-bottom: 1px solid #334155; }
+        .authorize-btn {
+            background-color: #22c55e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .reject-btn {
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg px-4 py-3 mb-4">
-    <a href="/" class="btn btn-outline-light btn-sm me-3">← Back to Main</a>
+    <a href="/" class="btn btn-outline-light btn-sm me-3">← Back to Home</a>
     <span class="navbar-brand fw-bold text-white mb-0">🟢 UrbanPulse // City Ops Console</span>
     <span class="ms-auto badge bg-danger">LIVE: Haze Protocol Active</span>
 </nav>
@@ -59,9 +78,11 @@
                 <p class="mb-2"><strong>AI Assessment:</strong> PM2.5 predicted to exceed 150 in Clementi within 3 hours. High elderly population detected.</p>
                 <p class="mb-3"><strong>Proposed Action:</strong> Dispatch automated SMS alert to vulnerable residents and notify Clementi Polyclinic of potential 15% surge.</p>
                 <div>
-                    <button class="btn btn-success btn-sm me-2 fw-bold">AUTHORIZE ACTION</button>
-                    <button class="btn btn-outline-danger btn-sm">OVERRIDE / REJECT</button>
+                <div class="ops-card p-3 urgent-border pending-action-card">
+                    <button class="authorize-btn" onclick="handleAction('authorize')">AUTHORIZE ACTION</button>
+                    <button class="reject-btn" onclick="handleAction('reject')">OVERRIDE / REJECT</button>
                 </div>
+                <div class="ops-card p-3 log-feed audit-log-content"></div>
             </div>
         </div>
 
@@ -118,6 +139,36 @@
 
     // Add a popup when clicked
     hazardZone.bindPopup("<b>⚠️ Clementi Sector</b><br>PM2.5 Predicted: 155<br>Surge Risk: HIGH");
+
+    function handleAction(type) {
+        const actionCard = document.querySelector('.pending-action-card'); // Adjust selector to match your class
+        const logBox = document.querySelector('.audit-log-content'); // Adjust to match your log box class
+        const now = new  Date().toLocaleTimeString('en-GB');
+
+        if (type === 'authorize') {
+            // Visual feedback
+            alert("🚨 Action Authorized: SMS alerts dispatched to Clementi residents.");
+            
+            // Add to the Audit Log
+            const newLine = document.createElement('div');
+            newLine.innerHTML = `[${now}] - ADMIN_USER: <span style="color: #22c55e;">Authorized</span> Polyclinic Surge Protocol for Clementi.`;
+            logBox.appendChild(newLine);
+            
+            // Disable the card to show it's "Done"
+            actionCard.style.opacity = '0.5';
+            actionCard.style.pointerEvents = 'none';
+            
+        } else {
+            alert("🛑 Action Rejected: Scenario flagged for manual oversight.");
+            
+            const newLine = document.createElement('div');
+            newLine.innerHTML = `[${now}] - ADMIN_USER: <span style="color: #ef4444;">Rejected</span> Proposed SMS alert for District 22.`;
+            logBox.appendChild(newLine);
+        }
+        
+        // Auto-scroll log to bottom
+        logBox.scrollTop = logBox.scrollHeight;
+    }
 </script>
 
 </body>
