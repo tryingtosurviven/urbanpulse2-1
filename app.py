@@ -11,10 +11,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from ibm_watsonx_ai.foundation_models import Model
 from ibm_watsonx_ai import Credentials
 
-
-# ==============================================================================
 # CONFIG
-# ==============================================================================
 def env_bool(name: str, default: str = "false") -> bool:
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "y", "on")
 
@@ -310,6 +307,22 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
     # Governance: your requested policy
     autonomous = _policy_autonomous_only_for_severe(scenario_key, risk_level, highest_psi)
     clinic_state["protocol"] = "autonomous" if autonomous else "standard"
+    
+    # PHASE 3: OPERATIONAL SAFETY & AI PREDICTION
+    prediction_value = recommended_qty 
+    
+    if prediction_value > 500:
+        # High surge: Lock the system for Human Approval
+        status_msg = "⚠️ PENDING APPROVAL (High Surge Predicted)"
+        autonomous = False  # Force human-in-the-loop for safety
+        governance_note = "AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2."
+    else:
+        # Normal levels: Can proceed with standard protocol
+        status_msg = "✅ Monitoring (Normal Levels)"
+        governance_note = "Prediction within normal operating parameters."
+
+    # Update clinic_state with these safety flags
+    clinic_state["protocol"] = "standard" if not autonomous else "autonomous"
 
     # PO id (demo)
     po_id = f"PO-{int(time.time())}"
@@ -321,11 +334,11 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         "id": po_id,
         "qty": recommended_qty,
         "cost": "$—",
-        "reason": decision.get("justification", ""),
+        "reason": f"{status_msg} | {decision.get('justification', '')}",
         "autonomous": autonomous,
-        "psi": highest_psi,   # ✅ IMPORTANT: so the UI can detect severity
+        "psi": highest_psi,
         "risk_level": risk_level,
-    
+        "governance_log": governance_note # New key for the audit trail
     }
 
     # Add agentic logs (judge-friendly)

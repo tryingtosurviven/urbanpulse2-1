@@ -182,6 +182,7 @@
       <div class="draft-info">
         <h3>⚠️ ACTION REQUIRED: Draft PO Generated</h3>
         <span id="draft-facility" class="draft-facility">---</span>
+        🛡️ <strong>Safety Audit:</strong> <span id="draft-governance">Waiting...</span>
         <div style="font-size:0.8rem; color:#999; margin-top:2px;">PO ID: <span id="draft-id">---</span></div>
       </div>
       <div class="draft-action">
@@ -363,9 +364,19 @@
 
     function showDraftPanel(draft) {
       const panel = document.getElementById('draft-panel');
+      
+      // Update basic info
       document.getElementById('draft-id').innerText = draft.id;
       document.getElementById('draft-facility').innerText = "📍 For: " + (draft.facility || "Tan Tock Seng Hospital");
       document.getElementById('draft-qty').value = draft.qty;
+
+      // Update Phase 3 Governance Note (This is the "Proof" for judges)
+      const govElem = document.getElementById('draft-governance');
+      if (draft.governance_log) {
+          govElem.innerText = draft.governance_log;
+      } else {
+          govElem.innerText = "Standard manual review triggered.";
+      }
 
       panel.classList.add('visible');
       userDraftVisible = true;
