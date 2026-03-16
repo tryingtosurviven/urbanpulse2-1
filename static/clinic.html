@@ -14,6 +14,18 @@
     .status-badge { background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid #bbf7d0; }
     .dot { height: 8px; width: 8px; background: #22c55e; border-radius: 50%; display: inline-block; }
 
+    .back-home {
+      text-decoration: none;
+      color: #64748b;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: color 0.2s;
+    }
+    .back-home:hover { color: #1e293b; }
+
     .container { max-width: 1400px; margin: 30px auto; padding: 0 30px; }
     .section-title { font-size: 1.1rem; font-weight: 700; color: #64748b; margin: 30px 0 15px 0; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
     .section-title::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
@@ -126,6 +138,7 @@
 
 <body>
   <div class="header">
+    <a href="/" style="text-decoration: none; color: #667eea; font-weight: bold;">← Back to Home</a>
     <div class="logo"><span style="font-size: 1.5rem;">🏥</span> Ministry of Health | Oversight</div>
     <div id="global-status" class="status-badge"><span class="dot"></span> System Normal</div>
   </div>
@@ -133,6 +146,20 @@
   <!-- AI Order Assistant -->
   <div class="ai-panel">
     <div class="ai-card">
+      <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; border: 1px dashed #cbd5e1; grid-column: span 2; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label style="font-weight: 800; color: #1e293b; font-size: 0.85rem; letter-spacing: 0.5px;">🌐 LIVE DIGITAL TWIN SIMULATOR (PSI Level)</label>
+          <span id="slider-val-badge" style="background: #2563eb; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 700;">50</span>
+        </div>
+        <input type="range" id="psi-slider" min="0" max="350" value="50" style="width: 100%; margin-top: 12px; cursor: pointer;" oninput="updateSimValue(this.value)">
+        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 700; color: #64748b; margin-top: 5px;">
+          <span>0 (CLEAR)</span>
+          <span>100 (MODERATE)</span>
+          <span>200 (UNHEALTHY)</span>
+          <span>350 (HAZARDOUS)</span>
+        </div>
+      </div>
+      
       <div>
         <h3 class="ai-title">🤖 AI Order Assistant (Agentic Workflow)</h3>
         <p class="ai-sub">
@@ -239,6 +266,7 @@
   <script src="/static/script.js"></script>
 
   <script>
+    let isManualSim = false;
     /* Facility modal logic */
     const facilityData = {
       'ttsh': { name: "Tan Tock Seng Hospital", stock: "1,200", staff: "342", wait: "1.5 Hrs", surge: "Normal" },
@@ -289,18 +317,20 @@
         const res = await fetch('/api/clinic-poll');
         const data = await res.json();
 
-        const psi = Number(data.psi || 0);
-        const protocol = (data.protocol || "").toLowerCase();
-        const isSevere = protocol === "autonomous" || psi >= 200;
+        // --- CRITICAL FIX: Only run background updates if we are NOT in manual simulation ---
+        if (!isManualSim) { 
+            const psi = Number(data.psi || 0);
+            const protocol = (data.protocol || "").toLowerCase();
+            const isSevere = protocol === "autonomous" || psi >= 200;
 
-        if (isSevere) activateAlertMode();
-        else deactivateAlertMode();
-
-        if (protocol === 'autonomous' && data.draft && data.draft.active) {
-          activateAutonomousMode();
-          executeAutoOrder(data.draft.qty);
+            if (isSevere) {
+                activateAlertMode();
+            } else {
+                deactivateAlertMode();
+            }
         }
-
+        
+        // Always keep these running so you still get PO drafts while simulating
         if (data.current_view === 'logistics') {
           window.location.href = '/logistics';
         }
@@ -310,7 +340,7 @@
           !userDraftVisible &&
           data.draft &&
           data.draft.active &&
-          protocol !== 'autonomous'
+          data.protocol !== 'autonomous'
         ) {
           showDraftPanel(data.draft);
         }
@@ -572,54 +602,65 @@
     }
 
     async function runClinicAssistant(scenarioKey) {
-      if (assistantIsRunning) return;
-      assistantIsRunning = true;
-      setScenarioButtonsEnabled(false);
+        if (assistantIsRunning) return;
+        assistantIsRunning = true;
+        setScenarioButtonsEnabled(false);
 
-      chatAdd(`Running agent workflow for scenario: ${scenarioKey}...`, { status: true });
+        chatAdd(`[THOUGHT] Initializing UrbanPulse Sentinel for ${scenarioKey}...`, { status: true });
 
-      try {
-        const result = await window.runScenario(scenarioKey);
-        updateSingaporeAvgPsi(result);
+        try {
+            const result = await window.runScenario(scenarioKey);
+            updateSingaporeAvgPsi(result);
 
-        const risk = result?.risk_assessment || {};
-        const riskLevel = risk.risk_level || result?.risk_level || "N/A";
-        const highestPsi = risk.current_psi || result?.current_psi || result?.psi || "N/A";
+            // --- ADD THE LOGS HERE (After the result comes back) ---
+            chatAdd(`[THOUGHT] Analyzing regional PSI trends...`, { status: true });
+            chatAdd(`[GOVERNANCE] Checking Protocol 4.2 thresholds...`, { status: true });
 
-        const qty = extractRecommendedQty(result, scenarioKey);
+            const qty = extractRecommendedQty(result, scenarioKey);
+            const supply = result?.supply_chain_actions;
 
-        const burnRateFromApi =
-          result?.predictive_analytics?.burn_rate_hours ??
-          result?.burn_rate_hours;
+            chatAdd(`[ACTION] Recommended Qty: ${qty}. Safety Gate: ${supply.autonomous ? 'Auto' : 'Human-in-loop'}`, { status: true });
+            
+            // ... rest of your existing code (showing the draft panel) ...
 
-        const burnHours = Number.isFinite(Number(burnRateFromApi))
-          ? Number(burnRateFromApi)
-          : predictBurnRateHours(highestPsi, scenarioKey);
-
-        chatAdd(
-          `Assessment: PSI ${highestPsi} → ${riskLevel}. Predicted burn rate: current stock lasts ~${burnHours} hours. Recommended N95 order quantity: ${qty}.`,
-          { status: true }
-        );
-
-        const supply = result?.supply_chain_actions;
-        if (supply?.po_id) chatAdd(`Draft created: ${supply.po_id}`);
-
-        if (String(supply?.autonomous || "").toLowerCase() !== "true") {
-          const draft = {
-            active: true,
-            id: supply?.po_id || `DRAFT-${Date.now().toString().slice(-6)}`,
-            facility: "Tan Tock Seng Hospital",
-            qty: qty
-          };
-          showDraftPanel(draft);
+        } catch (e) {
+            chatAdd(`[ERROR] System fault: ${e.message}`, { status: true });
+        } finally {
+            assistantIsRunning = false;
+            setScenarioButtonsEnabled(true);
         }
+    }
 
-      } catch (e) {
-        chatAdd(`Error: ${e.message || e}`, { status: true });
-      } finally {
-        assistantIsRunning = false;
-        setScenarioButtonsEnabled(true);
-      }
+    function updateSimValue(val) {
+        isManualSim = true; 
+        document.getElementById('slider-val-badge').innerText = val;
+        
+        const badge = document.getElementById('global-status');
+        const cards = document.querySelectorAll('.card');
+        
+        // Tier 1: Hazardous / Very Unhealthy (201+)
+        if (val >= 201) {
+            badge.className = 'status-badge critical';
+            badge.style.background = '#fef2f2'; // Soft Red
+            badge.style.color = '#991b1b';
+            badge.style.borderColor = '#fecaca';
+            badge.innerHTML = '<span class="dot" style="background: #ef4444;"></span> 🔴 HAZARDOUS EMERGENCY';
+            cards.forEach(c => c.classList.add('critical'));
+            
+        // Tier 2: Unhealthy (101 - 200)
+        } else if (val >= 101) {
+            badge.className = 'status-badge'; 
+            badge.style.background = '#fffbeb'; // Amber/Yellow
+            badge.style.color = '#92400e';
+            badge.style.borderColor = '#fde68a';
+            badge.innerHTML = '<span class="dot" style="background: #f59e0b;"></span> 🟠 UNHEALTHY STATUS';
+            cards.forEach(c => c.classList.remove('critical'));
+            
+        // Tier 3: Moderate / Good (0 - 100)
+        } else {
+            isManualSim = false; 
+            deactivateAlertMode(); // Resets to Green "System Normal"
+        }
     }
   </script>
 

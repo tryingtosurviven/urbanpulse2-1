@@ -4,12 +4,20 @@ import time
 import json
 import random
 from typing import Any, Dict, Optional
-
 from flask import Flask, jsonify, request, send_from_directory
-
-# --- watsonx ---
 from ibm_watsonx_ai.foundation_models import Model
 from ibm_watsonx_ai import Credentials
+import datetime
+
+def write_governance_log(entry: Dict[str, Any]):
+    """
+    Writes a permanent audit trail of AI decisions to a local file.
+    """
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_line = f"[{timestamp}] PO: {entry.get('id')} | PSI: {entry.get('psi')} | {entry.get('governance_log')}\n"
+    
+    with open("governance.log", "a") as f:
+        f.write(log_line)
 
 # CONFIG
 def env_bool(name: str, default: str = "false") -> bool:
@@ -340,6 +348,9 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         "risk_level": risk_level,
         "governance_log": governance_note # New key for the audit trail
     }
+
+    # Record the permanent audit trail
+    write_governance_log(clinic_state["draft"])
 
     # Add agentic logs (judge-friendly)
     agent_logs.extend([
