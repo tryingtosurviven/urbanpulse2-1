@@ -121,3 +121,51 @@
 [2026-03-16 17:45:07] PO: PO-1773683107 | PSI: 68 | Prediction within normal operating parameters.
 [2026-03-16 17:45:07] PO: PO-1773683107 | PSI: 130 | Prediction within normal operating parameters.
 [2026-03-16 17:45:07] PO: PO-1773683107 | PSI: 65 | Prediction within normal operating parameters.
+[2026-03-18 07:20:15] PO: PO-1773818415 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:20:15] PO: PO-1773818415 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 07:20:15] PO: PO-1773818415 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 07:20:15] PO: PO-1773818415 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 07:20:15] PO: PO-1773818415 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 07:20:21] PO: PO-1773818421 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:20:21] PO: PO-1773818421 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 07:20:21] PO: PO-1773818421 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 07:20:21] PO: PO-1773818421 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 07:20:21] PO: PO-1773818421 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 07:20:41] PO: PO-1773818441 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:20:41] PO: PO-1773818441 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 07:20:41] PO: PO-1773818441 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 07:20:41] PO: PO-1773818441 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 07:20:41] PO: PO-1773818441 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 07:20:49] PO: PO-1773818449 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:20:50] PO: PO-1773818450 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 07:20:50] PO: PO-1773818450 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 07:20:50] PO: PO-1773818450 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 07:20:50] PO: PO-1773818450 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 07:21:17] PO: PO-1773818477 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:21:17] PO: PO-1773818477 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 07:21:17] PO: PO-1773818477 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 07:21:17] PO: PO-1773818477 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 07:21:17] PO: PO-1773818477 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 07:21:33] PO: PO-1773818493 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:21:33] PO: PO-1773818493 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 07:21:33] PO: PO-1773818493 | PSI: 65 | Prediction within normal operating parameters.
+[2026-03-18 07:21:33] PO: PO-1773818493 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 07:21:33] PO: PO-1773818493 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 07:21:40] PO: PO-1773818500 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:21:40] PO: PO-1773818500 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 07:21:40] PO: PO-1773818500 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 07:21:40] PO: PO-1773818500 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 07:21:40] PO: PO-1773818500 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 07:21:50] PO: PO-1773818510 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:21:50] PO: PO-1773818510 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 07:21:50] PO: PO-1773818510 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 07:21:50] PO: PO-1773818510 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 07:21:50] PO: PO-1773818510 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 07:24:33] PO: PO-1773818673 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 07:24:33] PO: PO-1773818673 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 07:24:33] PO: PO-1773818673 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 07:24:33] PO: PO-1773818673 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 07:24:33] PO: PO-1773818673 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 07:24:34] PO: PO-1773818674 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 07:24:35] PO: PO-1773818675 | PSI: 66 | Prediction within normal operating parameters.
+[2026-03-18 07:24:35] PO: PO-1773818675 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.

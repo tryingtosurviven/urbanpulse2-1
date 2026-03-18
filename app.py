@@ -12,9 +12,6 @@ import datetime
 from dotenv import load_dotenv
 load_dotenv()  # This loads the variables from .env into your system
 
-from auth import require_role, login_endpoint
-app.register_blueprint(login_endpoint)
-
 def write_governance_log(entry: Dict[str, Any]):
     """
     Writes a permanent audit trail of AI decisions to a local file.
@@ -52,7 +49,8 @@ INSTANCE = {
 APP_VERSION = "urbanpulse-r2-watsonx-live-1.0"
 
 app = Flask(__name__)
-
+from auth import require_role, login_endpoint
+app.register_blueprint(login_endpoint)
 
 # ==============================================================================
 # GLOBAL STATE (Demo-friendly, judge-visible)
@@ -418,11 +416,6 @@ def clinic_portal():
     clinic_state["protocol"] = "standard"
     clinic_state["draft"]["active"] = False
     return send_from_directory("static", "clinic.html")
-
-
-@app.route("/admin")
-def admin_portal():
-    return send_from_directory("static", "admin.html")
 
 
 @app.route("/logistics")
