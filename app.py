@@ -13,6 +13,15 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Loads variables from .env into environment
 
+# INPUT VALIDATION — whitelisted scenario keys
+VALID_SCENARIOS = {
+    "low_haze",
+    "moderate_haze",
+    "severe_haze",
+    "dengue_low",
+    "dengue_medium",
+    "dengue_high",
+}
 
 def write_governance_log(entry: Dict[str, Any]):
     """
@@ -694,18 +703,25 @@ def get_scenario(scenario_key):
 # Public endpoint for citizen map
 @app.post("/api/public/run-scenario/<scenario_key>")
 def api_public_run_scenario(scenario_key):
+    key = scenario_key.strip().lower()
+    if key not in VALID_SCENARIOS:
+        return jsonify({"error": "Invalid scenario", "code": "INVALID_SCENARIO_KEY"}), 400
     try:
-        result = run_scenario_with_watsonx_first(scenario_key.strip().lower())
+        result = run_scenario_with_watsonx_first(key)
         return jsonify(result)
     except Exception as e:
         return jsonify({"status": "error", "error": str(e), "instance": INSTANCE}), 400
 
 
+
 @app.post("/api/run-scenario/<scenario_key>")
 @require_role("admin")
 def api_run_scenario(scenario_key):
+    key = scenario_key.strip().lower()
+    if key not in VALID_SCENARIOS:
+        return jsonify({"error": "Invalid scenario", "code": "INVALID_SCENARIO_KEY"}), 400
     try:
-        result = run_scenario_with_watsonx_first(scenario_key.strip().lower())
+        result = run_scenario_with_watsonx_first(key)
         return jsonify(result)
     except Exception as e:
         return jsonify({"status": "error", "error": str(e), "instance": INSTANCE}), 400
@@ -717,6 +733,11 @@ def watsonx_scenario():
     payload = request.json or {}
     raw_key = payload.get("scenario_key", "")
     scenario_key = raw_key.strip().lower().replace(" ", "_")
+    
+    # ADD THIS:
+    if scenario_key not in VALID_SCENARIOS:
+        return jsonify({"error": "Invalid scenario", "code": "INVALID_SCENARIO_KEY"}), 400
+    
     try:
         result = run_scenario_with_watsonx_first(scenario_key)
         return jsonify(result)
