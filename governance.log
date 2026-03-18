@@ -169,3 +169,376 @@
 [2026-03-18 07:24:34] PO: PO-1773818674 | PSI: 129 | Prediction within normal operating parameters.
 [2026-03-18 07:24:35] PO: PO-1773818675 | PSI: 66 | Prediction within normal operating parameters.
 [2026-03-18 07:24:35] PO: PO-1773818675 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:34:28] PO: PO-1773822868 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:34:29] PO: PO-1773822869 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 16:34:29] PO: PO-1773822869 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 16:34:29] PO: PO-1773822869 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 16:34:29] PO: PO-1773822869 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 16:34:32] PO: PO-1773822872 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:34:34] PO: PO-1773822874 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 16:34:37] PO: PO-1773822877 | PSI: 65 | Prediction within normal operating parameters.
+[2026-03-18 16:34:49] PO: PO-1773822889 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 16:34:52] PO: PO-1773822892 | PSI: 228 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:34:53] PO: PO-1773822893 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 16:40:15] PO: PO-1773823215 | PSI: 223 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:40:15] PO: PO-1773823215 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 16:40:15] PO: PO-1773823215 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 16:40:15] PO: PO-1773823215 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 16:40:15] PO: PO-1773823215 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 16:40:18] PO: PO-1773823218 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 16:40:27] PO: PO-1773823227 | PSI: 223 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:40:31] PO: PO-1773823231 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:40:32] PO: PO-1773823232 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:40:33] PO: PO-1773823233 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 16:40:36] PO: PO-1773823236 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:48:57] PO: PO-1773823737 | PSI: 224 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 16:48:58] PO: PO-1773823738 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 16:48:58] PO: PO-1773823738 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 16:48:58] PO: PO-1773823738 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 16:48:58] PO: PO-1773823738 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 17:02:36] PO: PO-1773824556 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:02:37] PO: PO-1773824557 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:02:37] PO: PO-1773824557 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:02:37] PO: PO-1773824557 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 17:02:37] PO: PO-1773824557 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:26:11] PO: PO-1773825971 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:26:11] PO: PO-1773825971 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 17:26:12] PO: PO-1773825972 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 17:26:12] PO: PO-1773825972 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:26:12] PO: PO-1773825972 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:26:32] PO: PO-1773825992 | PSI: 223 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:26:32] PO: PO-1773825992 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:26:32] PO: PO-1773825992 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:26:32] PO: PO-1773825992 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:26:32] PO: PO-1773825992 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 17:30:14] PO: PO-1773826214 | PSI: 223 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:30:15] PO: PO-1773826215 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:30:15] PO: PO-1773826215 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 17:30:15] PO: PO-1773826215 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 17:30:15] PO: PO-1773826215 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:32:58] PO: PO-1773826378 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:32:58] PO: PO-1773826378 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:32:58] PO: PO-1773826378 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:32:58] PO: PO-1773826378 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:32:59] PO: PO-1773826379 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:33:03] PO: PO-1773826383 | PSI: 224 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:33:03] PO: PO-1773826383 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 17:33:04] PO: PO-1773826384 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 17:33:04] PO: PO-1773826384 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:33:04] PO: PO-1773826384 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:33:07] PO: PO-1773826387 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:33:07] PO: PO-1773826387 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 17:33:07] PO: PO-1773826387 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 17:33:08] PO: PO-1773826388 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 17:33:08] PO: PO-1773826388 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:37:39] PO: PO-1773826659 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:37:39] PO: PO-1773826659 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:37:39] PO: PO-1773826659 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 17:37:39] PO: PO-1773826659 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 17:37:40] PO: PO-1773826660 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:37:45] PO: PO-1773826665 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:37:45] PO: PO-1773826665 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:37:45] PO: PO-1773826665 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:37:45] PO: PO-1773826665 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 17:37:45] PO: PO-1773826665 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:38:16] PO: PO-1773826696 | PSI: 223 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:38:17] PO: PO-1773826697 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:38:17] PO: PO-1773826697 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:38:17] PO: PO-1773826697 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 17:38:17] PO: PO-1773826697 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:38:30] PO: PO-1773826710 | PSI: 224 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:38:30] PO: PO-1773826710 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:38:31] PO: PO-1773826711 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:38:31] PO: PO-1773826711 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:38:31] PO: PO-1773826711 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 17:38:45] PO: PO-1773826725 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:38:45] PO: PO-1773826725 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 17:38:46] PO: PO-1773826726 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:38:46] PO: PO-1773826726 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 17:38:46] PO: PO-1773826726 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:38:56] PO: PO-1773826736 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:38:56] PO: PO-1773826736 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:38:56] PO: PO-1773826736 | PSI: 66 | Prediction within normal operating parameters.
+[2026-03-18 17:38:56] PO: PO-1773826736 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 17:38:56] PO: PO-1773826736 | PSI: 66 | Prediction within normal operating parameters.
+[2026-03-18 17:43:00] PO: PO-1773826980 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:43:01] PO: PO-1773826981 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 17:43:01] PO: PO-1773826981 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:43:01] PO: PO-1773826981 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:43:01] PO: PO-1773826981 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:43:25] PO: PO-1773827005 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:43:25] PO: PO-1773827005 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 17:43:26] PO: PO-1773827006 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 17:43:26] PO: PO-1773827006 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:43:26] PO: PO-1773827006 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:43:33] PO: PO-1773827013 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:43:33] PO: PO-1773827013 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:43:33] PO: PO-1773827013 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:43:33] PO: PO-1773827013 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 17:43:33] PO: PO-1773827013 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 17:44:24] PO: PO-1773827064 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:44:24] PO: PO-1773827064 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:44:25] PO: PO-1773827065 | PSI: 65 | Prediction within normal operating parameters.
+[2026-03-18 17:44:25] PO: PO-1773827065 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 17:44:25] PO: PO-1773827065 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:44:32] PO: PO-1773827072 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:44:32] PO: PO-1773827072 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:44:32] PO: PO-1773827072 | PSI: 65 | Prediction within normal operating parameters.
+[2026-03-18 17:44:32] PO: PO-1773827072 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:44:32] PO: PO-1773827072 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:46:49] PO: PO-1773827209 | PSI: 223 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:46:49] PO: PO-1773827209 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:46:49] PO: PO-1773827209 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:46:49] PO: PO-1773827209 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 17:46:49] PO: PO-1773827209 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 17:46:55] PO: PO-1773827215 | PSI: 224 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:46:55] PO: PO-1773827215 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:46:55] PO: PO-1773827215 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:46:55] PO: PO-1773827215 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 17:46:55] PO: PO-1773827215 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 17:47:07] PO: PO-1773827227 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:47:07] PO: PO-1773827227 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:47:08] PO: PO-1773827228 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:47:08] PO: PO-1773827228 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:47:08] PO: PO-1773827228 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:47:14] PO: PO-1773827234 | PSI: 224 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:47:14] PO: PO-1773827234 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 17:47:15] PO: PO-1773827235 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:47:15] PO: PO-1773827235 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 17:47:15] PO: PO-1773827235 | PSI: 65 | Prediction within normal operating parameters.
+[2026-03-18 17:47:23] PO: PO-1773827243 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:47:23] PO: PO-1773827243 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 17:47:23] PO: PO-1773827243 | PSI: 66 | Prediction within normal operating parameters.
+[2026-03-18 17:47:23] PO: PO-1773827243 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 17:47:23] PO: PO-1773827243 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:47:30] PO: PO-1773827250 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:47:30] PO: PO-1773827250 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:47:30] PO: PO-1773827250 | PSI: 65 | Prediction within normal operating parameters.
+[2026-03-18 17:47:30] PO: PO-1773827250 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 17:47:30] PO: PO-1773827250 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 17:52:55] PO: PO-1773827575 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:52:55] PO: PO-1773827575 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 17:52:55] PO: PO-1773827575 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:52:55] PO: PO-1773827575 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 17:52:55] PO: PO-1773827575 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 17:53:23] PO: PO-1773827603 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:53:23] PO: PO-1773827603 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:53:23] PO: PO-1773827603 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 17:53:24] PO: PO-1773827604 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 17:53:24] PO: PO-1773827604 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 17:53:26] PO: PO-1773827606 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 17:53:26] PO: PO-1773827606 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 17:53:27] PO: PO-1773827607 | PSI: 69 | Prediction within normal operating parameters.
+[2026-03-18 17:53:27] PO: PO-1773827607 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 17:53:27] PO: PO-1773827607 | PSI: 66 | Prediction within normal operating parameters.
+[2026-03-18 18:00:07] PO: PO-1773828007 | PSI: 226 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 18:00:07] PO: PO-1773828007 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 18:00:07] PO: PO-1773828007 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 18:00:08] PO: PO-1773828008 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 18:00:08] PO: PO-1773828008 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 18:00:13] PO: PO-1773828013 | PSI: 222 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 18:00:13] PO: PO-1773828013 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 18:00:13] PO: PO-1773828013 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 18:00:13] PO: PO-1773828013 | PSI: 130 | Prediction within normal operating parameters.
+[2026-03-18 18:00:13] PO: PO-1773828013 | PSI: 67 | Prediction within normal operating parameters.
+[2026-03-18 18:00:16] PO: PO-1773828016 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 18:00:16] PO: PO-1773828016 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 18:00:16] PO: PO-1773828016 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 18:00:16] PO: PO-1773828016 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 18:00:16] PO: PO-1773828016 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 18:01:40] PO: PO-1773828100 | PSI: 228 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 18:01:41] PO: PO-1773828101 | PSI: 132 | Prediction within normal operating parameters.
+[2026-03-18 18:01:41] PO: PO-1773828101 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 18:01:41] PO: PO-1773828101 | PSI: 127 | Prediction within normal operating parameters.
+[2026-03-18 18:01:41] PO: PO-1773828101 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 18:02:24] PO: PO-1773828144 | PSI: 224 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 18:02:24] PO: PO-1773828144 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 18:02:25] PO: PO-1773828145 | PSI: 70 | Prediction within normal operating parameters.
+[2026-03-18 18:02:25] PO: PO-1773828145 | PSI: 129 | Prediction within normal operating parameters.
+[2026-03-18 18:02:25] PO: PO-1773828145 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 18:04:44] PO: PO-1773828284 | PSI: 227 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 18:04:44] PO: PO-1773828284 | PSI: 131 | Prediction within normal operating parameters.
+[2026-03-18 18:04:44] PO: PO-1773828284 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 18:04:44] PO: PO-1773828284 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 18:04:44] PO: PO-1773828284 | PSI: 71 | Prediction within normal operating parameters.
+[2026-03-18 18:05:59] PO: PO-1773828359 | PSI: 225 | AI predicted a surge > 500 cases. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:00] PO: PO-1773828360 | PSI: 128 | Prediction within normal operating parameters.
+[2026-03-18 18:06:00] PO: PO-1773828360 | PSI: 68 | Prediction within normal operating parameters.
+[2026-03-18 18:06:00] PO: PO-1773828360 | PSI: 133 | Prediction within normal operating parameters.
+[2026-03-18 18:06:00] PO: PO-1773828360 | PSI: 66 | Prediction within normal operating parameters.
+[2026-03-18 18:06:24] PO: PO-1773828384 | PSI: 225 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:24] PO: PO-1773828384 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:24] PO: PO-1773828384 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:24] PO: PO-1773828384 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:24] PO: PO-1773828384 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:26] PO: PO-1773828386 | PSI: None | Dengue Cases: 26 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:26] PO: PO-1773828386 | PSI: None | Dengue Cases: 22 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:26] PO: PO-1773828386 | PSI: None | Dengue Cases: 14 | Prediction within normal operating parameters.
+[2026-03-18 18:06:26] PO: PO-1773828386 | PSI: None | Dengue Cases: 6 | Prediction within normal operating parameters.
+[2026-03-18 18:06:26] PO: PO-1773828386 | PSI: None | Dengue Cases: 6 | Prediction within normal operating parameters.
+[2026-03-18 18:06:29] PO: PO-1773828389 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:29] PO: PO-1773828389 | PSI: 131 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:29] PO: PO-1773828389 | PSI: 66 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:29] PO: PO-1773828389 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:29] PO: PO-1773828389 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:31] PO: PO-1773828391 | PSI: None | Dengue Cases: 26 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:31] PO: PO-1773828391 | PSI: None | Dengue Cases: 22 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:31] PO: PO-1773828391 | PSI: None | Dengue Cases: 13 | Prediction within normal operating parameters.
+[2026-03-18 18:06:31] PO: PO-1773828391 | PSI: None | Dengue Cases: 5 | Prediction within normal operating parameters.
+[2026-03-18 18:06:31] PO: PO-1773828391 | PSI: None | Dengue Cases: 6 | Prediction within normal operating parameters.
+[2026-03-18 18:06:33] PO: PO-1773828393 | PSI: 225 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:33] PO: PO-1773828393 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:33] PO: PO-1773828393 | PSI: 67 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:33] PO: PO-1773828393 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:33] PO: PO-1773828393 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:47] PO: PO-1773828407 | PSI: 228 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:06:47] PO: PO-1773828407 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:47] PO: PO-1773828407 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:47] PO: PO-1773828407 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:06:47] PO: PO-1773828407 | PSI: 69 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:12] PO: PO-1773829332 | PSI: 224 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:22:12] PO: PO-1773829332 | PSI: 128 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:12] PO: PO-1773829332 | PSI: 69 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:12] PO: PO-1773829332 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:12] PO: PO-1773829332 | PSI: 66 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:18] PO: PO-1773829338 | PSI: None | Dengue Cases: 22 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:22:18] PO: PO-1773829338 | PSI: None | Dengue Cases: 23 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:22:19] PO: PO-1773829339 | PSI: None | Dengue Cases: 11 | Prediction within normal operating parameters.
+[2026-03-18 18:22:19] PO: PO-1773829339 | PSI: None | Dengue Cases: 5 | Prediction within normal operating parameters.
+[2026-03-18 18:22:19] PO: PO-1773829339 | PSI: None | Dengue Cases: 5 | Prediction within normal operating parameters.
+[2026-03-18 18:22:22] PO: PO-1773829342 | PSI: 228 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:22:22] PO: PO-1773829342 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:22] PO: PO-1773829342 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:22] PO: PO-1773829342 | PSI: 131 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:22] PO: PO-1773829342 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:23] PO: PO-1773829343 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:22:24] PO: PO-1773829344 | PSI: 128 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:24] PO: PO-1773829344 | PSI: 66 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:24] PO: PO-1773829344 | PSI: 132 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:24] PO: PO-1773829344 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:32] PO: PO-1773829352 | PSI: 227 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:22:32] PO: PO-1773829352 | PSI: 131 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:32] PO: PO-1773829352 | PSI: 67 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:32] PO: PO-1773829352 | PSI: 128 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:22:32] PO: PO-1773829352 | PSI: 67 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:24:58] PO: PO-1773829498 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:24:58] PO: PO-1773829498 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:24:59] PO: PO-1773829499 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:24:59] PO: PO-1773829499 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:24:59] PO: PO-1773829499 | PSI: 66 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:25:06] PO: PO-1773829506 | PSI: 224 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:25:55] PO: PO-1773829555 | PSI: 223 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:25:55] PO: PO-1773829555 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:25:55] PO: PO-1773829555 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:25:55] PO: PO-1773829555 | PSI: 132 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:25:55] PO: PO-1773829555 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:46] PO: PO-1773830326 | PSI: 228 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:38:46] PO: PO-1773830326 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:46] PO: PO-1773830326 | PSI: 67 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:46] PO: PO-1773830326 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:47] PO: PO-1773830327 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:48] PO: PO-1773830328 | PSI: None | Dengue Cases: 26 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:38:48] PO: PO-1773830328 | PSI: None | Dengue Cases: 24 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:38:48] PO: PO-1773830328 | PSI: None | Dengue Cases: 12 | Prediction within normal operating parameters.
+[2026-03-18 18:38:48] PO: PO-1773830328 | PSI: None | Dengue Cases: 8 | Prediction within normal operating parameters.
+[2026-03-18 18:38:48] PO: PO-1773830328 | PSI: None | Dengue Cases: 7 | Prediction within normal operating parameters.
+[2026-03-18 18:38:49] PO: PO-1773830329 | PSI: 222 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:38:49] PO: PO-1773830329 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:49] PO: PO-1773830329 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:49] PO: PO-1773830329 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:49] PO: PO-1773830329 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:53] PO: PO-1773830333 | PSI: 228 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:38:53] PO: PO-1773830333 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:53] PO: PO-1773830333 | PSI: 65 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:53] PO: PO-1773830333 | PSI: 132 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:38:53] PO: PO-1773830333 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:00] PO: PO-1773830340 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:39:01] PO: PO-1773830341 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:01] PO: PO-1773830341 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:01] PO: PO-1773830341 | PSI: 128 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:01] PO: PO-1773830341 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:19] PO: PO-1773830359 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:39:19] PO: PO-1773830359 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:19] PO: PO-1773830359 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:19] PO: PO-1773830359 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:39:20] PO: PO-1773830360 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:43:52] PO: PO-1773830632 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:43:52] PO: PO-1773830632 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:43:52] PO: PO-1773830632 | PSI: 65 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:43:52] PO: PO-1773830632 | PSI: 128 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:43:52] PO: PO-1773830632 | PSI: 69 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:23] PO: PO-1773830783 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:46:23] PO: PO-1773830783 | PSI: 128 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:23] PO: PO-1773830783 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:23] PO: PO-1773830783 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:23] PO: PO-1773830783 | PSI: 66 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:30] PO: PO-1773830790 | PSI: 227 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:46:30] PO: PO-1773830790 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:30] PO: PO-1773830790 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:30] PO: PO-1773830790 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:30] PO: PO-1773830790 | PSI: 65 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:35] PO: PO-1773830795 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:46:35] PO: PO-1773830795 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:35] PO: PO-1773830795 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:35] PO: PO-1773830795 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:35] PO: PO-1773830795 | PSI: 66 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:38] PO: PO-1773830798 | PSI: None | Dengue Cases: 23 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:46:38] PO: PO-1773830798 | PSI: None | Dengue Cases: 23 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:46:38] PO: PO-1773830798 | PSI: None | Dengue Cases: 13 | Prediction within normal operating parameters.
+[2026-03-18 18:46:38] PO: PO-1773830798 | PSI: None | Dengue Cases: 5 | Prediction within normal operating parameters.
+[2026-03-18 18:46:38] PO: PO-1773830798 | PSI: None | Dengue Cases: 7 | Prediction within normal operating parameters.
+[2026-03-18 18:46:44] PO: PO-1773830804 | PSI: 224 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:46:44] PO: PO-1773830804 | PSI: 131 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:45] PO: PO-1773830805 | PSI: 69 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:45] PO: PO-1773830805 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:45] PO: PO-1773830805 | PSI: 69 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:48] PO: PO-1773830808 | PSI: 227 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:46:48] PO: PO-1773830808 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:48] PO: PO-1773830808 | PSI: 67 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:48] PO: PO-1773830808 | PSI: 131 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:46:48] PO: PO-1773830808 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:47:00] PO: PO-1773830820 | PSI: 224 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:47:00] PO: PO-1773830820 | PSI: 132 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:47:00] PO: PO-1773830820 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:47:00] PO: PO-1773830820 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:47:01] PO: PO-1773830821 | PSI: 67 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:52:27] PO: PO-1773831147 | PSI: 226 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:52:27] PO: PO-1773831147 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:52:27] PO: PO-1773831147 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:52:27] PO: PO-1773831147 | PSI: 131 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:52:27] PO: PO-1773831147 | PSI: 65 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:30] PO: PO-1773831270 | PSI: 224 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:30] PO: PO-1773831270 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:30] PO: PO-1773831270 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:30] PO: PO-1773831270 | PSI: 132 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:30] PO: PO-1773831270 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:32] PO: PO-1773831272 | PSI: 224 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:32] PO: PO-1773831272 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:32] PO: PO-1773831272 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:32] PO: PO-1773831272 | PSI: 127 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:32] PO: PO-1773831272 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:35] PO: PO-1773831275 | PSI: 227 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:35] PO: PO-1773831275 | PSI: 132 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:35] PO: PO-1773831275 | PSI: 71 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:35] PO: PO-1773831275 | PSI: 131 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:35] PO: PO-1773831275 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:38] PO: PO-1773831278 | PSI: 225 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:38] PO: PO-1773831278 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:38] PO: PO-1773831278 | PSI: 66 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:38] PO: PO-1773831278 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:38] PO: PO-1773831278 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:44] PO: PO-1773831284 | PSI: None | Dengue Cases: 22 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:45] PO: PO-1773831285 | PSI: None | Dengue Cases: 25 | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:45] PO: PO-1773831285 | PSI: None | Dengue Cases: 13 | Prediction within normal operating parameters.
+[2026-03-18 18:54:45] PO: PO-1773831285 | PSI: None | Dengue Cases: 7 | Prediction within normal operating parameters.
+[2026-03-18 18:54:45] PO: PO-1773831285 | PSI: None | Dengue Cases: 7 | Prediction within normal operating parameters.
+[2026-03-18 18:54:47] PO: PO-1773831287 | PSI: 223 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:47] PO: PO-1773831287 | PSI: 130 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:47] PO: PO-1773831287 | PSI: 69 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:47] PO: PO-1773831287 | PSI: 129 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:47] PO: PO-1773831287 | PSI: 69 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:50] PO: PO-1773831290 | PSI: 223 | Dengue Cases: None | AI predicted a surge > 500. Manual verification required per Protocol 4.2.
+[2026-03-18 18:54:50] PO: PO-1773831290 | PSI: 132 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:50] PO: PO-1773831290 | PSI: 70 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:50] PO: PO-1773831290 | PSI: 133 | Dengue Cases: None | Prediction within normal operating parameters.
+[2026-03-18 18:54:50] PO: PO-1773831290 | PSI: 68 | Dengue Cases: None | Prediction within normal operating parameters.

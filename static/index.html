@@ -202,7 +202,7 @@
 
     <div class="role-cards" role="navigation" aria-label="Choose a portal">
       <div class="role-card" role="button" tabindex="0"
-           onclick="go('/citizen')" onkeydown="cardKey(event, '/citizen')">
+           onclick="go('/citizen?mode=haze')" onkeydown="cardKey(event, '/citizen?mode=haze')">
         <i>👤</i>
         <h2>Citizen Portal</h2>
         <p>
@@ -269,17 +269,17 @@
   </script>
 
   <script>
-  window.watsonAssistantChatOptions = {
-    integrationID: "0d997ed0-451c-4329-a5c2-45a0a613f3f3", 
-    region: "aws-ap-southeast-1", 
-    serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d", 
-    onLoad: async (instance) => { await instance.render(); }
-  };
-  setTimeout(function(){
-    const t=document.createElement('script');
-    t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
-    document.head.appendChild(t);
-  });
-</script>
+    window.watsonAssistantChatOptions = {
+      integrationID: "0d997ed0-451c-4329-a5c2-45a0a613f3f3",
+      region: "aws-ap-southeast-1",
+      serviceInstanceID: "20260127-1515-5797-5009-cb9a48045b0d",
+      onLoad: async (instance) => { await instance.render(); }
+    };
+    setTimeout(function() {
+      const t = document.createElement('script');
+      t.src = "https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+      document.head.appendChild(t);
+    });
+  </script>
 </body>
 </html>

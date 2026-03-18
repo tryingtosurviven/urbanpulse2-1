@@ -8,6 +8,35 @@ with PSI values for all 5 regions (central, east, north, south, west).
 """
 
 DEMO_SCENARIOS = {
+    
+    "dengue_low": {
+    "dengue_data": {
+        "bedok": 6,
+        "tampines": 5,
+        "hougang": 4,
+        "jurong": 3,
+        "woodlands": 2
+    }
+},
+"dengue_medium": {
+    "dengue_data": {
+        "bedok": 12,
+        "tampines": 11,
+        "hougang": 10,
+        "jurong": 7,
+        "woodlands": 6
+    }
+},
+"dengue_high": {
+    "dengue_data": {
+        "bedok": 24,
+        "tampines": 21,
+        "hougang": 16,
+        "jurong": 9,
+        "woodlands": 8
+    }
+},
+
     "low_haze": {
         "psi_data": {
             "central": 65,
