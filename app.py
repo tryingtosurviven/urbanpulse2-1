@@ -799,6 +799,24 @@ def reject_order():
     clinic_state["draft"]["active"] = False
     return jsonify({"status": "success"})
 
+@app.get("/api/lta-eta/<facility_id>")
+@require_role("clinic_manager", "admin")
+def lta_eta(facility_id):
+    """
+    Returns live delivery ETA from central warehouse to facility.
+    Uses LTA DataMall TrafficSpeedBands API.
+    Called by logistics.html after a PO is dispatched.
+    """
+    try:
+        from lta_agent import get_delivery_eta
+        eta_data = get_delivery_eta(facility_id.strip().lower())
+        return jsonify({"status": "success", **eta_data})
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "display": "⏱ ETA unavailable",
+        }), 500
 
 @app.route("/access-denied")
 def access_denied():

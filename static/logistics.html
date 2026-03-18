@@ -67,8 +67,26 @@
         <h1>Supply Logistics</h1>
         <p class="subtitle">Live Resupply Operations</p>
         
-        <div id="truck-list-container">
+        <div id="lta-eta-panel" style="
+            background: #0f172a;
+            border: 1px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            color: white;
+        ">
+            <div style="font-size: 0.75rem; color: #7dd3fc; font-weight: 700; letter-spacing: 1px;">
+                🛰 LIVE LTA TRAFFIC DATA
             </div>
+            <div id="eta-display" style="font-size: 1.4rem; font-weight: 800; margin-top: 8px;">
+                Loading ETA...
+            </div>
+            <div id="eta-meta" style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
+                Fetching traffic speed bands from LTA DataMall...
+            </div>
+        </div>
+
+        <div id="truck-list-container"></div>
 
         <div class="history-section">
             <h4>Deliveries This Week (Completed)</h4>
@@ -101,7 +119,6 @@
         const storageKey = 'trucks_' + facilityId;
         let activeTrucks = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
-        // Initialize empty list if needed
         if (activeTrucks.length === 0) {
             activeTrucks.push({
                 idNum: 4, name: "Truck #04", qty: "5,000",
@@ -110,7 +127,6 @@
             localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
         }
 
-        // Add New Order if Qty present and different
         if (newOrderQty) {
             const lastTruck = activeTrucks[0];
             if (!lastTruck || lastTruck.qty !== newOrderQty) {
@@ -127,10 +143,9 @@
             }
         }
 
-        // Selected Truck Index (Defaults to 0 / Top)
         let selectedTruckIndex = 0; 
 
-        // --- 3. RENDER FUNCTION (Handles Display & Clicks) ---
+        // --- 3. RENDER FUNCTION ---
         function renderTrucks() {
             const container = document.getElementById('truck-list-container');
             container.innerHTML = "";
@@ -143,8 +158,6 @@
             activeTrucks.forEach((truck, index) => {
                 const isSelected = (index === selectedTruckIndex);
                 const card = document.createElement('div');
-                
-                // Style based on selection
                 card.className = isSelected ? 'status-card active-focus' : 'status-card';
                 
                 const badgeText = isSelected ? 'LIVE TRACKING' : 'EN ROUTE';
@@ -152,7 +165,6 @@
                 const statusText = isSelected ? '⚡ Entering Last Mile' : '🚛 In Transit';
                 const eta = isSelected ? "~ 12 Minutes" : "~ 45 Minutes"; 
 
-                // HTML Content with Delete Button
                 card.innerHTML = `
                     <button class="delete-btn" onclick="deleteTruck(event, ${index})">&times;</button>
                     <h3>
@@ -172,9 +184,7 @@
                     </div>
                 `;
                 
-                // Click to Select Logic
                 card.onclick = () => selectTruck(index);
-                
                 container.appendChild(card);
             });
             
@@ -182,26 +192,19 @@
         }
 
         // --- 4. ACTION FUNCTIONS ---
-
-        // Select a Truck
         function selectTruck(index) {
             selectedTruckIndex = index;
-            renderTrucks(); // Re-render to update highlighting
+            renderTrucks();
         }
 
-        // Delete a Truck
         window.deleteTruck = function(event, index) {
-            event.stopPropagation(); // Prevent triggering the "Select" click
-            
+            event.stopPropagation();
             if (confirm("Cancel this shipment?")) {
                 activeTrucks.splice(index, 1);
                 localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
-                
-                // Adjust selection if needed
                 if (selectedTruckIndex >= activeTrucks.length) {
                     selectedTruckIndex = Math.max(0, activeTrucks.length - 1);
                 }
-                
                 renderTrucks();
             }
         };
@@ -215,27 +218,29 @@
         var hospitalIcon = L.divIcon({ html: '<div style="font-size:30px;">🏥</div>', className: 'dummy', iconSize: [30, 30], iconAnchor: [15, 15] });
         L.marker([target.lat, target.lng], {icon: hospitalIcon}).addTo(map).bindPopup(`<b>${target.name}</b>`).openPopup();
 
-        var startLat = target.lat - 0.02; var startLng = target.lng - 0.02;
+        var startLat = target.lat - 0.02;
+        var startLng = target.lng - 0.02;
         var truckIcon = L.divIcon({ html: '<div class="truck-icon">🚛</div>', className: 'dummy', iconSize: [40, 40], iconAnchor: [20, 20] });
         var truckMarker = L.marker([startLat, startLng], {icon: truckIcon}).addTo(map);
         
-        // --- 6. DYNAMIC MAP UPDATER ---
+        // --- 6. MAP TOOLTIP ---
         function updateMapTooltip() {
             if (activeTrucks.length > 0) {
                 const currentTruck = activeTrucks[selectedTruckIndex];
-                // Unbind old tooltip and bind new one to ensure text updates
                 truckMarker.unbindTooltip(); 
                 truckMarker.bindTooltip(`${currentTruck.name}<br>Cargo: ${currentTruck.qty}`, {permanent: true, direction: 'right', offset: [10, 0]});
                 truckMarker.setOpacity(1);
             } else {
-                truckMarker.setOpacity(0); // Hide truck if no orders
+                truckMarker.setOpacity(0);
             }
         }
 
         // --- 7. ANIMATION ---
-        let step = 0; const totalSteps = 400; 
+        let step = 0;
+        const totalSteps = 400; 
         function animateTruck() {
-            step++; if (step > totalSteps) step = 0; 
+            step++;
+            if (step > totalSteps) step = 0; 
             const currentLat = startLat + ((target.lat - startLat) * (step / totalSteps));
             const currentLng = startLng + ((target.lng - startLng) * (step / totalSteps));
             truckMarker.setLatLng([currentLat, currentLng]);
@@ -243,7 +248,7 @@
         }
         animateTruck();
 
-        // --- 8. INITIAL HISTORY RENDER ---
+        // --- 8. HISTORY ---
         const historyContainer = document.getElementById('history-list');
         historyContainer.innerHTML = `
             <div class="history-item">
@@ -256,8 +261,40 @@
             </div>
         `;
 
-        // Start App
+        // --- 9. LTA ETA FETCH ---
+        async function fetchLtaEta(fid) {
+            try {
+                const token = localStorage.getItem("urbanpulse_token");
+                const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+                const res = await fetch(`/api/lta-eta/${fid}`, { headers });
+                const data = await res.json();
+
+                const etaDiv = document.getElementById('eta-display');
+                const metaDiv = document.getElementById('eta-meta');
+
+                if (data.status === 'success') {
+                    etaDiv.innerHTML = data.display;
+                    metaDiv.innerHTML = `
+                        📍 ${data.route_label}<br/>
+                        🚗 Avg traffic speed: ${data.avg_speed_kmh} km/h &nbsp;|&nbsp;
+                        📏 Distance: ${data.distance_km} km &nbsp;|&nbsp;
+                        ${data.live_data
+                            ? '🟢 <b>Live LTA data</b>'
+                            : '🟡 Simulated (LTA API unavailable)'}
+                    `;
+                } else {
+                    etaDiv.innerHTML = '⏱ ETA unavailable';
+                    metaDiv.innerHTML = 'LTA data could not be fetched.';
+                }
+            } catch (e) {
+                document.getElementById('eta-display').innerHTML = '⏱ ETA unavailable';
+            }
+        }
+
+        // --- 10. START APP ---
         renderTrucks();
+        fetchLtaEta(facilityId);
+        setInterval(() => fetchLtaEta(facilityId), 120000);
 
     </script>
 </body>
