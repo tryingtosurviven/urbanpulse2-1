@@ -17,11 +17,29 @@ FACILITY_LOCATIONS = {
         "lat": 1.3210,
         "lng": 103.8468,
     },
-    "sgh": {
-        "name": "Singapore General Hospital",
+    "nuh": {
+        "name": "National University Hospital",
+        "area": "west",
+        "lat": 1.2940,
+        "lng": 103.7830,
+    },
+    "cgh": {
+        "name": "Changi General Hospital",
+        "area": "east",
+        "lat": 1.3400,
+        "lng": 103.9630,
+    },
+    "ktph": {
+        "name": "Khoo Teck Puat Hospital",
+        "area": "north",
+        "lat": 1.4240,
+        "lng": 103.8380,
+    },
+    "amk": {
+        "name": "Ang Mo Kio Polyclinic",
         "area": "central",
-        "lat": 1.2796,
-        "lng": 103.8354,
+        "lat": 1.3740,
+        "lng": 103.8450,
     },
     "jurong": {
         "name": "Jurong Polyclinic",
@@ -29,17 +47,17 @@ FACILITY_LOCATIONS = {
         "lat": 1.3329,
         "lng": 103.7436,
     },
+    "tamp": {
+        "name": "Tampines Polyclinic",
+        "area": "east",
+        "lat": 1.3525,
+        "lng": 103.9447,
+    },
     "woodlands": {
         "name": "Woodlands Polyclinic",
         "area": "north",
         "lat": 1.4361,
         "lng": 103.7865,
-    },
-    "tampines": {
-        "name": "Tampines Polyclinic",
-        "area": "east",
-        "lat": 1.3525,
-        "lng": 103.9447,
     },
 }
 

@@ -7,9 +7,24 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <header>
-        <h1>🏙️ UrbanPulse</h1>
-        <p>Agentic AI for Proactive Healthcare Resilience</p>
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 10px 40px;">
+        <div>
+            <h1>🏙️ UrbanPulse</h1>
+            <p>Agentic AI for Proactive Healthcare Resilience</p>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+            <span id="role-badge" style="
+                background:#7c3aed; color:white; 
+                padding:4px 12px; border-radius:20px; 
+                font-size:0.75rem; font-weight:700;
+            "></span>
+            <button onclick="logoutUser()" style="
+                background:#ef4444; color:white; border:none;
+                padding:6px 14px; border-radius:8px; 
+                cursor:pointer; font-weight:600; font-size:0.8rem;
+            ">Logout</button>
+        </div>
     </header>
 
     <div class="container">
@@ -59,5 +74,25 @@
     </footer>
 
     <script src="/static/script.js"></script>
+    <script>
+        // --- AUTH & ROLE DISPLAY ---
+        const role = localStorage.getItem("urbanpulse_role") || "unknown";
+        const userName = localStorage.getItem("urbanpulse_name") || "";
+        const roleBadge = document.getElementById("role-badge");
+        
+        if (roleBadge) {
+            // Displays: Natalie (ADMIN)
+            roleBadge.innerText = `${userName} (${role.replace("_", " ").toUpperCase()})`;
+        }
+
+        // Logout function
+        window.logoutUser = function() {
+            localStorage.removeItem("urbanpulse_token");
+            localStorage.removeItem("urbanpulse_role");
+            localStorage.removeItem("urbanpulse_name");
+            document.cookie = "urbanpulse_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.href = "/login";
+        }
+    </script>
 </body>
 </html>
