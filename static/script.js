@@ -4,6 +4,47 @@
 // - Normalizes outputs for UI
 // - Supports ADMIN/DEMO panels + CLINIC portal auto-dispatch (severe haze only)
 
+// ==========================================
+// 1. AUTHENTICATION HELPERS (New)
+// ==========================================
+function getAuthToken() {
+  return localStorage.getItem("urbanpulse_token") || null;
+}
+
+function authHeaders() {
+  const token = getAuthToken();
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+}
+
+/**
+ * Wrapper around fetch that auto-attaches JWT and handles 401/403.
+ */
+async function authedFetch(url, options = {}) {
+  const mergedOptions = {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...authHeaders(),
+      "Content-Type": "application/json",
+    },
+  };
+
+  const res = await fetch(url, mergedOptions);
+
+  if (res.status === 401) {
+    localStorage.removeItem("urbanpulse_token");
+    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}&reason=expired`;
+    throw new Error("Session expired");
+  }
+
+  if (res.status === 403) {
+    window.location.href = "/access-denied";
+    throw new Error("Access denied");
+  }
+
+  return res;
+}
+
 async function runScenario(scenarioName) {
   const logContainer = document.getElementById("log");
   const statusDiv = document.getElementById("status");
@@ -93,26 +134,23 @@ window.runRegionScenario = runRegionScenario;
 /* --------------------------
    Backend call + fallbacks
 --------------------------- */
-
 async function callScenarioBackend(scenarioName) {
-  // 1) Try /api/run-scenario/<scenario> (POST)
+  // 1) Try /api/run-scenario (Now uses authedFetch)
   try {
-    const res1 = await fetch(`/api/run-scenario/${encodeURIComponent(scenarioName)}`, {
+    const res1 = await authedFetch(`/api/run-scenario/${encodeURIComponent(scenarioName)}`, {
       method: "POST",
       headers: { Accept: "application/json" },
     });
     if (res1.ok) return await safeJson(res1);
-  } catch (_) {
-    // ignore, fallback below
+  } catch (e) {
+    // Only throw if it's an auth error, otherwise fall through
+    if (e.message === "Session expired" || e.message === "Access denied") throw e;
   }
 
-  // 2) Fallback to /api/watsonx-scenario (POST JSON)
-  const res2 = await fetch(`/api/watsonx-scenario`, {
+  // 2) Fallback to watsonx-scenario (Now uses authedFetch)
+  const res2 = await authedFetch(`/api/watsonx-scenario`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+    headers: { Accept: "application/json" },
     body: JSON.stringify({ scenario_key: scenarioName }),
   });
 
@@ -173,7 +211,7 @@ async function maybeAutoDispatch(scenarioName, data) {
 
   try {
     // Confirm order via backend
-    const res = await fetch("/api/clinic-confirm-order", {
+    const res = await authedFetch("/api/clinic-confirm-order", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ confirmed_qty: qty }),
@@ -286,3 +324,46 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+// ==========================================
+// 2. USER UI & LOGOUT (New)
+// ==========================================
+async function doLogout() {
+  const token = getAuthToken();
+  if (token) {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
+    }).catch(() => {});
+  }
+  localStorage.removeItem("urbanpulse_token");
+  localStorage.removeItem("urbanpulse_role");
+  localStorage.removeItem("urbanpulse_name");
+  document.cookie = "urbanpulse_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  window.location.href = "/login";
+}
+
+function renderUserBadge(containerId = "user-badge") {
+  const name = localStorage.getItem("urbanpulse_name") || "Guest";
+  const role = localStorage.getItem("urbanpulse_role") || "";
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = `
+    <span style="font-size:0.82rem; color:#94a3b8;">
+      👤 ${name}
+      <span style="background:rgba(99,102,241,0.2); color:#a5b4fc; border-radius:999px; padding:2px 8px; font-size:0.72rem; margin-left:4px;">${role}</span>
+    </span>
+    <button onclick="doLogout()" style="margin-left:12px; font-size:0.75rem; padding:4px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(239,68,68,0.15); color:#fca5a5; cursor:pointer;">
+      Sign Out
+    </button>
+  `;
+}
+
+// Expose to window for HTML access
+window.doLogout = doLogout;
+window.renderUserBadge = renderUserBadge;
+
+// Auto-render the badge if the container exists on the page
+document.addEventListener("DOMContentLoaded", () => {
+  renderUserBadge("user-badge");
+});

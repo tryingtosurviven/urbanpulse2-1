@@ -9,6 +9,12 @@ from ibm_watsonx_ai.foundation_models import Model
 from ibm_watsonx_ai import Credentials
 import datetime
 
+from dotenv import load_dotenv
+load_dotenv()  # This loads the variables from .env into your system
+
+from auth import require_role, login_endpoint
+app.register_blueprint(login_endpoint)
+
 def write_governance_log(entry: Dict[str, Any]):
     """
     Writes a permanent audit trail of AI decisions to a local file.
@@ -406,8 +412,8 @@ def citizen_portal():
 
 
 @app.route("/clinic")
+@require_role("clinic_manager", "admin")
 def clinic_portal():
-    # Reset view/protocol each time user loads clinic portal
     clinic_state["view"] = "normal"
     clinic_state["protocol"] = "standard"
     clinic_state["draft"]["active"] = False
@@ -420,8 +426,15 @@ def admin_portal():
 
 
 @app.route("/logistics")
+@require_role("clinic_manager", "admin")
 def logistics_portal():
     return send_from_directory("static", "logistics.html")
+
+# PROTECTED — admin only
+@app.route("/admin")
+@require_role("admin")
+def admin_portal():
+    return send_from_directory("static", "admin.html")
 
 @app.route('/api/scenario/<scenario_key>')
 def get_scenario(scenario_key):
@@ -439,6 +452,7 @@ def get_scenario(scenario_key):
 # API: SCENARIO EXECUTION (primary endpoint used by your frontend)
 # ==============================================================================
 @app.post("/api/run-scenario/<scenario_key>")
+@require_role("admin")
 def api_run_scenario(scenario_key):
     try:
         result = run_scenario_with_watsonx_first(scenario_key.strip().lower())
@@ -451,6 +465,7 @@ def api_run_scenario(scenario_key):
 # API: WATSONX SCENARIO (explicit endpoint if you want to call it directly)
 # ==============================================================================
 @app.post("/api/watsonx-scenario")
+@require_role("admin")
 def watsonx_scenario():
     payload = request.json or {}
     raw_key = payload.get("scenario_key", "")
@@ -466,11 +481,10 @@ def watsonx_scenario():
 # API: CLINIC POLLING / ORDERS
 # ==============================================================================
 @app.get("/api/clinic-poll")
+@require_role("clinic_manager", "admin")
 def clinic_poll():
-    # If no scenario has been run yet, no draft exists.
     if not clinic_state["draft"].get("active"):
         return jsonify({"status": "waiting", "current_view": clinic_state["view"], "protocol": clinic_state["protocol"]})
-
     return jsonify({
         "status": "alert_active",
         "current_view": clinic_state["view"],
@@ -482,23 +496,38 @@ def clinic_poll():
 
 
 @app.post("/api/clinic-confirm-order")
+@require_role("clinic_manager", "admin")
 def confirm_order():
     data = request.json or {}
     confirmed = int(data.get("confirmed_qty") or 0)
+ 
+    # IM8 audit: log WHO confirmed the order
+    user = getattr(request, "current_user", {})
+    print(f"[AUDIT] Order confirmed: qty={confirmed} by={user.get('username','unknown')} role={user.get('role','unknown')}")
+ 
     clinic_state["view"] = "approved"
     clinic_state["draft"]["active"] = False
-    return jsonify({"status": "success", "confirmed_qty": confirmed})
+    return jsonify({"status": "success", "confirmed_qty": confirmed, "confirmed_by": user.get("username")})
 
 
 @app.post("/api/clinic-reject-order")
+@require_role("clinic_manager", "admin")
 def reject_order():
+    user = getattr(request, "current_user", {})
+    print(f"[AUDIT] Order rejected by={user.get('username','unknown')}")
     clinic_state["draft"]["active"] = False
     return jsonify({"status": "success"})
 
+# Add access-denied page route 
+@app.route("/access-denied")
+def access_denied():
+    return send_from_directory("static", "access_denied.html"), 403
 
-# ==============================================================================
+@app.route("/login")
+def login_page():
+    return send_from_directory("static", "login.html")
+
 # RUN
-# ==============================================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     app.run(host="0.0.0.0", port=port)

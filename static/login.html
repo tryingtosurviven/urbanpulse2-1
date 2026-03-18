@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UrbanPulse R3 — Secure Login</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1a2a6c 60%, #23074d 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #f1f5f9;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    }
+
+    .logo { font-size: 2rem; margin-bottom: 4px; }
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 0.85rem; color: #94a3b8; margin-bottom: 28px; }
+
+    .field { margin-bottom: 16px; }
+    label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus { border-color: #6366f1; }
+
+    /* Demo user quick-select */
+    .demo-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .pill {
+      font-size: 0.75rem;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.07);
+      cursor: pointer;
+      transition: background 0.18s;
+      color: #cbd5e1;
+    }
+    .pill:hover { background: rgba(99,102,241,0.3); border-color: #6366f1; }
+
+    .pill-label { font-size: 0.72rem; color: #64748b; margin-bottom: 6px; }
+
+    button[type=submit] {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(90deg, #6366f1, #4f46e5);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    button[type=submit]:hover { opacity: 0.88; }
+    button[type=submit]:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #fca5a5;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .role-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+    .badge-admin    { background: #7c3aed22; color: #c4b5fd; border: 1px solid #7c3aed55; }
+    .badge-clinic   { background: #0369a122; color: #7dd3fc; border: 1px solid #0369a155; }
+    .badge-citizen  { background: #05966922; color: #6ee7b7; border: 1px solid #05966955; }
+
+    .im8-note {
+      margin-top: 22px;
+      font-size: 0.72rem;
+      color: #475569;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🏙️</div>
+    <h1>UrbanPulse R3</h1>
+    <p class="subtitle">Secure portal access — authenticated session required</p>
+
+    <!-- Demo quick-fill pills (remove in production) -->
+    <p class="pill-label">Demo accounts (click to fill):</p>
+    <div class="demo-pills">
+      <span class="pill" onclick="fill('admin01','admin123')">
+        Admin <span class="role-badge badge-admin">admin</span>
+      </span>
+      <span class="pill" onclick="fill('clinic_manager01','clinic123')">
+        Clinic Mgr <span class="role-badge badge-clinic">clinic</span>
+      </span>
+      <span class="pill" onclick="fill('citizen01','citizen123')">
+        Citizen <span class="role-badge badge-citizen">citizen</span>
+      </span>
+    </div>
+
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" type="text" placeholder="e.g. clinic_manager01" autocomplete="username" />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+
+    <button type="submit" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="error" id="error-msg"></div>
+
+    <p class="im8-note">
+      🔒 Sessions expire after 8 hours (GovTech IM8 compliant).<br/>
+      All access events are logged for audit.
+    </p>
+  </div>
+
+  <script>
+    // Pre-fill if redirected with ?next= (so user knows why they landed here)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reason") === "expired") {
+      showError("Your session has expired. Please sign in again.");
+    }
+
+    function fill(u, p) {
+      document.getElementById("username").value = u;
+      document.getElementById("password").value = p;
+    }
+
+    async function doLogin() {
+      const btn = document.getElementById("login-btn");
+      const errDiv = document.getElementById("error-msg");
+      errDiv.style.display = "none";
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!username || !password) {
+        showError("Please enter both username and password.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Signing in…";
+
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || "Login failed.");
+          return;
+        }
+
+        // Store token in localStorage for subsequent API calls
+        localStorage.setItem("urbanpulse_token", data.token);
+        localStorage.setItem("urbanpulse_role", data.role);
+        localStorage.setItem("urbanpulse_name", data.name);
+
+        // Also set cookie so server-side @require_role decorator can read it
+        document.cookie = `urbanpulse_token=${data.token}; path=/; SameSite=Strict`;
+
+        // Redirect: go to intended page, or role-based default
+        const next = params.get("next");
+        if (next && next.startsWith("/")) {
+          window.location.href = next;
+        } else {
+          const defaults = { admin: "/admin", clinic_manager: "/clinic", citizen: "/citizen" };
+          window.location.href = defaults[data.role] || "/";
+        }
+
+      } catch (e) {
+        showError("Network error. Please try again.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Sign In";
+      }
+    }
+
+    function showError(msg) {
+      const e = document.getElementById("error-msg");
+      e.textContent = msg;
+      e.style.display = "block";
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") doLogin();
+    });
+  </script>
+</body>
+</html>
