@@ -4,11 +4,13 @@ import time
 import json
 import random
 import datetime
+import anthropic
+
 from typing import Any, Dict, Optional
 
 from flask import Flask, jsonify, request, send_from_directory
-from ibm_watsonx_ai.foundation_models import Model
-from ibm_watsonx_ai import Credentials
+#from ibm_watsonx_ai.foundation_models import Model
+#from ibm_watsonx_ai import Credentials
 from dotenv import load_dotenv
 
 load_dotenv()  # Loads variables from .env into environment
@@ -80,7 +82,7 @@ app.register_blueprint(login_endpoint)
 # ==============================================================================
 clinic_state = {
     "view": "normal",
-    "protocol": "standard",  # standard | autonomous
+    "protocol": "standard",
     "draft": {
         "active": False,
         "facility": "---",
@@ -97,7 +99,7 @@ clinic_state = {
 }
 
 AGENT_SYSTEM = None
-WATSONX_MODEL: Optional[Model] = None
+WATSONX_MODEL = None
 
 
 # ==============================================================================
@@ -150,71 +152,59 @@ def _build_agent_system():
 # ==============================================================================
 # WATSONX INITIALIZATION
 # ==============================================================================
-def _get_watsonx_model() -> Optional[Model]:
-    """
-    Returns a cached watsonx Model if credentials exist, else None.
-    """
-    global WATSONX_MODEL
-    if WATSONX_MODEL is not None:
-        return WATSONX_MODEL
+#def _get_watsonx_model() -> Optional[Model]:
+#    """
+#    Returns a cached watsonx Model if credentials exist, else None.
+#    """
+#    global WATSONX_MODEL
+#    if WATSONX_MODEL is not None:
+#        return WATSONX_MODEL
 
-    if not watsonx_enabled():
-        return None
+#    if not watsonx_enabled():
+#        return None
 
-    creds = Credentials(
-        url=os.getenv("WATSONX_URL"),
-        api_key=os.getenv("WATSONX_API_KEY"),
+#    creds = Credentials(
+#        url=os.getenv("WATSONX_URL"),
+#        api_key=os.getenv("WATSONX_API_KEY"),
+#    )
+
+#    WATSONX_MODEL = Model(
+#        model_id=os.getenv("WATSONX_MODEL_ID"),
+#        credentials=creds,
+#        project_id=os.getenv("WATSONX_PROJECT_ID"),
+#    )
+#    return WATSONX_MODEL
+
+
+def _claude_reason(prompt: str) -> Dict[str, Any]:
+    """
+    Calls Claude API as AI reasoning engine.
+    Drop-in replacement for _watsonx_reason.
+    """
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",  # Fast + cheap for demo
+        max_tokens=450,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
     )
-
-    WATSONX_MODEL = Model(
-        model_id=os.getenv("WATSONX_MODEL_ID"),
-        credentials=creds,
-        project_id=os.getenv("WATSONX_PROJECT_ID"),
-    )
-    return WATSONX_MODEL
-
-
-def _watsonx_reason(prompt: str) -> Dict[str, Any]:
-    """
-    Calls watsonx live at runtime.
-    Returns parsed JSON dict. Raises if parsing fails.
-    """
-    model = _get_watsonx_model()
-    if model is None:
-        raise RuntimeError("watsonx not configured (missing env vars or WATSONX_ENABLED=false)")
-
-    params = {
-        "decoding_method": "greedy",
-        "max_new_tokens": 450,
-        "temperature": 0.2,
-    }
-
-    try:
-        txt = model.generate_text(prompt=prompt, params=params)
-    except TypeError:
-        txt = model.generate(prompt=prompt, params=params)
-
-    if isinstance(txt, dict):
-        text_out = (
-            txt.get("results", [{}])[0].get("generated_text")
-            or txt.get("generated_text")
-            or json.dumps(txt)
-        )
-    else:
-        text_out = str(txt)
-
+    
+    text_out = message.content[0].text
+    
+    # Extract JSON from response
     start = text_out.find("{")
     end = text_out.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        raise ValueError(f"watsonx did not return JSON. Raw: {text_out[:300]}")
+    if start == -1 or end == -1:
+        raise ValueError(f"Claude did not return JSON. Raw: {text_out[:300]}")
+    
+    return json.loads(text_out[start:end + 1])
 
-    json_blob = text_out[start:end + 1]
-    return json.loads(json_blob)
+def claude_enabled() -> bool:
+    return bool(os.getenv("ANTHROPIC_API_KEY"))
 
-
-# ==============================================================================
 # SCENARIO / PROMPTS
-# ==============================================================================
 def _scenario_with_jitter(base: Dict[str, Any]) -> Dict[str, Any]:
     updated = dict(base)
 
@@ -356,42 +346,41 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
     # --------------------------------------------------------------------------
     # 1) Live watsonx (preferred)
     # --------------------------------------------------------------------------
-    if watsonx_enabled():
+    if claude_enabled():
         try:
             if is_dengue:
                 agent_logs.append({
                     "agent": "PublicHealthSentinel",
-                    "action": "Calling watsonx dengue reasoning",
+                    "action": "Calling Claude AI dengue reasoning",
                     "ts": time.time(),
                 })
-                decision = _watsonx_reason(
+                decision = _claude_reason(
                     _build_dengue_watsonx_prompt(scenario_key, scenario["dengue_data"])
                 )
             else:
                 agent_logs.append({
                     "agent": "EnvironmentSentinel",
-                    "action": "Calling watsonx haze reasoning",
+                    "action": "Calling Claude AI haze reasoning",
                     "ts": time.time(),
                 })
-                decision = _watsonx_reason(
+                decision = _claude_reason(
                     _build_haze_watsonx_prompt(scenario_key, scenario["psi_data"])
                 )
 
             used_watsonx = True
             agent_logs.append({
-                "agent": "watsonx",
+                "agent": "ClaudeAI",
                 "action": "Decision returned",
                 "ts": time.time(),
             })
         except Exception as e:
             watsonx_error = str(e)
             agent_logs.append({
-                "agent": "watsonx",
-                "action": "watsonx failed, fallback engaged",
+                "agent": "ClaudeAI",
+                "action": "Claude failed, fallback engaged",
                 "error": watsonx_error,
                 "ts": time.time(),
             })
-
             if not is_demo_mode():
                 raise
 
@@ -532,10 +521,12 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
     # --------------------------------------------------------------------------
     prediction_value = recommended_qty
 
-    if prediction_value > 500:
+    if prediction_value > 500 and not autonomous:
         status_msg = "⚠️ PENDING APPROVAL (High Surge Predicted)"
-        autonomous = False
         governance_note = "AI predicted a surge > 500. Manual verification required per Protocol 4.2."
+    elif autonomous:
+        status_msg = "⚡ AUTO-DISPATCHED (Severe Haze Protocol)"
+        governance_note = "PSI >= 200. Autonomous dispatch authorised under Protocol 3.1."
     else:
         status_msg = "✅ Monitoring (Normal Levels)"
         governance_note = "Prediction within normal operating parameters."

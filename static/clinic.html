@@ -141,6 +141,19 @@
     <a href="/" style="text-decoration: none; color: #667eea; font-weight: bold;">← Back to Home</a>
     <div class="logo"><span style="font-size: 1.5rem;">🏥</span> Ministry of Health | Oversight</div>
     <div id="global-status" class="status-badge"><span class="dot"></span> System Normal</div>
+    <!-- Add inside the header bar -->
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span id="role-badge" style="
+        background:#1e40af; color:white; 
+        padding:4px 12px; border-radius:20px; 
+        font-size:0.75rem; font-weight:700;
+      "></span>
+      <button onclick="logoutUser()" style="
+        background:#ef4444; color:white; border:none;
+        padding:6px 14px; border-radius:8px; 
+        cursor:pointer; font-weight:600; font-size:0.8rem;
+      ">Logout</button>
+    </div>
   </div>
 
   <!-- AI Order Assistant -->
@@ -265,15 +278,38 @@
   <!-- Unified frontend controller -->
   <script src="/static/script.js"></script>
 
+  
   <script>
     let isManualSim = false;
-    /* Facility modal logic */
+
+    // --- AUTH HELPERS ---
+    function getToken() { return localStorage.getItem("urbanpulse_token"); }
+    function authHeaders(extra = {}) {
+      const token = getToken();
+      return { ...(token ? { "Authorization": `Bearer ${token}` } : {}), ...extra };
+    }
+
+    // --- ROLE BADGE & LOGOUT ---
+    const role = localStorage.getItem("urbanpulse_role") || "unknown";
+    const userName = localStorage.getItem("urbanpulse_name") || "";
+    const roleBadge = document.getElementById("role-badge");
+    if (roleBadge) roleBadge.innerText = `${userName} (${role.replace("_", " ").toUpperCase()})`;
+
+    window.logoutUser = function() {
+      localStorage.removeItem("urbanpulse_token");
+      localStorage.removeItem("urbanpulse_role");
+      localStorage.removeItem("urbanpulse_name");
+      document.cookie = "urbanpulse_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.href = "/login";
+    }
+
+    // --- FACILITY MODAL ---
     const facilityData = {
       'ttsh': { name: "Tan Tock Seng Hospital", stock: "1,200", staff: "342", wait: "1.5 Hrs", surge: "Normal" },
-      'nuh': { name: "National University Hosp.", stock: "950", staff: "289", wait: "2.0 Hrs", surge: "Normal" },
-      'cgh': { name: "Changi General Hosp.", stock: "1,050", staff: "310", wait: "1.2 Hrs", surge: "Normal" },
+      'nuh':  { name: "National University Hosp.", stock: "950", staff: "289", wait: "2.0 Hrs", surge: "Normal" },
+      'cgh':  { name: "Changi General Hosp.", stock: "1,050", staff: "310", wait: "1.2 Hrs", surge: "Normal" },
       'ktph': { name: "Khoo Teck Puat Hosp.", stock: "890", staff: "250", wait: "1.8 Hrs", surge: "Normal" },
-      'amk': { name: "Ang Mo Kio Polyclinic", stock: "5,000", staff: "45", wait: "30 Mins", surge: "Normal" },
+      'amk':  { name: "Ang Mo Kio Polyclinic", stock: "5,000", staff: "45", wait: "30 Mins", surge: "Normal" },
       'jurong': { name: "Jurong Polyclinic", stock: "4,200", staff: "38", wait: "45 Mins", surge: "Normal" },
       'tamp': { name: "Tampines Polyclinic", stock: "4,800", staff: "42", wait: "25 Mins", surge: "Normal" },
       'woodlands': { name: "Woodlands Polyclinic", stock: "3,900", staff: "40", wait: "60 Mins", surge: "Busy" }
@@ -285,22 +321,31 @@
       document.getElementById('modal-stock').innerText = data.stock;
       document.getElementById('modal-staff').innerText = data.staff;
       document.getElementById('modal-wait').innerText = data.wait;
-
       const surgeElem = document.getElementById('modal-surge');
       surgeElem.innerText = data.surge;
       surgeElem.style.color = data.surge.includes('CRITICAL') ? '#dc2626' : '#166534';
-
       document.querySelector('.logistics-btn').onclick = function() {
         window.location.href = '/logistics?id=' + id;
       };
-
       document.getElementById('modal-overlay').style.display = 'flex';
     }
     function closeModal(e) { if (e.target.id === 'modal-overlay') e.target.style.display = 'none'; }
 
-    /* Polling & Remote Control */
-    let userDraftVisible = false;
-    let suppressDraftPopupUntil = 0;
+    // --- ALERT MODE ---
+    function activateAlertMode() {
+      const badge = document.getElementById('global-status');
+      badge.className = 'status-badge critical';
+      badge.innerHTML = '<span class="dot"></span> ⚠️ HAZE EMERGENCY';
+      document.querySelectorAll('.card').forEach(card => card.classList.add('critical'));
+    }
+
+    function activateAutonomousMode() {
+      const badge = document.getElementById('global-status');
+      badge.style.background = '#7e22ce';
+      badge.style.color = '#ffffff';
+      badge.style.borderColor = '#a855f7';
+      badge.innerHTML = '⚡ AI AUTONOMOUS PROTOCOL';
+    }
 
     function deactivateAlertMode() {
       const badge = document.getElementById('global-status');
@@ -312,25 +357,31 @@
       document.querySelectorAll('.card').forEach(card => card.classList.remove('critical'));
     }
 
+    // --- POLLING (with auth) ---
+    let userDraftVisible = false;
+    let suppressDraftPopupUntil = 0;
+
     setInterval(async () => {
       try {
-        const res = await fetch('/api/clinic-poll');
+        const res = await fetch('/api/clinic-poll', {
+          headers: authHeaders()
+        });
+
+        if (res.status === 401) {
+          window.location.href = '/login?reason=expired';
+          return;
+        }
+
         const data = await res.json();
 
-        // --- CRITICAL FIX: Only run background updates if we are NOT in manual simulation ---
-        if (!isManualSim) { 
-            const psi = Number(data.psi || 0);
-            const protocol = (data.protocol || "").toLowerCase();
-            const isSevere = protocol === "autonomous" || psi >= 200;
-
-            if (isSevere) {
-                activateAlertMode();
-            } else {
-                deactivateAlertMode();
-            }
+        if (!isManualSim) {
+          const psi = Number(data.psi || 0);
+          const protocol = (data.protocol || "").toLowerCase();
+          const isSevere = protocol === "autonomous" || psi >= 200;
+          if (isSevere) activateAlertMode();
+          else deactivateAlertMode();
         }
-        
-        // Always keep these running so you still get PO drafts while simulating
+
         if (data.current_view === 'logistics') {
           window.location.href = '/logistics';
         }
@@ -348,6 +399,7 @@
       } catch (e) { console.error("Polling error:", e); }
     }, 2000);
 
+    // --- LOGISTICS BUTTON ---
     let isAutoOrdering = false;
 
     function setLogisticsButtonLink({ id = "ttsh", qty = 0 } = {}) {
@@ -358,13 +410,14 @@
       };
     }
 
+    // --- AUTO ORDER (severe haze) ---
     async function executeAutoOrder(qty) {
       if (isAutoOrdering) return;
       isAutoOrdering = true;
 
       await fetch('/api/clinic-confirm-order', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ confirmed_qty: qty })
       });
 
@@ -380,7 +433,7 @@
       document.getElementById('success-overlay').style.display = 'flex';
 
       const poParagraph = document.querySelector('.po-modal p');
-      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched. You will be redirected to tracking shortly.';
+      if (poParagraph) poParagraph.innerText = 'PO auto-dispatched. Redirecting to tracking...';
 
       const closeBtn = document.getElementById('po-close-btn');
       if (closeBtn) closeBtn.style.display = 'none';
@@ -392,32 +445,22 @@
       setTimeout(() => { isAutoOrdering = false; }, 5000);
     }
 
+    // --- DRAFT PANEL ---
     function showDraftPanel(draft) {
-      const panel = document.getElementById('draft-panel');
-      
-      // Update basic info
       document.getElementById('draft-id').innerText = draft.id;
       document.getElementById('draft-facility').innerText = "📍 For: " + (draft.facility || "Tan Tock Seng Hospital");
       document.getElementById('draft-qty').value = draft.qty;
-
-      // Update Phase 3 Governance Note (This is the "Proof" for judges)
       const govElem = document.getElementById('draft-governance');
-      if (draft.governance_log) {
-          govElem.innerText = draft.governance_log;
-      } else {
-          govElem.innerText = "Standard manual review triggered.";
-      }
-
-      panel.classList.add('visible');
+      govElem.innerText = draft.governance_log || "Standard manual review triggered.";
+      document.getElementById('draft-panel').classList.add('visible');
       userDraftVisible = true;
     }
 
     async function approveDraft() {
       const newQty = document.getElementById('draft-qty').value;
-
       await fetch('/api/clinic-confirm-order', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ confirmed_qty: newQty })
       });
 
@@ -444,27 +487,15 @@
     }
 
     async function rejectDraft() {
-      await fetch('/api/clinic-reject-order', { method: 'POST' });
+      await fetch('/api/clinic-reject-order', {
+        method: 'POST',
+        headers: authHeaders()
+      });
       document.getElementById('draft-panel').classList.remove('visible');
       userDraftVisible = false;
     }
 
-    function activateAlertMode() {
-      const badge = document.getElementById('global-status');
-      badge.className = 'status-badge critical';
-      badge.innerHTML = '<span class="dot"></span> ⚠️ HAZE EMERGENCY';
-      document.querySelectorAll('.card').forEach(card => card.classList.add('critical'));
-    }
-
-    function activateAutonomousMode() {
-      const badge = document.getElementById('global-status');
-      badge.style.background = '#7e22ce';
-      badge.style.color = '#ffffff';
-      badge.style.borderColor = '#a855f7';
-      badge.innerHTML = '⚡ AI AUTONOMOUS PROTOCOL';
-    }
-
-    /* Chat actions */
+    // --- CHAT BOX ---
     let assistantIsRunning = false;
     let lastStatusEl = null;
 
@@ -472,36 +503,27 @@
 
     function escapeHtml(str) {
       return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
+        .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
 
     function chatAdd(text, opts = {}) {
       const box = getChatBox();
       if (!box) return;
-
       const line = document.createElement('div');
       line.className = "chat-line";
       line.innerHTML = `<span class="chat-label">UrbanPulse:</span> ${escapeHtml(text)}`;
-
       if (opts.status) {
         if (lastStatusEl && lastStatusEl.parentNode === box) {
           lastStatusEl.innerHTML = line.innerHTML;
-          lastStatusEl.className = line.className;
           box.scrollTop = box.scrollHeight;
           return;
         }
         lastStatusEl = line;
       }
-
       box.appendChild(line);
-
-      const maxLines = 10;
-      while (box.children.length > maxLines) box.removeChild(box.firstElementChild);
-
+      while (box.children.length > 10) box.removeChild(box.firstElementChild);
       box.scrollTop = box.scrollHeight;
     }
 
@@ -510,14 +532,9 @@
       if (!box) return;
       box.innerHTML = '';
       lastStatusEl = null;
-
       const line = document.createElement('div');
       line.className = "chat-line";
-      line.innerHTML = `
-        <span class="chat-label">UrbanPulse:</span>
-        Singapore Avg PSI (24-HR): <span id="sg-avg-psi">—</span>
-        (<span id="sg-avg-status">—</span>). Select a scenario to analyze hospital-specific resupply needs.
-      `;
+      line.innerHTML = `<span class="chat-label">UrbanPulse:</span> Singapore Avg PSI (24-HR): <span id="sg-avg-psi">—</span> (<span id="sg-avg-status">—</span>). Select a scenario to analyze hospital-specific resupply needs.`;
       box.appendChild(line);
     }
 
@@ -529,17 +546,7 @@
       });
     }
 
-    function extractRecommendedQty(result, scenarioKey) {
-      const supply = result?.supply_chain_actions || result?.supply || result?.procurement || {};
-      const direct = supply.recommended_qty ?? supply.qty ?? supply.recommended ?? result?.recommended_qty ?? result?.qty;
-      const parsed = parseInt(direct, 10);
-      if (!Number.isNaN(parsed) && parsed > 0) return parsed;
-
-      if (scenarioKey === 'severe_haze') return 1200;
-      if (scenarioKey === 'moderate_haze') return 600;
-      return 250;
-    }
-
+    // --- PSI HELPERS ---
     function psiCategory(psi) {
       if (psi <= 50) return "Good";
       if (psi <= 100) return "Moderate";
@@ -548,120 +555,116 @@
       return "Hazardous";
     }
 
-    /* Predictive burn-rate mapping */
-    function predictBurnRateHours(psi, scenarioKey) {
-      const p = Number(psi);
-      if (Number.isFinite(p)) {
-        if (p >= 200) return 4;
-        if (p >= 101) return 14;
-        return 72;
-      }
-      if (scenarioKey === 'severe_haze') return 4;
-      if (scenarioKey === 'moderate_haze') return 14;
-      return 72;
+    function extractRecommendedQty(result, scenarioKey) {
+      const supply = result?.supply_chain_actions || {};
+      const val = supply.recommended_qty ?? result?.recommended_qty;
+      const parsed = parseInt(val, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+      if (scenarioKey === 'severe_haze') return 1200;
+      if (scenarioKey === 'moderate_haze') return 600;
+      return 250;
     }
 
     function extractPsiDict(result) {
-      const raw = result?.raw_data || result?.data || {};
-      return (
-        result?.environmental_data?.psi_by_region ||
-        raw?.psi_data ||
-        result?.psi_data ||
-        {}
-      );
+      const raw = result?.raw_data || {};
+      return raw?.psi_data || result?.psi_data || {};
     }
 
     function computeAvgPsi(psiDict) {
-      if (!psiDict || typeof psiDict !== "object") return null;
-      const vals = Object.values(psiDict).map(v => Number(v)).filter(v => Number.isFinite(v));
+      const vals = Object.values(psiDict).map(Number).filter(isFinite);
       if (!vals.length) return null;
       return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
     }
 
     function setFakeSingaporeAvgPsi() {
-      const fakePsi = 68; // demo fallback
-      const status = psiCategory(fakePsi);
-      const psiEl = document.getElementById("sg-avg-psi");
-      const statusEl = document.getElementById("sg-avg-status");
-      if (psiEl) psiEl.innerText = String(fakePsi);
-      if (statusEl) statusEl.innerText = status;
+      const el = document.getElementById("sg-avg-psi");
+      const st = document.getElementById("sg-avg-status");
+      if (el) el.innerText = "68";
+      if (st) st.innerText = "Moderate";
     }
 
     function updateSingaporeAvgPsi(result) {
-      const psiDict = extractPsiDict(result);
-      const avg = computeAvgPsi(psiDict);
-      if (avg == null) {
-        setFakeSingaporeAvgPsi();
-        return;
-      }
-      const status = psiCategory(avg);
-      const psiEl = document.getElementById("sg-avg-psi");
-      const statusEl = document.getElementById("sg-avg-status");
-      if (psiEl) psiEl.innerText = String(avg);
-      if (statusEl) statusEl.innerText = status;
+      const avg = computeAvgPsi(extractPsiDict(result));
+      if (avg == null) { setFakeSingaporeAvgPsi(); return; }
+      const el = document.getElementById("sg-avg-psi");
+      const st = document.getElementById("sg-avg-status");
+      if (el) el.innerText = String(avg);
+      if (st) st.innerText = psiCategory(avg);
     }
 
+    // --- MAIN: RUN CLINIC ASSISTANT ---
     async function runClinicAssistant(scenarioKey) {
-        if (assistantIsRunning) return;
-        assistantIsRunning = true;
-        setScenarioButtonsEnabled(false);
+      if (assistantIsRunning) return;
+      assistantIsRunning = true;
+      setScenarioButtonsEnabled(false);
 
-        chatAdd(`[THOUGHT] Initializing UrbanPulse Sentinel for ${scenarioKey}...`, { status: true });
+      chatAdd(`[THOUGHT] Initializing UrbanPulse Sentinel for ${scenarioKey}...`, { status: true });
 
-        try {
-            const result = await window.runScenario(scenarioKey);
-            updateSingaporeAvgPsi(result);
+      try {
+        const result = await window.runScenario(scenarioKey);
+        updateSingaporeAvgPsi(result);
 
-            // --- ADD THE LOGS HERE (After the result comes back) ---
-            chatAdd(`[THOUGHT] Analyzing regional PSI trends...`, { status: true });
-            chatAdd(`[GOVERNANCE] Checking Protocol 4.2 thresholds...`, { status: true });
+        chatAdd(`[THOUGHT] Analyzing regional PSI trends...`, { status: true });
+        chatAdd(`[GOVERNANCE] Checking Protocol 4.2 thresholds...`, { status: true });
 
-            const qty = extractRecommendedQty(result, scenarioKey);
-            const supply = result?.supply_chain_actions;
+        const qty = extractRecommendedQty(result, scenarioKey);
+        const supply = result?.supply_chain_actions || {};
+        const isAuto = supply.autonomous === true;
 
-            chatAdd(`[ACTION] Recommended Qty: ${qty}. Safety Gate: ${supply.autonomous ? 'Auto' : 'Human-in-loop'}`, { status: true });
-            
-            // ... rest of your existing code (showing the draft panel) ...
+        chatAdd(`[ACTION] Recommended Qty: ${qty}. Safety Gate: ${isAuto ? 'Auto-dispatch ⚡' : 'Human-in-loop'}`, { status: true });
 
-        } catch (e) {
-            chatAdd(`[ERROR] System fault: ${e.message}`, { status: true });
-        } finally {
-            assistantIsRunning = false;
-            setScenarioButtonsEnabled(true);
-        }
-    }
-
-    function updateSimValue(val) {
-        isManualSim = true; 
-        document.getElementById('slider-val-badge').innerText = val;
-        
-        const badge = document.getElementById('global-status');
-        const cards = document.querySelectorAll('.card');
-        
-        // Tier 1: Hazardous / Very Unhealthy (201+)
-        if (val >= 201) {
-            badge.className = 'status-badge critical';
-            badge.style.background = '#fef2f2'; // Soft Red
-            badge.style.color = '#991b1b';
-            badge.style.borderColor = '#fecaca';
-            badge.innerHTML = '<span class="dot" style="background: #ef4444;"></span> 🔴 HAZARDOUS EMERGENCY';
-            cards.forEach(c => c.classList.add('critical'));
-            
-        // Tier 2: Unhealthy (101 - 200)
-        } else if (val >= 101) {
-            badge.className = 'status-badge'; 
-            badge.style.background = '#fffbeb'; // Amber/Yellow
-            badge.style.color = '#92400e';
-            badge.style.borderColor = '#fde68a';
-            badge.innerHTML = '<span class="dot" style="background: #f59e0b;"></span> 🟠 UNHEALTHY STATUS';
-            cards.forEach(c => c.classList.remove('critical'));
-            
-        // Tier 3: Moderate / Good (0 - 100)
+        if (isAuto) {
+          chatAdd(`[AUTO-DISPATCH] PSI critical — executing autonomous protocol...`, { status: true });
+          activateAutonomousMode();
+          await executeAutoOrder(qty);
         } else {
-            isManualSim = false; 
-            deactivateAlertMode(); // Resets to Green "System Normal"
+          // Show draft panel for human approval
+          const draft = result?.supply_chain_actions || {};
+          showDraftPanel({
+            id: draft.po_id || "PO-PENDING",
+            facility: "Tan Tock Seng Hospital (HQ)",
+            qty: qty,
+            governance_log: draft.governance?.why || "Manual review required per Protocol 4.2."
+          });
         }
+
+      } catch (e) {
+        chatAdd(`[ERROR] System fault: ${e.message}`, { status: true });
+      } finally {
+        assistantIsRunning = false;
+        setScenarioButtonsEnabled(true);
+      }
     }
+
+    // --- PSI SLIDER ---
+    function updateSimValue(val) {
+      isManualSim = true;
+      document.getElementById('slider-val-badge').innerText = val;
+      const badge = document.getElementById('global-status');
+      const cards = document.querySelectorAll('.card');
+      if (val >= 201) {
+        badge.className = 'status-badge critical';
+        badge.style.background = '#fef2f2';
+        badge.style.color = '#991b1b';
+        badge.style.borderColor = '#fecaca';
+        badge.innerHTML = '<span class="dot" style="background:#ef4444;"></span> 🔴 HAZARDOUS EMERGENCY';
+        cards.forEach(c => c.classList.add('critical'));
+      } else if (val >= 101) {
+        badge.className = 'status-badge';
+        badge.style.background = '#fffbeb';
+        badge.style.color = '#92400e';
+        badge.style.borderColor = '#fde68a';
+        badge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span> 🟠 UNHEALTHY STATUS';
+        cards.forEach(c => c.classList.remove('critical'));
+      } else {
+        isManualSim = false;
+        deactivateAlertMode();
+      }
+    }
+
+    // --- INIT ---
+    setFakeSingaporeAvgPsi();
+
   </script>
 
 </body>
