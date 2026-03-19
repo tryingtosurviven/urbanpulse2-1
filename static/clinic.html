@@ -232,6 +232,9 @@
         cursor:pointer; font-weight:600; font-size:0.8rem;
       ">Logout</button>
     </div>
+    <div id="broadcast-ticker" style="display:none; background:#ef4444; color:white; padding:10px; font-weight:800; text-align:center; position:relative; overflow:hidden; z-index: 99; border-bottom: 2px solid #b91c1c;">
+        <span id="ticker-text" style="font-size:0.9rem; letter-spacing: 0.5px;">📢 MOH DIRECTIVE: [System Message]</span>
+    </div>
   </div>
 
   <div id="admin-only-panel" style="
@@ -276,6 +279,19 @@
               🔄 Reset System
           </button>
       </div>
+
+      <div style="display:flex; gap:8px; width:100%; margin-top:16px; border-top:1px solid #4f46e5; padding-top:16px; align-items: center;">
+          <span style="font-size: 0.7rem; font-weight: 800; color: #a5b4fc; white-space: nowrap;">HQ COMMS:</span>
+          <input type="text" id="broadcast-msg" placeholder="Enter MOH HQ directive to all clinics..." 
+                 style="flex:1; padding:10px; border-radius:8px; border:none; background:#0f172a; color:white; font-size:0.85rem; border: 1px solid #312e81;">
+          <button onclick="sendBroadcast()" style="background:#6366f1; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;">
+              📣 Send
+          </button>
+          <button onclick="clearBroadcast()" style="background:#374151; color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:700; cursor:pointer;">
+              ✖ Clear
+          </button>
+      </div>
+
       <div id="audit-log-display" style="
           display:none; margin-top:12px;
           background:#0f172a; padding:12px;
@@ -580,6 +596,16 @@
         if (res.status === 401) { window.location.href = '/login?reason=expired'; return; }
 
         const data = await res.json();
+        
+        const ticker = document.getElementById('broadcast-ticker');
+        const tickerTxt = document.getElementById('ticker-text');
+        if (data.broadcast_msg && data.broadcast_msg.trim() !== "") {
+            ticker.style.display = 'block';
+            tickerTxt.innerText = "📢 MOH DIRECTIVE: " + data.broadcast_msg;
+        } else {
+            ticker.style.display = 'none';
+        }
+
         const statusEl = document.getElementById('live-status-indicator');
         const badge = document.getElementById('global-status'); // Header Badge
 
@@ -856,6 +882,29 @@
         btn.style.opacity = enabled ? "1" : "0.6";
         btn.style.cursor = enabled ? "pointer" : "not-allowed";
       });
+    }
+
+    // Admin Broadcast Functions ---
+    async function sendBroadcast() {
+        const msg = document.getElementById('broadcast-msg').value;
+        if (!msg) return;
+        
+        await fetch('/api/admin-broadcast', {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ message: msg })
+        });
+        chatAdd(`📡 [HQ] Broadcast directive sent to all terminals.`);
+    }
+
+    async function clearBroadcast() {
+        await fetch('/api/admin-broadcast', {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ message: "" })
+        });
+        document.getElementById('broadcast-msg').value = "";
+        chatAdd(`🔄 [HQ] Broadcast cleared.`);
     }
 
     // --- PSI HELPERS ---

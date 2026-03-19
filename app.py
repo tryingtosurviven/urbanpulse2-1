@@ -25,6 +25,8 @@ VALID_SCENARIOS = {
     "dengue_high",
 }
 
+current_broadcast_message = ""
+
 def write_governance_log(entry: Dict[str, Any]):
     """
     Writes a permanent JSON audit trail of AI decisions.
@@ -77,7 +79,7 @@ APP_VERSION = "urbanpulse-r3-haze-dengue-1.0"
 
 app = Flask(__name__)
 
-from auth import require_role, login_endpoint  # noqa: E402
+from auth import require_role, login_endpoint 
 
 app.register_blueprint(login_endpoint)
 
@@ -105,7 +107,24 @@ clinic_state = {
 AGENT_SYSTEM = None
 WATSONX_MODEL = None
 
+# AI REASONING (CLAUDE)
+def _claude_reason(prompt: str) -> Dict[str, Any]:
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=450,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    text_out = message.content[0].text
+    start = text_out.find("{")
+    end = text_out.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError("Claude did not return JSON.")
+    return json.loads(text_out[start:end + 1])
 
+def claude_enabled() -> bool:
+    return bool(os.getenv("ANTHROPIC_API_KEY"))
+    
 # ==============================================================================
 # HELPERS
 # ==============================================================================
@@ -131,6 +150,15 @@ def _risk_from_dengue(highest_cases: int) -> str:
     if highest_cases >= 10:
         return "MEDIUM"
     return "LOW"
+
+def _scenario_with_jitter(base: Dict[str, Any]) -> Dict[str, Any]:
+    updated = dict(base)
+    if "psi_data" in base:
+        updated["psi_data"] = {k: max(0, int(v) + random.randint(-3, 3)) for k, v in base["psi_data"].items()}
+    if "dengue_data" in base:
+        updated["dengue_data"] = {k: max(0, int(v) + random.randint(-2, 2)) for k, v in base["dengue_data"].items()}
+        updated["projected_cases"] = max(updated["dengue_data"].values()) if updated["dengue_data"] else 0
+    return updated
 
 
 def _build_agent_system():
@@ -178,54 +206,6 @@ def _build_agent_system():
 #        project_id=os.getenv("WATSONX_PROJECT_ID"),
 #    )
 #    return WATSONX_MODEL
-
-
-def _claude_reason(prompt: str) -> Dict[str, Any]:
-    """
-    Calls Claude API as AI reasoning engine.
-    Drop-in replacement for _watsonx_reason.
-    """
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",  # Fast + cheap for demo
-        max_tokens=450,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-    
-    text_out = message.content[0].text
-    
-    # Extract JSON from response
-    start = text_out.find("{")
-    end = text_out.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError(f"Claude did not return JSON. Raw: {text_out[:300]}")
-    
-    return json.loads(text_out[start:end + 1])
-
-def claude_enabled() -> bool:
-    return bool(os.getenv("ANTHROPIC_API_KEY"))
-
-# SCENARIO / PROMPTS
-def _scenario_with_jitter(base: Dict[str, Any]) -> Dict[str, Any]:
-    updated = dict(base)
-
-    if "psi_data" in base and isinstance(base["psi_data"], dict):
-        updated["psi_data"] = {
-            region: max(0, int(val) + random.randint(-3, 3))
-            for region, val in base["psi_data"].items()
-        }
-
-    if "dengue_data" in base and isinstance(base["dengue_data"], dict):
-        updated["dengue_data"] = {
-            region: max(0, int(val) + random.randint(-2, 2))
-            for region, val in base["dengue_data"].items()
-        }
-        updated["projected_cases"] = max(updated["dengue_data"].values()) if updated["dengue_data"] else 0
-
-    return updated
 
 
 def _policy_autonomous_only_for_severe(scenario_key: str, risk_level: str, highest_value: int) -> bool:
@@ -326,11 +306,6 @@ Rules:
 # CORE: SCENARIO EXECUTION
 # ==============================================================================
 def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
-    """
-    Main function:
-    - Haze: tries live watsonx first, then local MAS fallback.
-    - Dengue: tries live watsonx first, then deterministic local fallback.
-    """
     global AGENT_SYSTEM, clinic_state
 
     from scenarios import DEMO_SCENARIOS
@@ -561,7 +536,7 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         "projected_cases": highest_value if is_dengue else None,
         "risk_level": risk_level,
         "governance_log": governance_note,
-        "dengue_data": scenario.get("dengue_data") if is_dengue else None,  # ← ADD THIS
+        "dengue_data": scenario.get("dengue_data") if is_dengue else None,
     }
 
     write_governance_log(clinic_state["draft"])
@@ -668,6 +643,7 @@ def home():
 
 
 @app.route("/citizen")
+@require_role("citizen", "clinic_manager", "admin")
 def citizen_portal():
     return send_from_directory("static", "citizen.html")
 
@@ -795,10 +771,11 @@ def clinic_poll():
         })
 
     return jsonify({
-        "status": "alert_active",
+        "status": "alert_active" if clinic_state["draft"]["active"] else "waiting",
         "current_view": clinic_state["view"],
         "protocol": clinic_state["protocol"],
         "draft": clinic_state["draft"],
+        "broadcast_msg": current_broadcast_message,
         "psi": clinic_state["draft"].get("psi", 0) or 0,
         "projected_cases": clinic_state["draft"].get("projected_cases", 0) or 0,
         "alert_message": clinic_state["draft"].get("reason", ""),
@@ -880,9 +857,24 @@ def admin_reset():
     clinic_state["draft"]["projected_cases"] = 0
     clinic_state["draft"]["risk_level"] = "LOW"
     clinic_state["draft"]["governance_log"] = ""
-    clinic_state["draft"]["dengue_data"] = None  # ← ADD THIS
+    clinic_state["draft"]["dengue_data"] = None
+    global current_broadcast_message
+    current_broadcast_message = ""
     return jsonify({"status": "success"})
 
+@app.route('/api/admin-broadcast', methods=['POST'])
+@require_role("admin")
+def admin_broadcast():
+    global current_broadcast_message
+    
+    # In your system, user info is attached to request.current_user by the decorator
+    user = getattr(request, "current_user", {})
+    if user.get('role') != 'admin':
+        return jsonify({"status": "error", "message": "Unauthorized"}), 403
+    
+    data = request.json or {}
+    current_broadcast_message = data.get('message', '')
+    return jsonify({"status": "success", "broadcast": current_broadcast_message})
 @app.route("/access-denied")
 def access_denied():
     return send_from_directory("static", "access_denied.html"), 403
