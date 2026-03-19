@@ -778,6 +778,9 @@ def clinic_poll():
             "status": "waiting",
             "current_view": clinic_state["view"],
             "protocol": clinic_state["protocol"],
+            "psi": 0,           # ← ADD THIS
+            "projected_cases": 0,  # ← ADD THIS
+            "draft": {"active": False},  # ← ADD THIS
         })
 
     return jsonify({
@@ -844,22 +847,13 @@ def lta_eta(facility_id):
 @require_role("admin")
 def admin_reset():
     """Wipes the global state so all clinic managers return to normal."""
-    global clinic_state
     clinic_state["view"] = "normal"
     clinic_state["protocol"] = "standard"
-    clinic_state["draft"] = {
-        "active": False,
-        "facility": "---",
-        "id": "---",
-        "qty": 0,
-        "cost": "$0",
-        "reason": "",
-        "autonomous": False,
-        "psi": 0,
-        "projected_cases": 0,
-        "risk_level": "LOW",
-        "governance_log": "",
-    }
+    clinic_state["draft"]["active"] = False
+    clinic_state["draft"]["psi"] = 0
+    clinic_state["draft"]["projected_cases"] = 0
+    clinic_state["draft"]["risk_level"] = "LOW"
+    clinic_state["draft"]["governance_log"] = ""
     return jsonify({"status": "success"})
 
 @app.route("/access-denied")

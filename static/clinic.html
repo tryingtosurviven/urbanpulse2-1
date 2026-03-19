@@ -435,8 +435,10 @@
     }
 
     // --- POLLING (with auth) ---
+    // --- POLLING (with auth) ---
     let userDraftVisible = false;
     let suppressDraftPopupUntil = 0;
+    let isAdminManualOverride = false;
 
     setInterval(async () => {
       try {
@@ -445,95 +447,74 @@
 
         const data = await res.json();
         const statusEl = document.getElementById('live-status-indicator');
+        const badge = document.getElementById('global-status'); // Header Badge
 
-        
-          const psi = Number(data.psi || 0);
-          const protocol = (data.protocol || "").toLowerCase();
-          
-          // --- DYNAMIC STATUS TEXT & CARD COLORS ---
+        const psi = Number(data.psi || 0);
+        const protocol = (data.protocol || "").toLowerCase();
+
+        if (!isAdminManualOverride) {  
           if (psi >= 200 || protocol === "autonomous") {
-              // SEVERE CASE
-              if (statusEl) {
-                  statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`;
-                  statusEl.style.color = "#ef4444"; 
+              // SEVERE STATE
+              if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
+              if (badge) {
+                  badge.className = 'status-badge critical';
+                  badge.innerHTML = '<span class="dot"></span> ⚠️ SEVERE HAZE';
+                  badge.style.background = ''; // Clear manual styles
               }
-              activateAlertMode(); // Turns cards Red
+              activateAlertMode();
           } 
           else if (psi >= 101) {
-              // MODERATE CASE
-              if (statusEl) {
-                  statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`;
-                  statusEl.style.color = "#f59e0b"; 
+              // MODERATE STATE - FIX FOR CLINIC MANAGER
+              if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
+              if (badge) {
+                  badge.className = 'status-badge'; 
+                  badge.style.background = '#fffbeb'; // Amber background
+                  badge.style.color = '#92400e';
+                  badge.style.borderColor = '#fde68a';
+                  badge.innerHTML = `<span class="dot" style="background: #f59e0b;"></span> ⚠️ MODERATE HAZE`;
               }
-              // Set cards to Amber
-              document.querySelectorAll('.card').forEach(c => {
-                  c.classList.remove('critical');
-                  c.classList.add('moderate');
-              });
+              document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
           } 
           else {
-              // --- UPDATED: SITUATION LOW / NORMAL CASE ---
+              // NORMAL / LOW STATE
               if (statusEl) {
-                  // If there is data but it's low, show SITUATION: LOW
                   if (data.psi > 0 || (data.draft && data.draft.active)) {
-                      statusEl.innerHTML = `● SITUATION: LOW RISK (CLEAR)`;
-                      statusEl.style.color = "#10b981"; // Green
+                      statusEl.innerHTML = `● SITUATION: LOW RISK (CLEAR)`; statusEl.style.color = "#10b981";
+                      if (badge) { badge.innerHTML = '<span class="dot"></span> LOW HAZE'; }
                   } else {
-                      statusEl.innerHTML = `● Monitoring for incoming alerts...`;
-                      statusEl.style.color = "#10b981";
+                      statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981";
+                      if (badge) {
+                          badge.className = 'status-badge';
+                          badge.style.background = ''; 
+                          badge.style.color = '';
+                          badge.style.borderColor = '';
+                          badge.innerHTML = '<span class="dot"></span> System Normal';
+                      }
                   }
               }
-
-              // CRITICAL: Reset all cards to default white
-              document.querySelectorAll('.card').forEach(c => {
-                  c.classList.remove('critical', 'moderate');
-                  // Remove inline styles that might have been stuck from the slider or previous alerts
-                  c.style.borderLeft = '';
-                  c.style.background = '';
-              });
-
-              // Reset indicator text inside cards
-              document.querySelectorAll('.stock-indicator').forEach(i => {
-                  i.style.background = '';
-                  i.style.color = '';
-                  i.innerText = 'Supply Healthy';
-              });
-
-              deactivateAlertMode(); // Resets the top system badge to "System Normal"
+              document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical', 'moderate'); c.style.borderLeft = ''; c.style.background = ''; });
+              document.querySelectorAll('.stock-indicator').forEach(i => { i.style.background = ''; i.style.color = ''; i.innerText = 'Supply Healthy'; });
           }
-
-          // Auto-trigger redirect for Autonomous Severe Haze
-          if (protocol === "autonomous" && !isAdmin && !isAutoOrdering) {
-              executeAutoOrder(data.draft ? data.draft.qty : 1200);
-          }
-
-        // Handle manual view redirects
-        if (data.current_view === 'logistics') {
-          window.location.href = '/logistics';
         }
 
-        // Handle Draft PO Appearance and Chat Logs for Clinic Manager
-        if (
-          Date.now() > suppressDraftPopupUntil &&
-          !userDraftVisible &&
-          data.draft &&
-          data.draft.active &&
-          data.protocol !== 'autonomous' &&
-          !isAdmin 
-        ) {
-          showDraftPanel(data.draft);
+        // Auto-trigger redirect for Autonomous Severe Haze
+        if (protocol === "autonomous" && !isAdmin && !isAutoOrdering) {
+            executeAutoOrder(data.draft ? data.draft.qty : 1200);
+        }
 
+        if (data.current_view === 'logistics') { window.location.href = '/logistics'; }
+
+        // Handle Draft PO Appearance
+        if (Date.now() > suppressDraftPopupUntil && !userDraftVisible && data.draft && data.draft.active && data.protocol !== 'autonomous' && !isAdmin) {
+          showDraftPanel(data.draft);
           const riskLevel = data.draft.risk_level || "UNKNOWN";
           const qty = data.draft.qty || 0;
           const psiVal = data.draft.psi ? `PSI: ${data.draft.psi}` : `Cases: ${data.draft.projected_cases}`;
-          
           chatAdd(`🚨 [ALERT] MOH System has detected a health surge event.`);
           chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | ${psiVal}`);
-          chatAdd(`🤖 [AI DECISION] Claude AI has recommended ${qty} units N95 masks.`);
-          chatAdd(`⚖️ [GOVERNANCE] ${data.draft.governance_log || 'Manual review required.'}`);
-          chatAdd(`📋 [ACTION REQUIRED] Please review and approve/reject the Draft PO below.`);
+          chatAdd(`🤖 [AI DECISION] Claude AI recommended ${qty} units N95 masks.`);
+          chatAdd(`📋 [ACTION REQUIRED] Please review the Draft PO below.`);
         }
-
       } catch (e) { console.error("Polling error:", e); }
     }, 2000);
 
@@ -630,12 +611,16 @@
     }
 
     async function rejectDraft() {
-      await fetch('/api/clinic-reject-order', {
-        method: 'POST',
-        headers: authHeaders()
-      });
-      document.getElementById('draft-panel').classList.remove('visible');
-      userDraftVisible = false;
+        // We do NOT call the backend reset here anymore.
+        // We just hide the draft panel for this user.
+        document.getElementById('draft-panel').classList.remove('visible');
+        userDraftVisible = false;
+        
+        // Optional: Add a note to the chat so the manager knows it was hidden locally
+        chatAdd(`ℹ️ [LOCAL] Draft PO hidden. Situation remains active until Admin reset.`);
+        
+        // Prevent the popup from coming back immediately
+        suppressDraftPopupUntil = Date.now() + 60000; // Suppress for 1 minute
     }
 
     // --- CHAT BOX ---
@@ -764,6 +749,7 @@
 
             // --- ROLE-BASED BRANCHING ---
             if (isAdmin) {
+                isAdminManualOverride = true; // ← ADD THIS
                 const badge = document.getElementById('global-status');
                 const label = scenarioKey.replace(/_/g, ' ').toUpperCase();
                 
@@ -836,27 +822,33 @@
         }
     }
 
+    let isResetting = false;
+
     async function triggerReset() {
+        if (isResetting) return; // ← prevent double-firing
+        isResetting = true;
+
         try {
-            await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
+            const res = await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
+            if (!res.ok) throw new Error('Reset failed on server');
             
+            isAdminManualOverride = false;
             chatClear();
+            deactivateAlertMode();
 
             const badge = document.getElementById('global-status');
-            badge.className = 'status-badge'; // Revert to base green style
-            // --- CLEAN UP THE MANUAL STYLES WE ADDED ---
+            badge.className = 'status-badge';
             badge.style.background = ''; 
             badge.style.color = '';
             badge.style.borderColor = '';
             badge.innerHTML = '<span class="dot"></span> System Normal';
-            // 4. Reset Status Indicator text (Green Monitoring line)
+
             const statusEl = document.getElementById('live-status-indicator');
             if (statusEl) {
                 statusEl.innerHTML = `● Monitoring for incoming alerts...`;
                 statusEl.style.color = "#10b981";
             }
 
-            // 5. Reset all cards and indicators to default white
             document.querySelectorAll('.card').forEach(c => {
                 c.classList.remove('critical', 'moderate');
                 c.style.borderLeft = '';
@@ -867,8 +859,12 @@
             });
 
             chatAdd(`🔄 [SYSTEM] State reset. All alerts cleared.`);
+
         } catch (e) {
             console.error("Reset failed", e);
+            chatAdd(`❌ [ERROR] Reset failed: ${e.message}`);
+        } finally {
+            isResetting = false; // ← always release the lock
         }
     }
     
