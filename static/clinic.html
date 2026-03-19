@@ -207,6 +207,11 @@
         display: inline-block;
         margin-right: 4px;
     }
+
+    #tab-haze.active { background:#2563eb; color:white; }
+    #tab-dengue.active { background:#f59e0b; color:white; }
+    #tab-haze:not(.active) { background:transparent; color:#64748b; }
+    #tab-dengue:not(.active) { background:transparent; color:#64748b; }
   </style>
 </head>
 
@@ -312,6 +317,31 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- SCENARIO TABS — clinic manager only -->
+  <div id="scenario-tabs" style="display:none; max-width:1400px; margin:12px auto 0 auto; padding:0 30px;">
+      <div style="display:flex; gap:8px; background:white; border:1px solid #e2e8f0; border-radius:12px; padding:6px; width:fit-content;">
+          <button id="tab-haze" onclick="switchTab('haze')" style="
+              background:#2563eb; color:white; border:none;
+              padding:8px 20px; border-radius:8px;
+              font-weight:700; font-size:0.85rem; cursor:pointer;
+              transition:all 0.2s;">
+              🌫️ Haze Monitor
+          </button>
+          <button id="tab-dengue" onclick="switchTab('dengue')" style="
+              background:transparent; color:#64748b; border:none;
+              padding:8px 20px; border-radius:8px;
+              font-weight:700; font-size:0.85rem; cursor:pointer;
+              transition:all 0.2s;">
+              🦟 Dengue Clusters
+          </button>
+      </div>
+      <span id="tab-live-indicator" style="
+          margin-left:12px; font-size:0.75rem; 
+          color:#64748b; font-weight:600;
+          vertical-align:middle;
+      "></span>
   </div>
 
   <!-- DENGUE ALERT PANEL — shown when dengue is active -->
@@ -459,6 +489,10 @@
         // Clinic manager — hide trigger buttons, change subtitle
         const scenarioButtons = document.getElementById('scenario-buttons');
         if (scenarioButtons) scenarioButtons.style.display = 'none';
+
+        // Show scenario tabs for clinic manager
+        const tabs = document.getElementById('scenario-tabs');
+        if (tabs) tabs.style.display = 'block';
 
         const subText = document.getElementById('ai-sub-text');
         if (subText) subText.innerHTML = `
@@ -655,6 +689,8 @@
               // Show dengue map panel
               if (data.draft.dengue_data) {
                   showDenguePanel(data.draft.dengue_data);
+                  switchTab('dengue');
+
               }
           } else {
               chatAdd(`🚨 [ALERT] MOH System has detected a haze surge event.`);
@@ -771,8 +807,6 @@
         document.getElementById('draft-panel').classList.remove('visible');
         userDraftVisible = false;
         
-        // Only hide dengue panel if we're NOT in a dengue scenario
-        // Dengue map should stay visible even after rejecting the PO
         const isDengueActive = document.getElementById('dengue-panel') && 
                                document.getElementById('dengue-panel').style.display !== 'none';
         if (!isDengueActive) {
@@ -866,6 +900,7 @@
 
     // --- DENGUE MAP & PANEL ---
     let dengueMap = null;
+    let dengueMapInitialized = false;
 
     const DISTRICT_CONFIG = {
         bedok:     { lat: 1.3236, lng: 103.9300, label: "Bedok" },
@@ -873,6 +908,42 @@
         hougang:   { lat: 1.3616, lng: 103.8920, label: "Hougang" },
         jurong:    { lat: 1.3329, lng: 103.7436, label: "Jurong" },
         woodlands: { lat: 1.4361, lng: 103.7865, label: "Woodlands" },
+    };
+
+    const SYNTHETIC_DENGUE_DATA = {
+        bedok:     24,
+        tampines:  21,
+        hougang:   16,
+        jurong:    11,
+        woodlands: 9,
+    };
+
+    const SYNTHETIC_GEOJSON = {
+        bedok: {
+            type: "Feature",
+            properties: { LOCALITY: "Bedok North Ave 4 (Blk 538)", CASE_SIZE: 24, synthetic: true },
+            geometry: { type: "Polygon", coordinates: [[[103.9280,1.3220],[103.9310,1.3220],[103.9320,1.3245],[103.9295,1.3255],[103.9275,1.3240],[103.9280,1.3220]]] }
+        },
+        tampines: {
+            type: "Feature",
+            properties: { LOCALITY: "Tampines St 45 (Blk 471)", CASE_SIZE: 21, synthetic: true },
+            geometry: { type: "Polygon", coordinates: [[[103.9430,1.3510],[103.9460,1.3508],[103.9465,1.3530],[103.9440,1.3538],[103.9428,1.3525],[103.9430,1.3510]]] }
+        },
+        hougang: {
+            type: "Feature",
+            properties: { LOCALITY: "Hougang Ave 8 (Blk 684)", CASE_SIZE: 16, synthetic: true },
+            geometry: { type: "Polygon", coordinates: [[[103.8900,1.3600],[103.8930,1.3598],[103.8935,1.3622],[103.8908,1.3628],[103.8896,1.3614],[103.8900,1.3600]]] }
+        },
+        jurong: {
+            type: "Feature",
+            properties: { LOCALITY: "Jurong West St 52 (Blk 514)", CASE_SIZE: 11, synthetic: true },
+            geometry: { type: "Polygon", coordinates: [[[103.7418,1.3315],[103.7448,1.3312],[103.7452,1.3338],[103.7425,1.3345],[103.7412,1.3330],[103.7418,1.3315]]] }
+        },
+        woodlands: {
+            type: "Feature",
+            properties: { LOCALITY: "Woodlands Dr 50 (Blk 306)", CASE_SIZE: 9, synthetic: true },
+            geometry: { type: "Polygon", coordinates: [[[103.7848,1.4348],[103.7878,1.4345],[103.7882,1.4368],[103.7855,1.4375],[103.7842,1.4360],[103.7848,1.4348]]] }
+        },
     };
 
     function getZone(cases) {
@@ -887,105 +958,213 @@
         return 'Standard monitoring. No immediate order needed.';
     }
 
+    function ensureDengueMapExists() {
+        if (dengueMapInitialized && dengueMap) return;
+        const mapEl = document.getElementById('dengue-map');
+        if (!mapEl) return;
+        mapEl.style.display = 'block';
+        if (dengueMap) { dengueMap.remove(); dengueMap = null; }
+        dengueMap = L.map('dengue-map').setView([1.3521, 103.8198], 11);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap & CARTO', subdomains: 'abcd', maxZoom: 19
+        }).addTo(dengueMap);
+        dengueMapInitialized = true;
+    }
+
     function showDenguePanel(dengueData) {
+        window._lastDengueData = dengueData;
         const panel = document.getElementById('dengue-panel');
         const container = document.getElementById('dengue-district-cards');
         const redZonesEl = document.getElementById('dengue-red-zones');
-
         if (!panel || !container) return;
 
-        // Show panel, hide normal hospital/polyclinic cards
         panel.style.display = 'block';
         const normalContainer = document.querySelector('.container');
         if (normalContainer) normalContainer.style.display = 'none';
 
-        // Build district cards
         container.innerHTML = '';
         const redZones = [];
 
-        Object.entries(dengueData).forEach(([district, cases]) => {
-            const config = DISTRICT_CONFIG[district];
-            if (!config) return;
-            const zone = getZone(cases);
-            const action = getClinicAction(cases);
-            if (zone.level === 'RED') redZones.push(config.label);
-
-            container.innerHTML += `
-                <div class="dengue-card ${zone.cls}">
-                    <div class="dengue-district">${config.label}</div>
-                    <span class="dengue-zone-badge ${zone.cls}">${zone.level} ZONE</span>
-                    <div class="dengue-stat">🦟 Cases: <strong>${cases}</strong></div>
-                    <div class="dengue-stat">📊 Trend: <strong>${zone.trend}</strong></div>
-                    <div class="dengue-stat" style="margin-top:6px; font-size:0.75rem; color:#78350f;">
-                        📦 ${action}
+        if (dengueData && Object.keys(dengueData).length > 0) {
+            Object.entries(dengueData).forEach(([district, cases]) => {
+                const config = DISTRICT_CONFIG[district];
+                if (!config) return;
+                const zone = getZone(cases);
+                const action = getClinicAction(cases);
+                if (zone.level === 'RED') redZones.push(config.label);
+                container.innerHTML += `
+                    <div class="dengue-card ${zone.cls}">
+                        <div class="dengue-district">${config.label}</div>
+                        <span class="dengue-zone-badge ${zone.cls}">${zone.level} ZONE</span>
+                        <div class="dengue-stat">🦟 Cases: <strong>${cases}</strong></div>
+                        <div class="dengue-stat">📊 Trend: <strong>${zone.trend}</strong></div>
+                        <div class="dengue-stat" style="margin-top:6px; font-size:0.75rem; color:#78350f;">
+                            📦 ${action}
+                        </div>
                     </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
 
-        // Update red zones advisory
         if (redZonesEl) {
             redZonesEl.innerHTML = redZones.length > 0
                 ? `<strong style="color:#991b1b;">${redZones.join(', ')}</strong>`
                 : 'affected districts';
         }
 
-        // Init Leaflet map
         setTimeout(() => {
-            if (dengueMap) {
-                dengueMap.remove();
-                dengueMap = null;
+            ensureDengueMapExists();
+            if (!dengueMap) return;
+            dengueMap.eachLayer(layer => {
+                if (layer instanceof L.Marker || layer instanceof L.GeoJSON) dengueMap.removeLayer(layer);
+            });
+            if (dengueData) {
+                Object.entries(dengueData).forEach(([district, cases]) => {
+                    const feature = SYNTHETIC_GEOJSON[district];
+                    if (!feature) return;
+                    const zone = getZone(cases);
+                    const locality = feature.properties.LOCALITY;
+                    L.geoJSON(feature, {
+                        style: { color: zone.color, weight: 3, fillColor: zone.color, fillOpacity: 0.45 },
+                        onEachFeature: (feat, layer) => {
+                            layer.bindPopup(`<b>🦟 ${locality}</b><br>Cases: <b>${cases}</b><br>Zone: <b style="color:${zone.color}">${zone.level}</b><br>Trend: ${zone.trend}<br><small>${getClinicAction(cases)}</small>`);
+                            const bounds = layer.getBounds();
+                            if (bounds.isValid()) {
+                                L.marker(bounds.getCenter(), {
+                                    icon: L.divIcon({
+                                        html: `<div style="background:${zone.color};color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);">${cases}</div>`,
+                                        className: '', iconSize: [32,32], iconAnchor: [16,16],
+                                    })
+                                }).addTo(dengueMap);
+                            }
+                        }
+                    }).addTo(dengueMap);
+                });
             }
+            setTimeout(() => { dengueMap.invalidateSize(); }, 200);
+        }, 150);
+    }
 
-            dengueMap = L.map('dengue-map').setView([1.3521, 103.8198], 11);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap & CARTO', subdomains: 'abcd', maxZoom: 19
-            }).addTo(dengueMap);
+    function showDenguePanelEmpty() {
+        const panel = document.getElementById('dengue-panel');
+        const container = document.getElementById('dengue-district-cards');
+        const normalContainer = document.querySelector('.container');
+        if (panel) panel.style.display = 'block';
+        if (normalContainer) normalContainer.style.display = 'none';
 
-            // Add pins per district
-            Object.entries(dengueData).forEach(([district, cases]) => {
+        if (container) {
+            container.innerHTML = '';
+            container.innerHTML += `
+                <div style="grid-column:1/-1; margin-bottom:8px;">
+                    <span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:700;">
+                        🧪 SYNTHETIC — Stress-Test Scenario (Demo Data)
+                    </span>
+                </div>
+            `;
+            Object.entries(SYNTHETIC_DENGUE_DATA).forEach(([district, cases]) => {
                 const config = DISTRICT_CONFIG[district];
                 if (!config) return;
                 const zone = getZone(cases);
-
-                const icon = L.divIcon({
-                    html: `<div style="
-                        background:${zone.color};
-                        color:white;
-                        border-radius:50%;
-                        width:36px; height:36px;
-                        display:flex; align-items:center; justify-content:center;
-                        font-weight:800; font-size:0.85rem;
-                        border:3px solid white;
-                        box-shadow:0 2px 8px rgba(0,0,0,0.3);
-                    ">${cases}</div>`,
-                    className: '',
-                    iconSize: [36, 36],
-                    iconAnchor: [18, 18],
-                });
-
-                L.marker([config.lat, config.lng], { icon })
-                    .addTo(dengueMap)
-                    .bindPopup(`
-                        <b>🦟 ${config.label}</b><br>
-                        Cases: <b>${cases}</b><br>
-                        Zone: <b style="color:${zone.color}">${zone.level}</b><br>
-                        Trend: ${zone.trend}<br>
-                        <small>${getClinicAction(cases)}</small>
-                    `);
+                const action = getClinicAction(cases);
+                container.innerHTML += `
+                    <div class="dengue-card ${zone.cls}" style="opacity:0.8;border-style:dashed;">
+                        <div class="dengue-district">${config.label}</div>
+                        <span class="dengue-zone-badge ${zone.cls}">${zone.level} ZONE</span>
+                        <div class="dengue-stat">🦟 Cases: <strong>${cases}</strong></div>
+                        <div class="dengue-stat">📊 Trend: <strong>${zone.trend}</strong></div>
+                        <div class="dengue-stat" style="margin-top:6px;font-size:0.75rem;color:#78350f;">📦 ${action}</div>
+                    </div>
+                `;
             });
+            container.innerHTML += `
+                <div style="grid-column:1/-1;margin-top:6px;font-size:0.78rem;color:#94a3b8;text-align:center;">
+                    ℹ️ No active MOH alert. Showing synthetic baseline. Click 🛰 to overlay real NEA data.
+                </div>
+            `;
+        }
 
-        }, 100);
+        setTimeout(() => {
+            ensureDengueMapExists();
+            if (!dengueMap) return;
+            dengueMap.eachLayer(layer => {
+                if (layer instanceof L.Marker || layer instanceof L.GeoJSON) dengueMap.removeLayer(layer);
+            });
+            Object.entries(SYNTHETIC_GEOJSON).forEach(([district, feature]) => {
+                const cases = feature.properties.CASE_SIZE;
+                const locality = feature.properties.LOCALITY;
+                const zone = getZone(cases);
+                L.geoJSON(feature, {
+                    style: { color: zone.color, weight: 2, dashArray: '6,4', fillColor: zone.color, fillOpacity: 0.3 },
+                    onEachFeature: (feat, layer) => {
+                        layer.bindPopup(`<b>🧪 SYNTHETIC SCENARIO</b><br><b>🦟 ${locality}</b><br>Cases: <b>${cases}</b><br>Zone: <b style="color:${zone.color}">${zone.level}</b><br><small style="color:#94a3b8;">Demo stress-test data</small>`);
+                        const bounds = layer.getBounds();
+                        if (bounds.isValid()) {
+                            L.marker(bounds.getCenter(), {
+                                icon: L.divIcon({
+                                    html: `<div style="background:white;border:2px dashed ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15);">🧪 ${cases} cases</div>`,
+                                    className: '', iconAnchor: [35,10],
+                                })
+                            }).addTo(dengueMap);
+                        }
+                    }
+                }).addTo(dengueMap);
+            });
+            setTimeout(() => { dengueMap.invalidateSize(); }, 200);
+        }, 150);
     }
+    
+   
 
-    function hideDenguePanel() {
+    function hideDenguePanel(clearData = false) {
+        if (clearData) {
+            window._lastDengueData = null;
+            dengueMapInitialized = false;
+            if (dengueMap) { dengueMap.remove(); dengueMap = null; }
+        }
         const panel = document.getElementById('dengue-panel');
         if (panel) panel.style.display = 'none';
         const normalContainer = document.querySelector('.container');
         if (normalContainer) normalContainer.style.display = 'block';
-        if (dengueMap) { dengueMap.remove(); dengueMap = null; }
     }
 
+    // --- SCENARIO TABS (clinic manager only) ---
+    let currentTab = 'haze';
+
+    function switchTab(tab) {
+        currentTab = tab;
+
+        const hazeBtn = document.getElementById('tab-haze');
+        const dengueBtn = document.getElementById('tab-dengue');
+        const indicator = document.getElementById('tab-live-indicator');
+
+        if (tab === 'haze') {
+            hazeBtn.style.background = '#2563eb';
+            hazeBtn.style.color = 'white';
+            dengueBtn.style.background = 'transparent';
+            dengueBtn.style.color = '#64748b';
+
+            const panel = document.getElementById('dengue-panel');
+            if (panel) panel.style.display = 'none';
+            const normalContainer = document.querySelector('.container');
+            if (normalContainer) normalContainer.style.display = 'block';
+            if (indicator) indicator.innerText = '';
+
+        } else {
+            dengueBtn.style.background = '#f59e0b';
+            dengueBtn.style.color = 'white';
+            hazeBtn.style.background = 'transparent';
+            hazeBtn.style.color = '#64748b';
+
+            if (window._lastDengueData) {
+                showDenguePanel(window._lastDengueData);
+                if (indicator) indicator.innerText = '● Live alert active';
+            } else {
+                showDenguePanelEmpty();
+                if (indicator) indicator.innerText = '● No active alert';
+            }
+        }
+    }
+     
     async function loadLiveNEAData() {
         const btn = document.getElementById('live-nea-btn');
         const statusEl = document.getElementById('live-nea-status');
@@ -995,91 +1174,90 @@
         btn.innerText = '⏳ Fetching...';
         if (statusEl) statusEl.innerText = 'Connecting to data.gov.sg...';
 
-        try {
-            const res = await fetch('/api/live-dengue', { headers: authHeaders() });
-            const result = await res.json();
+        let lastError = null;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                const res = await fetch('/api/live-dengue', { headers: authHeaders() });
+                const result = await res.json();
+                if (result.status !== 'success') throw new Error(result.error || 'API failed');
 
-            if (result.status !== 'success') throw new Error(result.error || 'API failed');
+                const features = (result.data?.features) || [];
+                ensureDengueMapExists();
+                if (!dengueMap) throw new Error('Map not ready');
 
-            const geojson = result.data;
-            const features = geojson.features || [];
+                const liveCards = [];
+                let clusterCount = 0;
 
-            if (!dengueMap) {
-                if (statusEl) statusEl.innerText = '⚠️ Map not ready. Trigger dengue scenario first.';
-                btn.disabled = false;
-                btn.innerText = '🛰 Overlay Real NEA Clusters (data.gov.sg)';
-                return;
-            }
+                features.forEach(feature => {
+                    const cases = feature.properties?.CASE_SIZE || 0;
+                    const locality = feature.properties?.LOCALITY || 'Unknown';
+                    const zone = getZone(cases);
 
-            // Add live cluster polygons to map
-            let clusterCount = 0;
-            features.forEach(feature => {
-                const cases = feature.properties?.CASE_SIZE || 0;
-                const locality = feature.properties?.LOCALITY || 'Unknown';
-                const zone = getZone(cases);
-
-                L.geoJSON(feature, {
-                    style: {
-                        color: zone.color,
-                        weight: 3,
-                        fillColor: zone.color,
-                        fillOpacity: 0.5,
-                    },
-                    onEachFeature: (feat, layer) => {
-                        layer.bindPopup(`
-                            <b>🟢 LIVE NEA CLUSTER</b><br>
-                            <b>🦟 ${locality}</b><br>
-                            Cases: <b>${cases}</b><br>
-                            Zone: <b style="color:${zone.color}">${zone.level}</b><br>
-                            <small style="color:#64748b;">Source: data.gov.sg (live)</small>
-                        `);
-                        // Add a visible label marker at cluster centroid
-                        const bounds = layer.getBounds();
-                        if (bounds.isValid()) {
-                            const center = bounds.getCenter();
-                            L.marker(center, {
-                                icon: L.divIcon({
-                                    html: `<div style="
-                                        background:white;
-                                        border:2px solid ${zone.color};
-                                        color:${zone.color};
-                                        border-radius:6px;
-                                        padding:2px 6px;
-                                        font-size:0.65rem;
-                                        font-weight:800;
-                                        white-space:nowrap;
-                                        box-shadow:0 1px 4px rgba(0,0,0,0.2);
-                                    ">🟢 LIVE: ${cases} cases</div>`,
-                                    className: '',
-                                    iconAnchor: [40, 10],
-                                })
-                            }).addTo(dengueMap);
+                    L.geoJSON(feature, {
+                        style: { color: zone.color, weight: 3, fillColor: zone.color, fillOpacity: 0.5 },
+                        onEachFeature: (feat, layer) => {
+                            layer.bindPopup(`<b>🟢 LIVE NEA CLUSTER</b><br><b>🦟 ${locality}</b><br>Cases: <b>${cases}</b><br>Zone: <b style="color:${zone.color}">${zone.level}</b><br><small style="color:#64748b;">Source: data.gov.sg (live)</small>`);
+                            const bounds = layer.getBounds();
+                            if (bounds.isValid()) {
+                                L.marker(bounds.getCenter(), {
+                                    icon: L.divIcon({
+                                        html: `<div style="background:white;border:2px solid ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🟢 LIVE: ${cases} cases</div>`,
+                                        className: '', iconAnchor: [40, 10],
+                                    })
+                                }).addTo(dengueMap);
+                            }
                         }
-                    }
-                }).addTo(dengueMap);
-                clusterCount++;
-            });
+                    }).addTo(dengueMap);
+                    liveCards.push({ locality, cases, zone });
+                    clusterCount++;
+                });
 
-            // Update source text
-            if (sourceEl) {
-                sourceEl.innerHTML = `
-                    <span style="color:#64748b;">Synthetic scenario: stress-test data above ↑</span><br>
-                    <span style="color:#0ea5e9; font-weight:700;">
-                        🟢 Live NEA feed: ${clusterCount} real active clusters overlaid on map
-                    </span>
-                    <span style="color:#94a3b8; font-size:0.72rem;">
-                        (Same source as nea.gov.sg — updated every 14 days)
-                    </span>`;
+                // Add live cluster cards below synthetic cards
+                const container = document.getElementById('dengue-district-cards');
+                if (container && liveCards.length > 0) {
+                    container.innerHTML += `
+                        <div style="grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:2px dashed #0ea5e9;">
+                            <div style="font-size:0.8rem;font-weight:700;color:#0ea5e9;margin-bottom:8px;">
+                                🟢 LIVE NEA DATA — ${clusterCount} active clusters from data.gov.sg
+                            </div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">
+                                ${liveCards.map(c => `
+                                    <div style="background:white;border:1px solid #e2e8f0;border-left:4px solid ${c.zone.color};border-radius:8px;padding:10px;font-size:0.8rem;">
+                                        <div style="font-weight:700;color:#0f172a;margin-bottom:4px;">${c.locality}</div>
+                                        <div style="color:#64748b;">🦟 Cases: <strong style="color:#0f172a;">${c.cases}</strong></div>
+                                        <div style="color:#64748b;">Zone: <strong style="color:${c.zone.color};">${c.zone.level}</strong></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (sourceEl) {
+                    sourceEl.innerHTML = `
+                        <span style="color:#64748b;">Synthetic scenario: stress-test data above ↑</span><br>
+                        <span style="color:#0ea5e9;font-weight:700;">🟢 Live NEA feed: ${clusterCount} real active clusters overlaid on map</span>
+                        <span style="color:#94a3b8;font-size:0.72rem;">(Same source as nea.gov.sg — updated every 14 days)</span>`;
+                }
+                if (statusEl) statusEl.innerText = `✅ ${clusterCount} real clusters from data.gov.sg`;
+                btn.innerText = '✅ Live Data Loaded';
+                btn.style.background = '#10b981';
+                dengueMap.invalidateSize();
+                return;
+
+            } catch (e) {
+                lastError = e;
+                if (attempt < 2) {
+                    if (statusEl) statusEl.innerText = `⏳ Retrying (attempt ${attempt + 1})...`;
+                    await new Promise(r => setTimeout(r, 1500));
+                }
             }
-
-            if (statusEl) statusEl.innerText = `✅ ${clusterCount} real clusters from data.gov.sg`;
-
-        } catch (e) {
-            console.error('Live NEA fetch failed:', e);
-            if (statusEl) statusEl.innerText = `❌ Failed: ${e.message}`;
-            btn.disabled = false;
-            btn.innerText = '🛰 Overlay Real NEA Clusters (data.gov.sg)';
         }
+
+        console.error('Live NEA fetch failed:', lastError);
+        if (statusEl) statusEl.innerText = `❌ Failed: ${lastError?.message}`;
+        btn.disabled = false;
+        btn.innerText = '🛰 Overlay Real NEA Clusters (data.gov.sg)';
     }
 
     function setFakeSingaporeAvgPsi() {
@@ -1226,7 +1404,8 @@
             isAdminManualOverride = false;
             chatClear();
             deactivateAlertMode();
-            hideDenguePanel();
+            hideDenguePanel(true);
+
 
 
             const badge = document.getElementById('global-status');
