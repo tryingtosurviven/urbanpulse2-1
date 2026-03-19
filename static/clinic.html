@@ -1132,7 +1132,6 @@
 
     function switchTab(tab) {
         currentTab = tab;
-
         const hazeBtn = document.getElementById('tab-haze');
         const dengueBtn = document.getElementById('tab-dengue');
         const indicator = document.getElementById('tab-live-indicator');
@@ -1160,104 +1159,104 @@
                 if (indicator) indicator.innerText = '● Live alert active';
             } else {
                 showDenguePanelEmpty();
-                if (indicator) indicator.innerText = '● No active alert';
+                if (indicator) indicator.innerText = '● Monitoring clusters';
+            }
+
+            // --- AUTO-LOAD LIVE DATA HERE ---
+            // This triggers the fetch automatically when the tab opens
+            if (!window._neaDataLoaded) {
+                loadLiveNEAData();
             }
         }
     }
+
      
     async function loadLiveNEAData() {
+        if (window._neaDataLoaded) return; // Prevent double loading
         const btn = document.getElementById('live-nea-btn');
         const statusEl = document.getElementById('live-nea-status');
         const sourceEl = document.querySelector('#dengue-panel p');
+        const container = document.getElementById('dengue-district-cards');
 
         btn.disabled = true;
         btn.innerText = '⏳ Fetching...';
         if (statusEl) statusEl.innerText = 'Connecting to data.gov.sg...';
 
-        let lastError = null;
-        for (let attempt = 1; attempt <= 2; attempt++) {
-            try {
-                const res = await fetch('/api/live-dengue', { headers: authHeaders() });
-                const result = await res.json();
-                if (result.status !== 'success') throw new Error(result.error || 'API failed');
+        try {
+            const res = await fetch('/api/live-dengue', { headers: authHeaders() });
+            const result = await res.json();
+            if (result.status !== 'success') throw new Error(result.error || 'API failed');
 
-                const features = (result.data?.features) || [];
-                ensureDengueMapExists();
-                if (!dengueMap) throw new Error('Map not ready');
+            const features = (result.data?.features) || [];
+            ensureDengueMapExists();
 
-                const liveCards = [];
-                let clusterCount = 0;
-
-                features.forEach(feature => {
-                    const cases = feature.properties?.CASE_SIZE || 0;
-                    const locality = feature.properties?.LOCALITY || 'Unknown';
-                    const zone = getZone(cases);
-
-                    L.geoJSON(feature, {
-                        style: { color: zone.color, weight: 3, fillColor: zone.color, fillOpacity: 0.5 },
-                        onEachFeature: (feat, layer) => {
-                            layer.bindPopup(`<b>🟢 LIVE NEA CLUSTER</b><br><b>🦟 ${locality}</b><br>Cases: <b>${cases}</b><br>Zone: <b style="color:${zone.color}">${zone.level}</b><br><small style="color:#64748b;">Source: data.gov.sg (live)</small>`);
-                            const bounds = layer.getBounds();
-                            if (bounds.isValid()) {
-                                L.marker(bounds.getCenter(), {
-                                    icon: L.divIcon({
-                                        html: `<div style="background:white;border:2px solid ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🟢 LIVE: ${cases} cases</div>`,
-                                        className: '', iconAnchor: [40, 10],
-                                    })
-                                }).addTo(dengueMap);
-                            }
+            const liveCardsData = [];
+            features.forEach(feature => {
+                const cases = feature.properties?.CASE_SIZE || 0;
+                const locality = feature.properties?.LOCALITY || 'Unknown';
+                const zone = getZone(cases);
+                
+                // Add to map
+                L.geoJSON(feature, {
+                    style: { color: zone.color, weight: 3, fillColor: zone.color, fillOpacity: 0.5 },
+                    onEachFeature: (feat, layer) => {
+                        layer.bindPopup(`<b>🟢 LIVE NEA CLUSTER</b><br><b>🦟 ${locality}</b><br>Cases: <b>${cases}</b>`);
+                        const bounds = layer.getBounds();
+                        if (bounds.isValid()) {
+                            L.marker(bounds.getCenter(), {
+                                icon: L.divIcon({
+                                    html: `<div style="background:white;border:2px solid ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🟢 LIVE: ${cases}</div>`,
+                                    className: '', iconAnchor: [40, 10],
+                                })
+                            }).addTo(dengueMap);
                         }
-                    }).addTo(dengueMap);
-                    liveCards.push({ locality, cases, zone });
-                    clusterCount++;
-                });
+                    }
+                }).addTo(dengueMap);
 
-                // Add live cluster cards below synthetic cards
-                const container = document.getElementById('dengue-district-cards');
-                if (container && liveCards.length > 0) {
-                    container.innerHTML += `
-                        <div style="grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:2px dashed #0ea5e9;">
-                            <div style="font-size:0.8rem;font-weight:700;color:#0ea5e9;margin-bottom:8px;">
-                                🟢 LIVE NEA DATA — ${clusterCount} active clusters from data.gov.sg
+                liveCardsData.push({ locality, cases, zone });
+            });
+
+            // --- RE-STRUCTURE THE GRID TO ENSURE LIVE DATA IS FIRST ---
+            const liveHtml = `
+                <div id="live-nea-section" style="grid-column:1/-1; margin-bottom:10px; padding-bottom:10px; border-bottom:2px solid #0ea5e9;">
+                    <div style="font-size:0.85rem; font-weight:800; color:#0ea5e9; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                        <span style="background:#0ea5e9; color:white; padding:2px 8px; border-radius:4px; font-size:0.7rem;">OFFICIAL</span>
+                        🟢 LIVE NEA DATA — ${features.length} clusters from data.gov.sg
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px;">
+                        ${liveCardsData.map(c => `
+                            <div class="dengue-card" style="border-left:5px solid ${c.zone.color};">
+                                <div class="dengue-district" style="font-size:0.8rem;">${c.locality}</div>
+                                <span class="dengue-zone-badge" style="background:${c.zone.color}22; color:${c.zone.color}; border:1px solid ${c.zone.color}44;">
+                                    ${c.zone.level} ZONE
+                                </span>
+                                <div class="dengue-stat">🦟 Cases: <strong>${c.cases}</strong></div>
                             </div>
-                            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">
-                                ${liveCards.map(c => `
-                                    <div style="background:white;border:1px solid #e2e8f0;border-left:4px solid ${c.zone.color};border-radius:8px;padding:10px;font-size:0.8rem;">
-                                        <div style="font-weight:700;color:#0f172a;margin-bottom:4px;">${c.locality}</div>
-                                        <div style="color:#64748b;">🦟 Cases: <strong style="color:#0f172a;">${c.cases}</strong></div>
-                                        <div style="color:#64748b;">Zone: <strong style="color:${c.zone.color};">${c.zone.level}</strong></div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
+                        `).join('')}
+                    </div>
+                </div>
+            `;
 
-                if (sourceEl) {
-                    sourceEl.innerHTML = `
-                        <span style="color:#64748b;">Synthetic scenario: stress-test data above ↑</span><br>
-                        <span style="color:#0ea5e9;font-weight:700;">🟢 Live NEA feed: ${clusterCount} real active clusters overlaid on map</span>
-                        <span style="color:#94a3b8;font-size:0.72rem;">(Same source as nea.gov.sg — updated every 14 days)</span>`;
-                }
-                if (statusEl) statusEl.innerText = `✅ ${clusterCount} real clusters from data.gov.sg`;
-                btn.innerText = '✅ Live Data Loaded';
-                btn.style.background = '#10b981';
-                dengueMap.invalidateSize();
-                return;
+            // Insert at the very top of the container
+            container.insertAdjacentHTML('afterbegin', liveHtml);
+            window._neaDataLoaded = true; 
+            if (btn) btn.style.display = 'none'; // Hide the button since it's now automatic
 
-            } catch (e) {
-                lastError = e;
-                if (attempt < 2) {
-                    if (statusEl) statusEl.innerText = `⏳ Retrying (attempt ${attempt + 1})...`;
-                    await new Promise(r => setTimeout(r, 1500));
-                }
+            if (sourceEl) {
+                sourceEl.innerHTML = `<span style="color:#0ea5e9; font-weight:700;">🟢 Live NEA feed active: ${features.length} real clusters found.</span>`;
             }
-        }
+            if (statusEl) statusEl.innerText = `✅ Loaded ${features.length} clusters.`;
+            
+            btn.innerText = '✅ Live Data Loaded';
+            btn.style.background = '#10b981';
+            dengueMap.invalidateSize();
 
-        console.error('Live NEA fetch failed:', lastError);
-        if (statusEl) statusEl.innerText = `❌ Failed: ${lastError?.message}`;
-        btn.disabled = false;
-        btn.innerText = '🛰 Overlay Real NEA Clusters (data.gov.sg)';
+        } catch (e) {
+            console.error('NEA fetch failed:', e);
+            if (statusEl) statusEl.innerText = `❌ Failed: ${e.message}`;
+            btn.disabled = false;
+            btn.innerText = '🛰 Overlay Real NEA Clusters (data.gov.sg)';
+        }
     }
 
     function setFakeSingaporeAvgPsi() {
