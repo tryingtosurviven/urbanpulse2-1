@@ -27,9 +27,8 @@ VALID_SCENARIOS = {
 
 def write_governance_log(entry: Dict[str, Any]):
     """
-    Writes a permanent JSON audit trail of AI decisions to a local file.
-    Append-only ensures tamper-evident logging (NIST AI RMF compliant).
-    PostgreSQL-ready for production deployment.
+    Writes a permanent JSON audit trail of AI decisions.
+    Aligned with clinic.html key expectations.
     """
     log_entry = {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -40,7 +39,7 @@ def write_governance_log(entry: Dict[str, Any]):
         "facility": entry.get("facility"),
         "qty": entry.get("qty"),
         "autonomous": entry.get("autonomous"),
-        "governance_note": entry.get("governance_log"),
+        "governance_note": entry.get("governance_log"), # Ensure this matches clinic.html
     }
 
     with open("governance.log", "a", encoding="utf-8") as f:
@@ -679,7 +678,11 @@ def logistics_portal():
 @app.route("/admin")
 @require_role("admin")
 def admin_portal():
-    """Admins now use the unified dashboard with the admin-only-panel revealed."""
+    """
+    Admins now use the unified dashboard.
+    The frontend JS will automatically reveal the 'admin-only-panel'.
+    """
+    # We explicitly serve clinic.html to admins to provide the unified view
     return send_from_directory("static", "clinic.html")
 
 @app.get("/api/governance-log")
@@ -836,6 +839,28 @@ def lta_eta(facility_id):
             "error": str(e),
             "display": "⏱ ETA unavailable",
         }), 500
+
+@app.post("/api/admin-reset")
+@require_role("admin")
+def admin_reset():
+    """Wipes the global state so all clinic managers return to normal."""
+    global clinic_state
+    clinic_state["view"] = "normal"
+    clinic_state["protocol"] = "standard"
+    clinic_state["draft"] = {
+        "active": False,
+        "facility": "---",
+        "id": "---",
+        "qty": 0,
+        "cost": "$0",
+        "reason": "",
+        "autonomous": False,
+        "psi": 0,
+        "projected_cases": 0,
+        "risk_level": "LOW",
+        "governance_log": "",
+    }
+    return jsonify({"status": "success"})
 
 @app.route("/access-denied")
 def access_denied():
