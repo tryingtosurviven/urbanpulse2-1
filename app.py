@@ -554,15 +554,14 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         "facility": "Tan Tock Seng Hospital (HQ)",
         "id": po_id,
         "qty": recommended_qty,
-        "item_type": item_name,     # New key for the frontend to read
-        "mode": "dengue" if is_dengue else "haze", # New key for frontend styling
         "cost": "$—",
-        "reason": display_reason,
+        "reason": f"{status_msg} | {decision.get('justification', '')}",
         "autonomous": autonomous,
         "psi": highest_value if not is_dengue else None,
         "projected_cases": highest_value if is_dengue else None,
         "risk_level": risk_level,
         "governance_log": governance_note,
+        "dengue_data": scenario.get("dengue_data") if is_dengue else None,  # ← ADD THIS
     }
 
     write_governance_log(clinic_state["draft"])
@@ -855,10 +854,25 @@ def lta_eta(facility_id):
             "display": "⏱ ETA unavailable",
         }), 500
 
+@app.get("/api/live-dengue")
+@require_role("clinic_manager", "admin")
+def live_dengue():
+    """Fetches live NEA dengue cluster data from data.gov.sg"""
+    try:
+        import requests as req
+        dataset_id = "d_dbfabf16158d1b0e1c420627c0819168"
+        poll = req.get(
+            f"https://api-open.data.gov.sg/v1/public/api/datasets/{dataset_id}/poll-download",
+            timeout=5
+        ).json()
+        geojson = req.get(poll['data']['url'], timeout=5).json()
+        return jsonify({"status": "success", "data": geojson})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
 @app.post("/api/admin-reset")
 @require_role("admin")
 def admin_reset():
-    """Wipes the global state so all clinic managers return to normal."""
     clinic_state["view"] = "normal"
     clinic_state["protocol"] = "standard"
     clinic_state["draft"]["active"] = False
@@ -866,6 +880,7 @@ def admin_reset():
     clinic_state["draft"]["projected_cases"] = 0
     clinic_state["draft"]["risk_level"] = "LOW"
     clinic_state["draft"]["governance_log"] = ""
+    clinic_state["draft"]["dengue_data"] = None  # ← ADD THIS
     return jsonify({"status": "success"})
 
 @app.route("/access-denied")
