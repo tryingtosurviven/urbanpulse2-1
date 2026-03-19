@@ -262,11 +262,9 @@
               padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
               🔴 Trigger Severe Haze
           </button>
-          <button onclick="runClinicAssistant('dengue_high')" style="
-              background:#1e3a5f; color:white; border:none;
-              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
-              🦟 Trigger Dengue High
-          </button>
+            <button onclick="runClinicAssistant('dengue_low')" style="background:#065f46; color:white; padding:10px; border-radius:8px; cursor:pointer;">🦟 Dengue Low</button>
+            <button onclick="runClinicAssistant('dengue_medium')" style="background:#92400e; color:white; padding:10px; border-radius:8px; cursor:pointer;">🦟 Dengue Medium</button>
+            <button onclick="runClinicAssistant('dengue_high')" style="background:#7f1d1d; color:white; padding:10px; border-radius:8px; cursor:pointer;">🦟 Dengue High</button>
           <button onclick="fetchGovernanceLog()" style="
               background:#374151; color:white; border:none;
               padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
@@ -986,6 +984,14 @@
                     <span class="dengue-zone-badge ${zone.cls}">${zone.level} ZONE</span>
                     <div>🦟 Cases: <strong>${cases}</strong></div>
                 </div>`;
+            
+            // Natalie: Draw boundary highlight only - NO Emoji/Marker
+            ensureDengueMapExists();
+            if (SYNTHETIC_GEOJSON[district]) {
+                L.geoJSON(SYNTHETIC_GEOJSON[district], {
+                    style: { color: zone.color, weight: 3, fillOpacity: 0.2, dashArray: '5, 5' }
+                }).addTo(dengueMap).bindPopup(`Simulated Cluster: ${district.toUpperCase()} (${cases} cases)`);
+            }
         });
 
         simulatedHtml += `</div></div>`;
@@ -1048,7 +1054,7 @@
                         if (bounds.isValid()) {
                             L.marker(bounds.getCenter(), {
                                 icon: L.divIcon({
-                                    html: `<div style="background:white;border:2px dashed ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.15);">🧪 ${cases} cases</div>`,
+                                    html: `<div style="color:${zone.color}; font-weight:800; font-size:0.8rem; white-space:nowrap;">${cases} cases</div>`,
                                     className: '', iconAnchor: [35,10],
                                 })
                             }).addTo(dengueMap);
@@ -1150,21 +1156,27 @@
                 const locality = feature.properties?.LOCALITY || 'Unknown';
                 const zone = getZone(cases);
 
-                L.geoJSON(feature, {
-                    style: { color: zone.color, weight: 3, fillColor: zone.color, fillOpacity: 0.5 },
+                // 1. Draw the boundary
+                const geoLayer = L.geoJSON(feature, {
+                    style: { color: zone.color, weight: 3, fillOpacity: 0.3 },
                     onEachFeature: (feat, layer) => {
-                        layer.bindPopup(`<b>🟢 LIVE NEA CLUSTER</b><br><b>🦟 ${locality}</b><br>Cases: <b>${cases}</b><br>Zone: <b style="color:${zone.color}">${zone.level}</b><br><small style="color:#64748b;">Source: data.gov.sg (live)</small>`);
-                        const bounds = layer.getBounds();
-                        if (bounds.isValid()) {
-                            L.marker(bounds.getCenter(), {
-                                icon: L.divIcon({
-                                    html: `<div style="background:white;border:2px solid ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🟢 LIVE: ${cases} cases</div>`,
-                                    className: '', iconAnchor: [40, 10],
-                                })
-                            }).addTo(dengueMap);
-                        }
+                        layer.bindPopup(`<b>🟢 LIVE NEA CLUSTER</b><br>Locality: ${locality}<br>Cases: ${cases}`);
                     }
                 }).addTo(dengueMap);
+
+                // 2. Natalie: Add the Case Number Label for Live Data
+                const bounds = geoLayer.getBounds();
+                if (bounds.isValid()) {
+                    L.marker(bounds.getCenter(), {
+                        icon: L.divIcon({
+                            // Pure text label with green/zone color
+                            html: `<div style="color:${zone.color}; font-weight:800; font-size:0.8rem; white-space:nowrap;">${cases} cases</div>`,
+                            className: '', 
+                            iconAnchor: [30, 10] // Adjusts position so text doesn't overlap boundary lines exactly
+                        })
+                    }).addTo(dengueMap);
+                }
+
                 liveCards.push({ locality, cases, zone });
                 clusterCount++;
             });
