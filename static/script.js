@@ -214,9 +214,9 @@ async function maybeAutoDispatch(scenarioName, data) {
 
   // If not on clinic page, do nothing (no need to order)
   // Clinic page has draft panel elements. This is a soft check.
-  const onClinic =
-    !!document.getElementById("draft-panel") || window.location.pathname.includes("/clinic");
-  if (!onClinic) return;
+  const onClinicPage = window.location.pathname.includes("/clinic") || 
+                       window.location.pathname.includes("/admin");
+  if (onClinicPage) return; // ← ADD THIS
 
   // Lock to prevent spam
   if (autoDispatchLock) return;

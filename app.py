@@ -539,13 +539,25 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
 
     po_id = f"PO-{int(time.time())}"
 
+    # Logic to swap "Masks" for "Vaccines" and "PSI" for "Zones" based on the scenario
+    item_name = "Dengue Vaccine Doses" if is_dengue else "N95 Respiratory Masks"
+    
+    # In Singapore, Dengue clusters are categorized by ZONES
+    if is_dengue:
+        zone_label = "RED ZONE (High Risk)" if highest_value >= 20 else "YELLOW ZONE (Moderate Risk)"
+        display_reason = f"{zone_label} | {decision.get('justification', '')}"
+    else:
+        display_reason = f"{status_msg} | {decision.get('justification', '')}"
+
     clinic_state["draft"] = {
         "active": True,
         "facility": "Tan Tock Seng Hospital (HQ)",
         "id": po_id,
         "qty": recommended_qty,
+        "item_type": item_name,     # New key for the frontend to read
+        "mode": "dengue" if is_dengue else "haze", # New key for frontend styling
         "cost": "$—",
-        "reason": f"{status_msg} | {decision.get('justification', '')}",
+        "reason": display_reason,
         "autonomous": autonomous,
         "psi": highest_value if not is_dengue else None,
         "projected_cases": highest_value if is_dengue else None,

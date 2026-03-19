@@ -452,31 +452,48 @@
         const psi = Number(data.psi || 0);
         const protocol = (data.protocol || "").toLowerCase();
 
-        if (!isAdminManualOverride) {  
+        if (!isAdminManualOverride) {
+          const isDengueAlert = data.draft && data.draft.active && 
+                                data.draft.projected_cases > 0 && 
+                                !data.draft.psi;
+
           if (psi >= 200 || protocol === "autonomous") {
-              // SEVERE STATE
               if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
               if (badge) {
                   badge.className = 'status-badge critical';
                   badge.innerHTML = '<span class="dot"></span> ⚠️ SEVERE HAZE';
-                  badge.style.background = ''; // Clear manual styles
+                  badge.style.background = '';
               }
               activateAlertMode();
-          } 
-          else if (psi >= 101) {
-              // MODERATE STATE - FIX FOR CLINIC MANAGER
+
+          } else if (isDengueAlert) {
+              // ← ADD THIS BLOCK for dengue
+              if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
+              if (badge) {
+                  badge.className = 'status-badge';
+                  badge.style.background = '#fef3c7';
+                  badge.style.color = '#92400e';
+                  badge.style.borderColor = '#fde68a';
+                  badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> 🦟 DENGUE ALERT`;
+              }
+              document.querySelectorAll('.card').forEach(c => {
+                  c.classList.remove('critical');
+                  c.classList.add('moderate');
+              });
+
+          } else if (psi >= 101) {
               if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
               if (badge) {
-                  badge.className = 'status-badge'; 
-                  badge.style.background = '#fffbeb'; // Amber background
+                  badge.className = 'status-badge';
+                  badge.style.background = '#fffbeb';
                   badge.style.color = '#92400e';
                   badge.style.borderColor = '#fde68a';
                   badge.innerHTML = `<span class="dot" style="background: #f59e0b;"></span> ⚠️ MODERATE HAZE`;
               }
               document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
-          } 
-          else {
-              // NORMAL / LOW STATE
+
+          } else {
+              // normal/low state - unchanged
               if (statusEl) {
                   if (data.psi > 0 || (data.draft && data.draft.active)) {
                       statusEl.innerHTML = `● SITUATION: LOW RISK (CLEAR)`; statusEl.style.color = "#10b981";
@@ -485,7 +502,7 @@
                       statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981";
                       if (badge) {
                           badge.className = 'status-badge';
-                          badge.style.background = ''; 
+                          badge.style.background = '';
                           badge.style.color = '';
                           badge.style.borderColor = '';
                           badge.innerHTML = '<span class="dot"></span> System Normal';
@@ -509,11 +526,23 @@
           showDraftPanel(data.draft);
           const riskLevel = data.draft.risk_level || "UNKNOWN";
           const qty = data.draft.qty || 0;
-          const psiVal = data.draft.psi ? `PSI: ${data.draft.psi}` : `Cases: ${data.draft.projected_cases}`;
-          chatAdd(`🚨 [ALERT] MOH System has detected a health surge event.`);
-          chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | ${psiVal}`);
-          chatAdd(`🤖 [AI DECISION] Claude AI recommended ${qty} units N95 masks.`);
-          chatAdd(`📋 [ACTION REQUIRED] Please review the Draft PO below.`);
+          const isDengue = data.draft.projected_cases != null && data.draft.psi == null;
+          const metricVal = isDengue 
+              ? `Projected Cases: ${data.draft.projected_cases}` 
+              : `PSI: ${data.draft.psi}`;
+
+          if (isDengue) {
+              chatAdd(`🦟 [ALERT] MOH has detected elevated dengue cluster activity.`);
+              chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | ${metricVal}`);
+              chatAdd(`🤖 [AI DECISION] Claude AI recommended ${qty} units prevention packs.`);
+              chatAdd(`🗺️ [ZONES] Affected districts flagged — see advisory below.`);
+              chatAdd(`📋 [ACTION REQUIRED] Please review and approve the Draft PO below.`);
+          } else {
+              chatAdd(`🚨 [ALERT] MOH System has detected a haze surge event.`);
+              chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | ${metricVal}`);
+              chatAdd(`🤖 [AI DECISION] Claude AI recommended ${qty} units N95 masks.`);
+              chatAdd(`📋 [ACTION REQUIRED] Please review the Draft PO below.`);
+          }
         }
       } catch (e) { console.error("Polling error:", e); }
     }, 2000);
@@ -568,15 +597,24 @@
     function showDraftPanel(draft) {
       if (isAdmin) return;
 
-      const panel = document.getElementById('draft-panel');
-
+      const isDengue = draft.projected_cases != null && draft.psi == null;
+      
       document.getElementById('draft-id').innerText = draft.id;
       document.getElementById('draft-facility').innerText = "📍 For: " + (draft.facility || "Tan Tock Seng Hospital");
       document.getElementById('draft-qty').value = draft.qty;
+      
       const govElem = document.getElementById('draft-governance');
       govElem.innerText = draft.governance_log || "Standard manual review triggered.";
+      
+      // Update panel title based on type
+      const panelTitle = document.querySelector('#draft-panel .draft-info h3');
+      if (panelTitle) {
+          panelTitle.innerHTML = isDengue 
+              ? '🦟 ACTION REQUIRED: Dengue Prevention Pack Order'
+              : '⚠️ ACTION REQUIRED: Draft PO Generated';
+      }
+
       document.getElementById('draft-panel').classList.add('visible');
-      panel.classList.add('visible');
       userDraftVisible = true;
     }
 
@@ -721,7 +759,6 @@
     }
 
     // --- MAIN: RUN CLINIC ASSISTANT ---
-    // --- MAIN: RUN CLINIC ASSISTANT ---
     async function runClinicAssistant(scenarioKey) {
         if (assistantIsRunning) return;
         assistantIsRunning = true;
@@ -736,43 +773,57 @@
             chatAdd(`📡 [THOUGHT] Analyzing regional trends...`);
             chatAdd(`⚖️ [GOVERNANCE] Checking Protocol thresholds...`);
 
-            // DEFINE THE VARIABLES NEEDED FOR THE REST OF THE LOGIC
             const qty = extractRecommendedQty(result, scenarioKey);
             const supply = result?.supply_chain_actions || {};
             const isAuto = supply.autonomous === true;
             const riskLevel = result?.risk_assessment?.risk_level || "UNKNOWN";
             const affectedRegions = result?.risk_assessment?.affected_regions?.join(", ") || "N/A";
+            const isDengue = scenarioKey.startsWith('dengue');
 
             chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | Affected: ${affectedRegions}`);
             chatAdd(`📦 [ACTION] Recommended Qty: ${qty} units`);
             chatAdd(`🛡️ [SAFETY GATE] ${isAuto ? '⚡ Auto-dispatch authorised' : '👤 Human-in-loop required'}`);
 
-            // --- ROLE-BASED BRANCHING ---
             if (isAdmin) {
-                isAdminManualOverride = true; // ← ADD THIS
+                isAdminManualOverride = true;
                 const badge = document.getElementById('global-status');
                 const label = scenarioKey.replace(/_/g, ' ').toUpperCase();
-                
-                // Determine style based on scenario
-                if (scenarioKey.includes('low')) {
-                    badge.className = 'status-badge'; 
-                    badge.style.background = ''; // Reset manual colors
+
+                if (isDengue) {
+                    badge.className = 'status-badge';
+                    badge.style.background = '#fef3c7';
+                    badge.style.color = '#92400e';
+                    badge.style.borderColor = '#fde68a';
+                    badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> 🦟 DENGUE ALERT`;
+                    chatAdd(`🦟 [BROADCAST] DENGUE HIGH ALERT initiated.`);
+                    chatAdd(`🗺️ [ZONES] ${affectedRegions} flagged as RED ZONE — cluster activity detected.`);
+                    chatAdd(`📋 [AUDIT] Prevention packs order generated. Clinics notified.`);
+                } else if (scenarioKey.includes('low')) {
+                    badge.className = 'status-badge';
+                    badge.style.background = '';
                     badge.style.color = '';
                     badge.style.borderColor = '';
                     badge.innerHTML = `<span class="dot"></span> ${label}`;
+                    chatAdd(`🚀 [BROADCAST] ${label} initiated. All clinics notified.`);
+                    chatAdd(`📋 [AUDIT] Decision logged to governance.log.`);
                 } else if (scenarioKey.includes('moderate')) {
-                    badge.className = 'status-badge'; 
-                    badge.style.background = '#fffbeb'; 
+                    badge.className = 'status-badge';
+                    badge.style.background = '#fffbeb';
                     badge.style.color = '#92400e';
                     badge.style.borderColor = '#fde68a';
-                    badge.innerHTML = `<span class="dot" style="background: #f59e0b;"></span> ⚠️ ${label}`;
+                    badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> ⚠️ ${label}`;
+                    chatAdd(`🚀 [BROADCAST] ${label} initiated. All clinics notified.`);
+                    chatAdd(`📋 [AUDIT] Decision logged to governance.log.`);
                 } else {
-                    badge.className = 'status-badge critical'; 
+                    badge.className = 'status-badge critical';
+                    badge.style.background = '';
+                    badge.style.color = '';
+                    badge.style.borderColor = '';
                     badge.innerHTML = `<span class="dot"></span> ⚠️ ${label}`;
+                    chatAdd(`🚀 [BROADCAST] ${label} initiated. All clinics notified.`);
+                    chatAdd(`📋 [AUDIT] Decision logged to governance.log.`);
                 }
-                
-                chatAdd(`🚀 [BROADCAST] ${label} initiated. All clinics notified.`);
-                chatAdd(`📋 [AUDIT] Decision logged to governance.log.`);
+
             } else {
                 // Clinic Manager Logic
                 if (isAuto) {
