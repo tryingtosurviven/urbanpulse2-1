@@ -770,7 +770,12 @@
       suppressDraftPopupUntil = Date.now() + 8000;
       userDraftVisible = true;
 
-      document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (N95)";
+      // Natalie: Check which view is active to set correct label
+      const isDengueScenario = document.getElementById('dengue-panel') && document.getElementById('dengue-panel').style.display !== 'none';
+      const finalLabel = isDengueScenario ? "Dengue Prevention Packs" : "N95 Masks";
+      
+      // Natalie: Fixed variable name to newQty
+      document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (" + finalLabel + ")";
 
       const modal = document.querySelector('.po-modal');
       modal.style.border = "none";
