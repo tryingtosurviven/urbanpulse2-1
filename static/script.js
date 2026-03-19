@@ -135,28 +135,47 @@ window.runRegionScenario = runRegionScenario;
    Backend call + fallbacks
 --------------------------- */
 async function callScenarioBackend(scenarioName) {
-  // 1) Try /api/run-scenario (Now uses authedFetch)
-  try {
-    const res1 = await authedFetch(`/api/run-scenario/${encodeURIComponent(scenarioName)}`, {
+  // Check if user is admin
+  const role = localStorage.getItem("urbanpulse_role") || "";
+  const isAdmin = role === "admin";
+
+  if (isAdmin) {
+    // Admin uses protected endpoint
+    try {
+      const res = await authedFetch(`/api/run-scenario/${encodeURIComponent(scenarioName)}`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) return await safeJson(res);
+    } catch (e) {
+      if (e.message === "Session expired") throw e;
+      // fall through to watsonx
+    }
+
+    // Admin fallback
+    const res2 = await authedFetch(`/api/watsonx-scenario`, {
       method: "POST",
       headers: { Accept: "application/json" },
+      body: JSON.stringify({ scenario_key: scenarioName }),
     });
-    if (res1.ok) return await safeJson(res1);
-  } catch (e) {
-    // Only throw if it's an auth error, otherwise fall through
-    if (e.message === "Session expired" || e.message === "Access denied") throw e;
+    const data2 = await safeJson(res2);
+    if (!res2.ok) throw new Error(data2?.error || "Failed to run scenario");
+    return data2;
+
+  } else {
+    // Clinic manager + citizen use public endpoint (no admin required)
+    const res = await fetch(`/api/public/run-scenario/${encodeURIComponent(scenarioName)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...authHeaders(),
+      },
+    });
+    const data = await safeJson(res);
+    if (!res.ok) throw new Error(data?.error || "Failed to run scenario");
+    return data;
   }
-
-  // 2) Fallback to watsonx-scenario (Now uses authedFetch)
-  const res2 = await authedFetch(`/api/watsonx-scenario`, {
-    method: "POST",
-    headers: { Accept: "application/json" },
-    body: JSON.stringify({ scenario_key: scenarioName }),
-  });
-
-  const data2 = await safeJson(res2);
-  if (!res2.ok) throw new Error(data2?.error || data2?.message || "Failed to run scenario");
-  return data2;
 }
 
 async function safeJson(res) {

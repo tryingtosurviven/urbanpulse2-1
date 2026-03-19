@@ -693,6 +693,7 @@ def get_scenario(scenario_key):
 
 # Public endpoint for citizen map
 @app.post("/api/public/run-scenario/<scenario_key>")
+@require_role("citizen", "clinic_manager", "admin")
 def api_public_run_scenario(scenario_key):
     key = scenario_key.strip().lower()
     if key not in VALID_SCENARIOS:
