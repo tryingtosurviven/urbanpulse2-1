@@ -88,6 +88,11 @@
     .reject-btn:hover { background: #f1f5f9; color: #ef4444; border-color: #fca5a5; }
 
     /* ALERT STATE */
+    .card.moderate {
+        border-left: 5px solid #f59e0b; background: #fffbeb; }
+    .card.moderate .stock-indicator {background: #fef3c7; color: #92400e; }
+    .card.moderate .stat-val { color: #b45309; }
+    
     .card.critical { border-left: 5px solid #ef4444; background: #fef2f2; }
     .card.critical .stock-indicator { background: #fee2e2; color: #991b1b; }
     .card.critical .stat-val { color: #b91c1c; }
@@ -594,72 +599,119 @@
 
     // --- MAIN: RUN CLINIC ASSISTANT ---
     async function runClinicAssistant(scenarioKey) {
-      if (assistantIsRunning) return;
-      assistantIsRunning = true;
-      setScenarioButtonsEnabled(false);
+        if (assistantIsRunning) return;
+        assistantIsRunning = true;
+        setScenarioButtonsEnabled(false);
 
-      chatAdd(`[THOUGHT] Initializing UrbanPulse Sentinel for ${scenarioKey}...`, { status: true });
+        // Remove { status: true } from ALL chatAdd calls so they stack
+        chatAdd(`🔍 [THOUGHT] Initializing UrbanPulse Sentinel for ${scenarioKey}...`);
 
-      try {
-        const result = await window.runScenario(scenarioKey);
-        updateSingaporeAvgPsi(result);
+        try {
+            const result = await window.runScenario(scenarioKey);
+            updateSingaporeAvgPsi(result);
 
-        chatAdd(`[THOUGHT] Analyzing regional PSI trends...`, { status: true });
-        chatAdd(`[GOVERNANCE] Checking Protocol 4.2 thresholds...`, { status: true });
+            chatAdd(`📡 [THOUGHT] Analyzing regional PSI trends...`);
+            chatAdd(`⚖️ [GOVERNANCE] Checking Protocol 4.2 thresholds...`);
 
-        const qty = extractRecommendedQty(result, scenarioKey);
-        const supply = result?.supply_chain_actions || {};
-        const isAuto = supply.autonomous === true;
+            const qty = extractRecommendedQty(result, scenarioKey);
+            const supply = result?.supply_chain_actions || {};
+            const isAuto = supply.autonomous === true;
+            const riskLevel = result?.risk_assessment?.risk_level || "UNKNOWN";
+            const affectedRegions = result?.risk_assessment?.affected_regions?.join(", ") || "N/A";
 
-        chatAdd(`[ACTION] Recommended Qty: ${qty}. Safety Gate: ${isAuto ? 'Auto-dispatch ⚡' : 'Human-in-loop'}`, { status: true });
+            chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | Affected: ${affectedRegions}`);
+            chatAdd(`📦 [ACTION] Recommended Qty: ${qty} units N95`);
+            chatAdd(`🛡️ [SAFETY GATE] ${isAuto ? '⚡ Auto-dispatch authorised (Severe Haze Protocol 3.1)' : '👤 Human-in-loop required (Protocol 4.2)'}`);
 
-        if (isAuto) {
-          chatAdd(`[AUTO-DISPATCH] PSI critical — executing autonomous protocol...`, { status: true });
-          activateAutonomousMode();
-          await executeAutoOrder(qty);
-        } else {
-          // Show draft panel for human approval
-          const draft = result?.supply_chain_actions || {};
-          showDraftPanel({
-            id: draft.po_id || "PO-PENDING",
-            facility: "Tan Tock Seng Hospital (HQ)",
-            qty: qty,
-            governance_log: draft.governance?.why || "Manual review required per Protocol 4.2."
-          });
+            if (isAuto) {
+                chatAdd(`🚨 [AUTO-DISPATCH] PSI critical — executing autonomous order now...`);
+                activateAutonomousMode();
+                await executeAutoOrder(qty);
+            } else {
+                chatAdd(`📋 [DRAFT PO] Generated for review. Awaiting clinic manager approval.`);
+                showDraftPanel({
+                    id: supply.po_id || "PO-PENDING",
+                    facility: "Tan Tock Seng Hospital (HQ)",
+                    qty: qty,
+                    governance_log: supply.governance?.why || "Manual review required per Protocol 4.2."
+                });
+            }
+
+        } catch (e) {
+            chatAdd(`❌ [ERROR] System fault: ${e.message}`);
+        } finally {
+            assistantIsRunning = false;
+            setScenarioButtonsEnabled(true);
         }
-
-      } catch (e) {
-        chatAdd(`[ERROR] System fault: ${e.message}`, { status: true });
-      } finally {
-        assistantIsRunning = false;
-        setScenarioButtonsEnabled(true);
-      }
     }
 
     // --- PSI SLIDER ---
     function updateSimValue(val) {
-      isManualSim = true;
-      document.getElementById('slider-val-badge').innerText = val;
-      const badge = document.getElementById('global-status');
-      const cards = document.querySelectorAll('.card');
-      if (val >= 201) {
-        badge.className = 'status-badge critical';
-        badge.style.background = '#fef2f2';
-        badge.style.color = '#991b1b';
-        badge.style.borderColor = '#fecaca';
-        badge.innerHTML = '<span class="dot" style="background:#ef4444;"></span> 🔴 HAZARDOUS EMERGENCY';
-        cards.forEach(c => c.classList.add('critical'));
-      } else if (val >= 101) {
-        badge.className = 'status-badge';
-        badge.style.background = '#fffbeb';
-        badge.style.color = '#92400e';
-        badge.style.borderColor = '#fde68a';
-        badge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span> 🟠 UNHEALTHY STATUS';
-        cards.forEach(c => c.classList.remove('critical'));
-      } else {
-        isManualSim = false;
-        deactivateAlertMode();
-      }
+        isManualSim = true; 
+        document.getElementById('slider-val-badge').innerText = val;
+        
+        const badge = document.getElementById('global-status');
+        const cards = document.querySelectorAll('.card');
+        const indicators = document.querySelectorAll('.stock-indicator');
+        
+        // Tier 1: Hazardous / Very Unhealthy (201+)
+        if (val >= 201) {
+            badge.className = 'status-badge critical';
+            badge.style.background = '#fef2f2';
+            badge.style.color = '#991b1b';
+            badge.style.borderColor = '#fecaca';
+            badge.innerHTML = '<span class="dot" style="background: #ef4444;"></span> 🔴 HAZARDOUS EMERGENCY';
+            
+            cards.forEach(c => {
+                c.classList.add('critical');
+                c.classList.remove('moderate');
+                c.style.borderLeft = '5px solid #ef4444';
+                c.style.background = '#fef2f2';
+            });
+            indicators.forEach(i => {
+                i.style.background = '#fee2e2';
+                i.style.color = '#991b1b';
+                i.innerText = '⚠️ Critical — Restock Now';
+            });
+
+        // Tier 2: Unhealthy (101 - 200)
+        } else if (val >= 101) {
+            badge.className = 'status-badge';
+            badge.style.background = '#fffbeb';
+            badge.style.color = '#92400e';
+            badge.style.borderColor = '#fde68a';
+            badge.innerHTML = '<span class="dot" style="background: #f59e0b;"></span> 🟠 UNHEALTHY — ELEVATED RISK';
+
+            cards.forEach(c => {
+                c.classList.remove('critical');
+                c.classList.add('moderate');
+                c.style.borderLeft = '5px solid #f59e0b';
+                c.style.background = '#fffbeb';
+            });
+            indicators.forEach(i => {
+                i.style.background = '#fef3c7';
+                i.style.color = '#92400e';
+                i.innerText = '🟠 Monitor — Stock Up';
+            });
+
+        // Tier 3: Moderate / Good (0 - 100)
+        } else {
+            isManualSim = false;
+            
+            cards.forEach(c => {
+                c.classList.remove('critical');
+                c.classList.remove('moderate');
+                c.style.borderLeft = '';
+                c.style.background = '';
+            });
+            indicators.forEach(i => {
+                i.style.background = '';
+                i.style.color = '';
+                i.innerText = 'Supply Healthy';
+            });
+
+            deactivateAlertMode();
+        }
     }
 
     // --- INIT ---
