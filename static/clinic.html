@@ -220,7 +220,6 @@
     <a href="/" style="text-decoration: none; color: #667eea; font-weight: bold;">← Back to Home</a>
     <div class="logo"><span style="font-size: 1.5rem;">🏥</span> Ministry of Health | Oversight</div>
     <div id="global-status" class="status-badge"><span class="dot"></span> System Normal</div>
-    <!-- Add inside the header bar -->
     <div style="display:flex; align-items:center; gap:12px;">
       <span id="role-badge" style="
         background:#1e40af; color:white; 
@@ -235,7 +234,6 @@
     </div>
   </div>
 
-  <!-- ADMIN ONLY PANEL — hidden for clinic_manager -->
   <div id="admin-only-panel" style="
       display: none;
       background: #1e1b4b;
@@ -289,7 +287,6 @@
       "></div>
   </div>
 
-  <!-- AI Order Assistant -->
   <div class="ai-panel">
     <div class="ai-card">
       
@@ -319,7 +316,6 @@
     </div>
   </div>
 
-  <!-- SCENARIO TABS — clinic manager only -->
   <div id="scenario-tabs" style="display:none; max-width:1400px; margin:12px auto 0 auto; padding:0 30px;">
       <div style="display:flex; gap:8px; background:white; border:1px solid #e2e8f0; border-radius:12px; padding:6px; width:fit-content;">
           <button id="tab-haze" onclick="switchTab('haze')" style="
@@ -344,7 +340,6 @@
       "></span>
   </div>
 
-  <!-- DENGUE ALERT PANEL — shown when dengue is active -->
   <div id="dengue-panel">
       <div style="max-width:1400px; margin:0 auto; padding: 0 30px;">
 
@@ -369,7 +364,6 @@
               </div>
           </div>
 
-          <!-- Clinic Action Advisory -->
           <div class="dengue-action-box">
               <h4>📋 Clinic Action Required</h4>
               <ul>
@@ -380,10 +374,8 @@
               </ul>
           </div>
 
-          <!-- Map -->
           <div id="dengue-map"></div>
 
-          <!-- District Cards -->
           <div class="dengue-grid" id="dengue-district-cards"></div>
 
       </div>
@@ -407,7 +399,6 @@
     </div>
   </div>
 
-  <!-- Draft Panel -->
   <div id="draft-panel">
     <div class="draft-content">
       <div class="draft-info">
@@ -428,7 +419,6 @@
     </div>
   </div>
 
-  <!-- Detail modal -->
   <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
     <div class="modal">
       <div class="modal-header">
@@ -448,7 +438,6 @@
     </div>
   </div>
 
-  <!-- Success modal -->
   <div class="modal-overlay" id="success-overlay" style="display:none;">
     <div class="modal po-modal">
       <span class="po-icon">✅</span>
@@ -466,7 +455,6 @@
     </div>
   </div>
 
-  <!-- Unified frontend controller -->
   <script src="/static/script.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -615,7 +603,6 @@
               activateAlertMode();
 
           } else if (isDengueAlert) {
-              // ← ADD THIS BLOCK for dengue
               if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
               if (badge) {
                   badge.className = 'status-badge';
@@ -973,76 +960,36 @@
 
     function showDenguePanel(dengueData) {
         window._lastDengueData = dengueData;
-        const panel = document.getElementById('dengue-panel');
         const container = document.getElementById('dengue-district-cards');
-        const redZonesEl = document.getElementById('dengue-red-zones');
-        if (!panel || !container) return;
+        if (!container) return;
 
-        panel.style.display = 'block';
-        const normalContainer = document.querySelector('.container');
-        if (normalContainer) normalContainer.style.display = 'none';
+        document.getElementById('dengue-panel').style.display = 'block';
+        document.querySelector('.container').style.display = 'none';
 
-        container.innerHTML = '';
-        const redZones = [];
+        // Natalie: Keep Live row if it exists, otherwise clear container
+        const liveSection = document.getElementById('live-nea-section');
+        container.innerHTML = liveSection ? liveSection.outerHTML : '';
 
-        if (dengueData && Object.keys(dengueData).length > 0) {
-            Object.entries(dengueData).forEach(([district, cases]) => {
-                const config = DISTRICT_CONFIG[district];
-                if (!config) return;
-                const zone = getZone(cases);
-                const action = getClinicAction(cases);
-                if (zone.level === 'RED') redZones.push(config.label);
-                container.innerHTML += `
-                    <div class="dengue-card ${zone.cls}">
-                        <div class="dengue-district">${config.label}</div>
-                        <span class="dengue-zone-badge ${zone.cls}">${zone.level} ZONE</span>
-                        <div class="dengue-stat">🦟 Cases: <strong>${cases}</strong></div>
-                        <div class="dengue-stat">📊 Trend: <strong>${zone.trend}</strong></div>
-                        <div class="dengue-stat" style="margin-top:6px; font-size:0.75rem; color:#78350f;">
-                            📦 ${action}
-                        </div>
-                    </div>
-                `;
-            });
-        }
+        // Create the simulated section
+        let simulatedHtml = `
+            <div id="simulated-dengue-section" style="grid-column:1/-1; margin-top:10px;">
+                <div style="background:#fef3c7; color:#92400e; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; width:fit-content; margin-bottom:10px;">
+                    🧪 SIMULATED STRESS-TEST DATA
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px;">`;
 
-        if (redZonesEl) {
-            redZonesEl.innerHTML = redZones.length > 0
-                ? `<strong style="color:#991b1b;">${redZones.join(', ')}</strong>`
-                : 'affected districts';
-        }
+        Object.entries(dengueData).forEach(([district, cases]) => {
+            const zone = getZone(cases);
+            simulatedHtml += `
+                <div class="dengue-card ${zone.cls}">
+                    <div style="font-weight:700;">${district.toUpperCase()}</div>
+                    <span class="dengue-zone-badge ${zone.cls}">${zone.level} ZONE</span>
+                    <div>🦟 Cases: <strong>${cases}</strong></div>
+                </div>`;
+        });
 
-        setTimeout(() => {
-            ensureDengueMapExists();
-            if (!dengueMap) return;
-            dengueMap.eachLayer(layer => {
-                if (layer instanceof L.Marker || layer instanceof L.GeoJSON) dengueMap.removeLayer(layer);
-            });
-            if (dengueData) {
-                Object.entries(dengueData).forEach(([district, cases]) => {
-                    const feature = SYNTHETIC_GEOJSON[district];
-                    if (!feature) return;
-                    const zone = getZone(cases);
-                    const locality = feature.properties.LOCALITY;
-                    L.geoJSON(feature, {
-                        style: { color: zone.color, weight: 3, fillColor: zone.color, fillOpacity: 0.45 },
-                        onEachFeature: (feat, layer) => {
-                            layer.bindPopup(`<b>🦟 ${locality}</b><br>Cases: <b>${cases}</b><br>Zone: <b style="color:${zone.color}">${zone.level}</b><br>Trend: ${zone.trend}<br><small>${getClinicAction(cases)}</small>`);
-                            const bounds = layer.getBounds();
-                            if (bounds.isValid()) {
-                                L.marker(bounds.getCenter(), {
-                                    icon: L.divIcon({
-                                        html: `<div style="background:${zone.color};color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);">${cases}</div>`,
-                                        className: '', iconSize: [32,32], iconAnchor: [16,16],
-                                    })
-                                }).addTo(dengueMap);
-                            }
-                        }
-                    }).addTo(dengueMap);
-                });
-            }
-            setTimeout(() => { dengueMap.invalidateSize(); }, 200);
-        }, 150);
+        simulatedHtml += `</div></div>`;
+        container.insertAdjacentHTML('beforeend', simulatedHtml);
     }
 
     function showDenguePanelEmpty() {
@@ -1132,6 +1079,7 @@
 
     function switchTab(tab) {
         currentTab = tab;
+
         const hazeBtn = document.getElementById('tab-haze');
         const dengueBtn = document.getElementById('tab-dengue');
         const indicator = document.getElementById('tab-live-indicator');
@@ -1162,8 +1110,7 @@
                 if (indicator) indicator.innerText = '● Monitoring clusters';
             }
 
-            // --- AUTO-LOAD LIVE DATA HERE ---
-            // This triggers the fetch automatically when the tab opens
+            // --- Natalie: AUTO-LOAD LIVE DATA (Natalie's Fix) ---
             if (!window._neaDataLoaded) {
                 loadLiveNEAData();
             }
@@ -1172,14 +1119,18 @@
 
      
     async function loadLiveNEAData() {
-        if (window._neaDataLoaded) return; // Prevent double loading
+        // --- Natalie: Added check to prevent double loading ---
+        if (window._neaDataLoaded) return; 
+
         const btn = document.getElementById('live-nea-btn');
         const statusEl = document.getElementById('live-nea-status');
         const sourceEl = document.querySelector('#dengue-panel p');
         const container = document.getElementById('dengue-district-cards');
 
-        btn.disabled = true;
-        btn.innerText = '⏳ Fetching...';
+        if(btn) {
+          btn.disabled = true;
+          btn.innerText = '⏳ Fetching...';
+        }
         if (statusEl) statusEl.innerText = 'Connecting to data.gov.sg...';
 
         try {
@@ -1189,73 +1140,78 @@
 
             const features = (result.data?.features) || [];
             ensureDengueMapExists();
+            if (!dengueMap) throw new Error('Map not ready');
 
-            const liveCardsData = [];
+            const liveCards = [];
+            let clusterCount = 0;
+
             features.forEach(feature => {
                 const cases = feature.properties?.CASE_SIZE || 0;
                 const locality = feature.properties?.LOCALITY || 'Unknown';
                 const zone = getZone(cases);
-                
-                // Add to map
+
                 L.geoJSON(feature, {
                     style: { color: zone.color, weight: 3, fillColor: zone.color, fillOpacity: 0.5 },
                     onEachFeature: (feat, layer) => {
-                        layer.bindPopup(`<b>🟢 LIVE NEA CLUSTER</b><br><b>🦟 ${locality}</b><br>Cases: <b>${cases}</b>`);
+                        layer.bindPopup(`<b>🟢 LIVE NEA CLUSTER</b><br><b>🦟 ${locality}</b><br>Cases: <b>${cases}</b><br>Zone: <b style="color:${zone.color}">${zone.level}</b><br><small style="color:#64748b;">Source: data.gov.sg (live)</small>`);
                         const bounds = layer.getBounds();
                         if (bounds.isValid()) {
                             L.marker(bounds.getCenter(), {
                                 icon: L.divIcon({
-                                    html: `<div style="background:white;border:2px solid ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🟢 LIVE: ${cases}</div>`,
+                                    html: `<div style="background:white;border:2px solid ${zone.color};color:${zone.color};border-radius:6px;padding:2px 6px;font-size:0.65rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🟢 LIVE: ${cases} cases</div>`,
                                     className: '', iconAnchor: [40, 10],
                                 })
                             }).addTo(dengueMap);
                         }
                     }
                 }).addTo(dengueMap);
-
-                liveCardsData.push({ locality, cases, zone });
+                liveCards.push({ locality, cases, zone });
+                clusterCount++;
             });
 
-            // --- RE-STRUCTURE THE GRID TO ENSURE LIVE DATA IS FIRST ---
-            const liveHtml = `
-                <div id="live-nea-section" style="grid-column:1/-1; margin-bottom:10px; padding-bottom:10px; border-bottom:2px solid #0ea5e9;">
-                    <div style="font-size:0.85rem; font-weight:800; color:#0ea5e9; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
-                        <span style="background:#0ea5e9; color:white; padding:2px 8px; border-radius:4px; font-size:0.7rem;">OFFICIAL</span>
-                        🟢 LIVE NEA DATA — ${features.length} clusters from data.gov.sg
+            // --- Natalie: THIS IS THE REPLACEMENT BLOCK TO FORCE THE LIVE DATA TO THE TOP ---
+            if (container && liveCards.length > 0) {
+                container.insertAdjacentHTML('afterbegin', `
+                    <div id="live-nea-section" style="grid-column:1/-1; margin-bottom:15px; padding-bottom:15px; border-bottom:2px solid #0ea5e9;">
+                        <div style="font-size:0.85rem; font-weight:800; color:#0ea5e9; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                            <span style="background:#0ea5e9; color:white; padding:2px 8px; border-radius:4px; font-size:0.7rem;">OFFICIAL</span>
+                            🟢 LIVE NEA DATA — ${clusterCount} active clusters from data.gov.sg
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px;">
+                            ${liveCards.map(c => `
+                                <div style="background:white; border:1px solid #e2e8f0; border-left:4px solid ${c.zone.color}; border-radius:8px; padding:10px; font-size:0.8rem;">
+                                    <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">${c.locality}</div>
+                                    <div style="color:#64748b;">🦟 Cases: <strong style="color:#0f172a;">${c.cases}</strong></div>
+                                    <div style="color:#64748b;">Zone: <strong style="color:${c.zone.color};">${c.zone.level}</strong></div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px;">
-                        ${liveCardsData.map(c => `
-                            <div class="dengue-card" style="border-left:5px solid ${c.zone.color};">
-                                <div class="dengue-district" style="font-size:0.8rem;">${c.locality}</div>
-                                <span class="dengue-zone-badge" style="background:${c.zone.color}22; color:${c.zone.color}; border:1px solid ${c.zone.color}44;">
-                                    ${c.zone.level} ZONE
-                                </span>
-                                <div class="dengue-stat">🦟 Cases: <strong>${c.cases}</strong></div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+                `);
 
-            // Insert at the very top of the container
-            container.insertAdjacentHTML('afterbegin', liveHtml);
-            window._neaDataLoaded = true; 
-            if (btn) btn.style.display = 'none'; // Hide the button since it's now automatic
+                window._neaDataLoaded = true; // Mark as loaded so it doesn't repeat
+            }
 
             if (sourceEl) {
-                sourceEl.innerHTML = `<span style="color:#0ea5e9; font-weight:700;">🟢 Live NEA feed active: ${features.length} real clusters found.</span>`;
+                sourceEl.innerHTML = `
+                    <span style="color:#64748b;">Synthetic scenario: stress-test data above ↑</span><br>
+                    <span style="color:#0ea5e9;font-weight:700;">🟢 Live NEA feed: ${clusterCount} real active clusters overlaid on map</span>
+                    <span style="color:#94a3b8;font-size:0.72rem;">(Same source as nea.gov.sg — updated every 14 days)</span>`;
             }
-            if (statusEl) statusEl.innerText = `✅ Loaded ${features.length} clusters.`;
-            
-            btn.innerText = '✅ Live Data Loaded';
-            btn.style.background = '#10b981';
+            if (statusEl) statusEl.innerText = `✅ ${clusterCount} real clusters from data.gov.sg`;
+            if (btn) {
+              btn.innerText = '✅ Live Data Loaded';
+              btn.style.background = '#10b981';
+            }
             dengueMap.invalidateSize();
 
         } catch (e) {
-            console.error('NEA fetch failed:', e);
+            console.error('Live NEA fetch failed:', e);
             if (statusEl) statusEl.innerText = `❌ Failed: ${e.message}`;
-            btn.disabled = false;
-            btn.innerText = '🛰 Overlay Real NEA Clusters (data.gov.sg)';
+            if (btn) {
+              btn.disabled = false;
+              btn.innerText = '🛰 Overlay Real NEA Clusters (data.gov.sg)';
+            }
         }
     }
 
@@ -1312,9 +1268,12 @@
                     badge.style.color = '#92400e';
                     badge.style.borderColor = '#fde68a';
                     badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> 🦟 DENGUE ALERT`;
-                    chatAdd(`🦟 [BROADCAST] DENGUE HIGH ALERT initiated.`);
-                    chatAdd(`🗺️ [ZONES] ${affectedRegions} flagged as RED ZONE — cluster activity detected.`);
-                    chatAdd(`📋 [AUDIT] Prevention packs order generated. Clinics notified.`);
+                    
+                    chatAdd(`🦟 [BROADCAST] DENGUE EMERGENCY PROTOCOL initiated.`);
+                    chatAdd(`📊 [ANALYSIS] Synthetic stress-test scenario loaded for districts: Bedok, Tampines, Hougang.`);
+                    chatAdd(`🛰️ [LIVE SYNC] Real-time NEA cluster data overlaid for comparative surveillance.`);
+                    chatAdd(`📋 [AUDIT] Decision logged. Clinics instructed to prepare prevention packs.`);
+    
                 } else if (scenarioKey.includes('low')) {
                     badge.className = 'status-badge';
                     badge.style.background = '';
@@ -1404,6 +1363,7 @@
             chatClear();
             deactivateAlertMode();
             hideDenguePanel(true);
+            window._neaDataLoaded = false; // Reset the live data flag so it can reload next time
 
 
 
