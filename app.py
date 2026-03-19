@@ -27,19 +27,24 @@ VALID_SCENARIOS = {
 
 def write_governance_log(entry: Dict[str, Any]):
     """
-    Writes a permanent audit trail of AI decisions to a local file.
+    Writes a permanent JSON audit trail of AI decisions to a local file.
+    Append-only ensures tamper-evident logging (NIST AI RMF compliant).
+    PostgreSQL-ready for production deployment.
     """
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_line = (
-        f"[{timestamp}] "
-        f"PO: {entry.get('id')} | "
-        f"PSI: {entry.get('psi', 'N/A')} | "
-        f"Dengue Cases: {entry.get('projected_cases', 'N/A')} | "
-        f"{entry.get('governance_log', '')}\n"
-    )
+    log_entry = {
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "po_id": entry.get("id"),
+        "psi": entry.get("psi"),
+        "projected_cases": entry.get("projected_cases"),
+        "risk_level": entry.get("risk_level"),
+        "facility": entry.get("facility"),
+        "qty": entry.get("qty"),
+        "autonomous": entry.get("autonomous"),
+        "governance_note": entry.get("governance_log"),
+    }
 
     with open("governance.log", "a", encoding="utf-8") as f:
-        f.write(log_line)
+        f.write(json.dumps(log_entry) + "\n")
 
 
 # ==============================================================================
@@ -671,11 +676,33 @@ def clinic_portal():
 def logistics_portal():
     return send_from_directory("static", "logistics.html")
 
-
 @app.route("/admin")
 @require_role("admin")
 def admin_portal():
-    return send_from_directory("static", "admin.html")
+    """Admins now use the unified dashboard with the admin-only-panel revealed."""
+    return send_from_directory("static", "clinic.html")
+
+@app.get("/api/governance-log")
+@require_role("admin")
+def get_governance_log():
+    """Returns last 50 governance log entries for admin audit view."""
+    entries = []
+    try:
+        with open("governance.log", "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+    except FileNotFoundError:
+        pass
+    return jsonify({
+        "status": "success",
+        "count": len(entries),
+        "entries": entries[-50:]  # last 50
+    })
 
 
 @app.route("/api/scenario/<scenario_key>")

@@ -161,6 +161,55 @@
     </div>
   </div>
 
+  <!-- ADMIN ONLY PANEL — hidden for clinic_manager -->
+  <div id="admin-only-panel" style="
+      display: none;
+      background: #1e1b4b;
+      color: white;
+      padding: 16px 24px;
+      margin: 16px 30px;
+      border-radius: 12px;
+      border: 1px solid #4f46e5;
+  ">
+      <div style="font-size:0.75rem; color:#a5b4fc; font-weight:700; letter-spacing:1px; margin-bottom:12px;">
+          🔐 ADMIN CONTROLS — System Orchestration
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button onclick="runClinicAssistant('low_haze')" style="
+              background:#065f46; color:white; border:none;
+              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
+              🟢 Trigger Low Haze
+          </button>
+          <button onclick="runClinicAssistant('moderate_haze')" style="
+              background:#92400e; color:white; border:none;
+              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
+              🟠 Trigger Moderate Haze
+          </button>
+          <button onclick="runClinicAssistant('severe_haze')" style="
+              background:#7f1d1d; color:white; border:none;
+              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
+              🔴 Trigger Severe Haze
+          </button>
+          <button onclick="runClinicAssistant('dengue_high')" style="
+              background:#1e3a5f; color:white; border:none;
+              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
+              🦟 Trigger Dengue High
+          </button>
+          <button onclick="fetchGovernanceLog()" style="
+              background:#374151; color:white; border:none;
+              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
+              📋 View Audit Log
+          </button>
+      </div>
+      <div id="audit-log-display" style="
+          display:none; margin-top:12px;
+          background:#0f172a; padding:12px;
+          border-radius:8px; font-size:0.75rem;
+          color:#94a3b8; max-height:150px;
+          overflow-y:auto; font-family:monospace;
+      "></div>
+  </div>
+
   <!-- AI Order Assistant -->
   <div class="ai-panel">
     <div class="ai-card">
@@ -283,9 +332,18 @@
   <!-- Unified frontend controller -->
   <script src="/static/script.js"></script>
 
-  
   <script>
     let isManualSim = false;
+
+    // --- ROLE-BASED UI ---
+    const currentRole = localStorage.getItem("urbanpulse_role") || "";
+    const isAdmin = currentRole === "admin";
+
+    // Show admin-only panel if admin
+    if (isAdmin) {
+        const adminPanel = document.getElementById('admin-only-panel');
+        if (adminPanel) adminPanel.style.display = 'block';
+    }
 
     // --- AUTH HELPERS ---
     function getToken() { return localStorage.getItem("urbanpulse_token"); }
@@ -298,7 +356,11 @@
     const role = localStorage.getItem("urbanpulse_role") || "unknown";
     const userName = localStorage.getItem("urbanpulse_name") || "";
     const roleBadge = document.getElementById("role-badge");
-    if (roleBadge) roleBadge.innerText = `${userName} (${role.replace("_", " ").toUpperCase()})`;
+    if (roleBadge) {
+        roleBadge.innerText = `${userName} (${role.replace("_", " ").toUpperCase()})`;
+        // Purple for admin, blue for clinic manager
+        roleBadge.style.background = isAdmin ? '#7c3aed' : '#1e40af';
+    }
 
     window.logoutUser = function() {
       localStorage.removeItem("urbanpulse_token");
@@ -642,6 +704,29 @@
         } finally {
             assistantIsRunning = false;
             setScenarioButtonsEnabled(true);
+        }
+    }
+
+    async function fetchGovernanceLog() {
+        const display = document.getElementById('audit-log-display');
+        display.style.display = 'block';
+        display.innerText = 'Loading audit log...';
+        try {
+            const res = await fetch('/api/governance-log', {
+                headers: authHeaders()
+            });
+            const data = await res.json();
+            if (data.entries && data.entries.length > 0) {
+                display.innerText = data.entries
+                    .slice(-10)  // show last 10 entries
+                    .reverse()
+                    .map(e => `[${e.timestamp}] ${e.po_id} | Risk: ${e.risk_level} | Qty: ${e.qty} | ${e.governance_note}`)
+                    .join('\n');
+            } else {
+                display.innerText = 'No audit entries yet.';
+            }
+        } catch(e) {
+            display.innerText = 'Error loading log: ' + e.message;
         }
     }
 
