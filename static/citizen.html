@@ -472,7 +472,9 @@
         dengueNextLow: "No urgent action required. Maintain routine control.",
         dengueRiskLabel: "Dengue Risk", caseLabel: "Projected Cases",
         watsonxLive: "live reasoning used", watsonxFallback: "fallback mode used",
-        iotTitle: "🏠 Home IoT Control", deviceLabel: "Device: Air Purifier", statusOffline: "OFFLINE", btnOn: "Manual ON", btnOff: "Manual OFF"
+        iotTitle: "🏠 Home IoT Control", deviceLabel: "Device: Air Purifier", statusOffline: "OFFLINE", btnOn: "Manual ON", btnOff: "Manual OFF",
+        dev_purifier: "Air Purifier", dev_aircon: "Smart AirCon", dev_vent: "Ventilation Intake", dev_ionizer: "Air Ionizer", dev_blinds: "Smart Blinds",
+        directiveLabel: "AI Directive", ecoEngaged: "Protective ecosystem engaged for", ecoSave: "Ecosystem in energy-save mode.",
       },
       'zh': {
         advisory: "🤖 智能助手建议", agentLog: "已捕获代理日志:", citizenAdvice: "市民建议:", dataUrl: "数据来源: NEA / data.gov.sg",
@@ -499,7 +501,9 @@
         dengueNextLow: "无需紧急行动。保持常规控制。",
         dengueRiskLabel: "登革热风险", caseLabel: "预计病例",
         watsonxLive: "已使用实时推理", watsonxFallback: "已使用后备模式",
-        iotTitle: "🏠 家庭 IoT 控制", deviceLabel: "设备: 空气净化器", statusOffline: "离线", btnOn: "手动开启", btnOff: "手动关闭"
+        iotTitle: "🏠 家庭 IoT 控制", deviceLabel: "设备: 空气净化器", statusOffline: "离线", btnOn: "手动开启", btnOff: "手动关闭",
+        dev_purifier: "空气净化器", dev_aircon: "智能空调", dev_vent: "通风口控制", dev_ionizer: "空气离子发生器", dev_blinds: "智能百叶窗",
+        directiveLabel: "AI 指令", ecoEngaged: "保护生态系统已启动，预计运行", ecoSave: "生态系统处于节能模式。",
       },
       'ms': {
         advisory: "🤖 Nasihat Ejen", agentLog: "Log ejen ditangkap:", citizenAdvice: "Nasihat rakyat:", dataUrl: "Sumber data: NEA / data.gov.sg",
@@ -526,7 +530,9 @@
         dengueNextLow: "Tiada tindakan segera. Kekalkan kawalan rutin.",
         dengueRiskLabel: "Risiko Denggi", caseLabel: "Kes Unjuran",
         watsonxLive: "penaakulan langsung digunakan", watsonxFallback: "mod sandaran digunakan",
-        iotTitle: "🏠 Kawalan IoT Rumah", deviceLabel: "Peranti: Penapis Udara", statusOffline: "LUAR TALIAN", btnOn: "Manual HIDUP", btnOff: "Manual MATI"
+        iotTitle: "🏠 Kawalan IoT Rumah", deviceLabel: "Peranti: Penapis Udara", statusOffline: "LUAR TALIAN", btnOn: "Manual HIDUP", btnOff: "Manual MATI",
+        dev_purifier: "Penapis Udara", dev_aircon: "AirCon Pintar", dev_vent: "Pengambilan Pengudaraan", dev_ionizer: "Pengion Udara", dev_blinds: "Bidai Pintar",
+        directiveLabel: "Arahan AI", ecoEngaged: "Ekosistem pelindung diaktifkan selama", ecoSave: "Ekosistem dalam mod jimat tenaga.",
       },
       'ta': {
         advisory: "🤖 முகவர் ஆலோசனை", agentLog: "பதிவு கைப்பற்றப்பட்டது:", citizenAdvice: "குடிமக்கள் ஆலோசனை:", dataUrl: "ஆதாரம்: NEA / data.gov.sg",
@@ -553,8 +559,10 @@
         dengueNextLow: "உடனடி நடவடிக்கை தேவையில்லை. வழக்கமான கட்டுப்பாடு போதும்.",
         dengueRiskLabel: "டெங்கு ஆபத்து", caseLabel: "கணிக்கப்பட்ட வழக்குகள்",
         watsonxLive: "நேரடி பகுத்தறிவு பயன்படுத்தப்பட்டது", watsonxFallback: "பின்பற்றப்பட்ட பயன்முறை பயன்படுத்தப்பட்டது",
-        iotTitle: "🏠 வீட்டு IoT கட்டுப்பாடு", deviceLabel: "சாதனம்: காற்று சுத்திகரிப்பு", statusOffline: "ஆஃப்லைன்", btnOn: "மேனுவல் ஆன்", btnOff: "மேனுவல் ஆஃப்"
-      }
+        iotTitle: "🏠 வீட்டு IoT கட்டுப்பாடு", deviceLabel: "சாதனம்: காற்று சுத்திகரிப்பு", statusOffline: "ஆஃப்லைன்", btnOn: "மேனுவல் ஆன்", btnOff: "மேனுவல் ஆஃப்",
+        dev_purifier: "காற்று சுத்திகரிப்பு", dev_aircon: "ஸ்மார்ட் ஏர்கான்", dev_vent: "காற்றோட்ட உட்கொள்ளல்", dev_ionizer: "ஏர் அயனைசர்", dev_blinds: "ஸ்மார்ட் பிளைண்ட்ஸ்",
+        directiveLabel: "AI உத்தரவு", ecoEngaged: "பாதுகாப்பு சுற்றுச்சூழல் அமைப்பு இதற்காக ஈடுபட்டுள்ளது", ecoSave: "சுற்றுச்சூழல் அமைப்பு ஆற்றல் சேமிப்பு பயன்முறையில் உள்ளது.",
+        }
     };
 
     function changeLang(lang, btn) {
@@ -801,30 +809,36 @@
 
       if (isNaN(psi)) return;
 
-      // 1. Define and Randomize the ecosystem
-      const allPossible = ["Air Purifier", "Smart AirCon", "Ventilation Intake", "Air Ionizer", "Smart Blinds"];
+      // 1. Mapping for translations
+      const deviceMap = {
+        "Air Purifier": t.dev_purifier,
+        "Smart AirCon": t.dev_aircon,
+        "Ventilation Intake": t.dev_vent,
+        "Air Ionizer": t.dev_ionizer,
+        "Smart Blinds": t.dev_blinds
+      };
+
+      const allPossible = Object.keys(deviceMap);
       const numTypes = Math.floor(Math.random() * 3) + 2; 
       const shuffled = allPossible.sort(() => 0.5 - Math.random());
       const currentDevices = shuffled.slice(0, numTypes);
 
-      // 2. Automation Logic: Determine if AI should turn them ON
       const shouldBeOn = psi >= 101;
-      statusBadge.innerText = shouldBeOn ? "AUTO ACTIVE" : "STANDBY";
+      statusBadge.innerText = shouldBeOn ? (currentLang === 'en' ? "AUTO ACTIVE" : t.advisory.split(' ')[1]) : "STANDBY";
       statusBadge.style.background = shouldBeOn ? "#ef4444" : "#10b981";
 
-      // 3. Generate individual Toggle Buttons for each device
-      deviceListContainer.innerHTML = ""; // Clear old list
-      activeDevices = {}; // Reset state tracking
+      deviceListContainer.innerHTML = ""; 
+      activeDevices = {}; 
 
       currentDevices.forEach(device => {
-        activeDevices[device] = shouldBeOn; // AI sets initial state
+        activeDevices[device] = shouldBeOn; 
+        const translatedName = deviceMap[device] || device; // Natalie: Use translated name
         
         const devRow = document.createElement('div');
         devRow.style = "display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;";
         
-        // Use a checkbox styled as a toggle or simple button
         devRow.innerHTML = `
-          <span style="font-size: 0.9rem; font-weight: 500;">${device}</span>
+          <span style="font-size: 0.9rem; font-weight: 500;">${translatedName}</span>
           <button id="toggle-${device.replace(/\s+/g, '')}" 
                   onclick="toggleSingleDevice('${device}')"
                   style="padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s;
@@ -835,16 +849,23 @@
         deviceListContainer.appendChild(devRow);
       });
 
-      // 4. Update the Log
+      // 2. Styling the AI Directive Box based on severity
       if (shouldBeOn) {
-        let duration = psi >= 200 ? "Continuous (Severe)" : "2 Hours (Moderate)";
-        log.innerHTML = `<span style="color:#b45309"><b>AI Directive:</b> PSI ${psi} is high. Protective ecosystem engaged for ${duration}.</span>`;
+        const isSevere = psi >= 200;
+        const boxBg = isSevere ? "#fee2e2" : "#fef3c7"; // Red vs Yellow
+        const textColor = isSevere ? "#991b1b" : "#92400e"; // Dark Red vs Dark Brown
+        const borderColor = isSevere ? "#ef4444" : "#f59e0b";
+        let duration = isSevere ? "Continuous" : "2 Hours";
+        
+        log.style = `background:${boxBg}; color:${textColor}; padding:10px; border-radius:8px; border-left:4px solid ${borderColor}; margin-top:15px;`;
+        log.innerHTML = `<b>${t.directiveLabel}:</b> PSI ${psi} is high. ${t.ecoEngaged} ${duration}.`;
       } else {
-        log.innerHTML = `<span style="color:#059669">✅ PSI ${psi} is safe. Ecosystem in energy-save mode.</span>`;
+        log.style = "margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;";
+        log.innerHTML = `<span style="color:#059669">✅ ${t.ecoSave}</span>`;
       }
-    }
+    } 
 
-    // Natalie: Handle individual human intervention
+    // Handle individual human intervention
     function toggleSingleDevice(deviceName) {
       activeDevices[deviceName] = !activeDevices[deviceName];
       const newState = activeDevices[deviceName];
