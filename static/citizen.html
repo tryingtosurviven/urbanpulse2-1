@@ -29,6 +29,9 @@
       box-shadow: 10px 0 30px rgba(0,0,0,0.1);
       z-index: 1000;
       box-sizing: border-box;
+      /*Enable scrolling for long content like the IoT panel */
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .main-content {
@@ -203,6 +206,23 @@
       <div class="small-note" id="automation-box">
         <b>Automation proof:</b> When a haze scenario triggers, the advisory updates without manual calculation.
         The decision logic runs server-side.
+      </div>
+    </div>
+
+    <div class="widget" id="iot-panel" style="border-left: 5px solid #10b981; margin-top: 20px;">
+      <h3 style="margin-top: 0; font-size: 1.1rem;">🏠 Home IoT Control</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span id="device-status-label">Device: Air Purifier</span>
+        <span id="iot-status-badge" style="background: #64748b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">OFFLINE</span>
+      </div>
+      
+      <div style="margin-top: 15px; display: flex; gap: 10px;">
+        <button id="iot-on-btn" class="lang-btn" style="background: #10b981; flex: 1; border: none;" onclick="manualIotControl(true)">Manual ON</button>
+        <button id="iot-off-btn" class="lang-btn" style="background: #ef4444; flex: 1; border: none;" onclick="manualIotControl(false)">Manual OFF</button>
+      </div>
+
+      <div class="small-note" id="iot-automation-log" style="margin-top: 10px; font-style: italic;">
+        Waiting for haze data...
       </div>
     </div>
 
@@ -453,7 +473,8 @@
         dengueNextMed: "Do a quick 10-minute home inspection for breeding spots.",
         dengueNextLow: "No urgent action required. Maintain routine control.",
         dengueRiskLabel: "Dengue Risk", caseLabel: "Projected Cases",
-        watsonxLive: "live reasoning used", watsonxFallback: "fallback mode used"
+        watsonxLive: "live reasoning used", watsonxFallback: "fallback mode used",
+        iotTitle: "🏠 Home IoT Control", deviceLabel: "Device: Air Purifier", statusOffline: "OFFLINE", btnOn: "Manual ON", btnOff: "Manual OFF"
       },
       'zh': {
         advisory: "🤖 智能助手建议", agentLog: "已捕获代理日志:", citizenAdvice: "市民建议:", dataUrl: "数据来源: NEA / data.gov.sg",
@@ -479,7 +500,8 @@
         dengueNextMed: "花10分钟快速检查家中是否有滋生点。",
         dengueNextLow: "无需紧急行动。保持常规控制。",
         dengueRiskLabel: "登革热风险", caseLabel: "预计病例",
-        watsonxLive: "已使用实时推理", watsonxFallback: "已使用后备模式"
+        watsonxLive: "已使用实时推理", watsonxFallback: "已使用后备模式",
+        iotTitle: "🏠 家庭 IoT 控制", deviceLabel: "设备: 空气净化器", statusOffline: "离线", btnOn: "手动开启", btnOff: "手动关闭"
       },
       'ms': {
         advisory: "🤖 Nasihat Ejen", agentLog: "Log ejen ditangkap:", citizenAdvice: "Nasihat rakyat:", dataUrl: "Sumber data: NEA / data.gov.sg",
@@ -505,7 +527,8 @@
         dengueNextMed: "Lakukan pemeriksaan rumah 10 minit untuk pembiakan.",
         dengueNextLow: "Tiada tindakan segera. Kekalkan kawalan rutin.",
         dengueRiskLabel: "Risiko Denggi", caseLabel: "Kes Unjuran",
-        watsonxLive: "penaakulan langsung digunakan", watsonxFallback: "mod sandaran digunakan"
+        watsonxLive: "penaakulan langsung digunakan", watsonxFallback: "mod sandaran digunakan",
+        iotTitle: "🏠 Kawalan IoT Rumah", deviceLabel: "Peranti: Penapis Udara", statusOffline: "LUAR TALIAN", btnOn: "Manual HIDUP", btnOff: "Manual MATI"
       },
       'ta': {
         advisory: "🤖 முகவர் ஆலோசனை", agentLog: "பதிவு கைப்பற்றப்பட்டது:", citizenAdvice: "குடிமக்கள் ஆலோசனை:", dataUrl: "ஆதாரம்: NEA / data.gov.sg",
@@ -531,7 +554,8 @@
         dengueNextMed: "வீட்டில் 10 நிமிடம் சோதனையை மேற்கொள்ளவும்.",
         dengueNextLow: "உடனடி நடவடிக்கை தேவையில்லை. வழக்கமான கட்டுப்பாடு போதும்.",
         dengueRiskLabel: "டெங்கு ஆபத்து", caseLabel: "கணிக்கப்பட்ட வழக்குகள்",
-        watsonxLive: "நேரடி பகுத்தறிவு பயன்படுத்தப்பட்டது", watsonxFallback: "பின்பற்றப்பட்ட பயன்முறை பயன்படுத்தப்பட்டது"
+        watsonxLive: "நேரடி பகுத்தறிவு பயன்படுத்தப்பட்டது", watsonxFallback: "பின்பற்றப்பட்ட பயன்முறை பயன்படுத்தப்பட்டது",
+        iotTitle: "🏠 வீட்டு IoT கட்டுப்பாடு", deviceLabel: "சாதனம்: காற்று சுத்திகரிப்பு", statusOffline: "ஆஃப்லைன்", btnOn: "மேனுவல் ஆன்", btnOff: "மேனுவல் ஆஃப்"
       }
     };
 
@@ -565,6 +589,17 @@
             if (hint) hint.innerText = t.hazeHint;
             if (autoBox) autoBox.innerHTML = t.hazeAutomation;
         }
+
+        // Update IoT Panel Translations
+        const iotTitle = document.querySelector('#iot-panel h3');
+        const deviceLabel = document.getElementById('device-status-label');
+        const onBtn = document.getElementById('iot-on-btn');
+        const offBtn = document.getElementById('iot-off-btn');
+
+        if (iotTitle) iotTitle.innerText = t.iotTitle;
+        if (deviceLabel) deviceLabel.innerText = t.deviceLabel;
+        if (onBtn) onBtn.innerText = t.btnOn;
+        if (offBtn) offBtn.innerText = t.btnOff;
 
         // IMPORTANT: Re-render the active sidebar content if a region was selected
         if (lastClickedRegion && typeof updateSidebar === 'function') {
@@ -631,6 +666,10 @@
           lastClickedRegion = { region, data: sidebarData, result };
 
           updateSidebar(sidebarData, result);
+          // Trigger IoT automation based on the new PSI value
+          if (currentMode === 'haze') {
+            updateIotStatus(primaryValue);
+          }
           marker.openPopup();
         }
 
@@ -748,6 +787,53 @@
     }
 
     initDashboard();
+
+
+    // IoT Simulation Logic - Fixed to update on every click
+    let iotDeviceOn = false;
+
+    function updateIotStatus(psiValue) {
+      const statusBadge = document.getElementById('iot-status-badge');
+      const log = document.getElementById('iot-automation-log');
+      const t = translations[currentLang]; // Use dictionary for translation
+      const psi = parseInt(psiValue);
+
+      if (isNaN(psi)) return;
+
+      // automation logic: if PSI > 100 (Unhealthy/Haze), turn on device
+      if (psi >= 101) {
+        iotDeviceOn = true;
+        statusBadge.innerText = "AUTO ACTIVE";
+        statusBadge.style.background = "#ef4444";
+        
+        // Natalie: This now updates every time based on the PSI severity
+        let duration = psi >= 200 ? "Continuous (Severe)" : "2 Hours (Moderate)";
+        log.innerHTML = `<span style="color:#b45309">⚠️ PSI ${psi} detected. Purifier switched ON.</span><br><b>Duration:</b> ${duration}`;
+        
+      } else {
+        // Situation improved: Auto switch off
+        iotDeviceOn = false;
+        statusBadge.innerText = "STANDBY";
+        statusBadge.style.background = "#10b981";
+        log.innerHTML = `<span style="color:#059669">✅ PSI ${psi} is safe. Purifier switched OFF.</span>`;
+      }
+    }
+  
+
+    function manualIotControl(turnOn) {
+      iotDeviceOn = turnOn;
+      const statusBadge = document.getElementById('iot-status-badge');
+      const log = document.getElementById('iot-automation-log');
+      
+      statusBadge.innerText = turnOn ? "MANUAL ON" : "MANUAL OFF";
+      statusBadge.style.background = turnOn ? "#3b82f6" : "#64748b";
+      log.innerText = turnOn ? "User manually started purifier." : "User manually stopped purifier.";
+      
+      // Flash the box to show interaction
+      const panel = document.getElementById('iot-panel');
+      panel.style.transform = "scale(1.02)";
+      setTimeout(() => panel.style.transform = "scale(1)", 200);
+    }
   </script>
 
 </body>
