@@ -212,7 +212,7 @@
     <div class="widget" id="iot-panel" style="border-left: 5px solid #10b981; margin-top: 20px;">
       <h3 style="margin-top: 0; font-size: 1.1rem;">🏠 Home IoT Control</h3>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span id="device-status-label">Device: Air Purifier</span>
+        <div id="device-status-label" style="font-size: 0.85rem; color: #475569; margin-bottom: 5px;">Detecting Home IoT Ecosystem...</div>
         <span id="iot-status-badge" style="background: #64748b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">OFFLINE</span>
       </div>
       
@@ -792,30 +792,54 @@
     // IoT Simulation Logic - Fixed to update on every click
     let iotDeviceOn = false;
 
+
+    // Diverse IoT Ecosystem Randomization for Judges
     function updateIotStatus(psiValue) {
       const statusBadge = document.getElementById('iot-status-badge');
       const log = document.getElementById('iot-automation-log');
-      const t = translations[currentLang]; // Use dictionary for translation
+      const deviceLabel = document.getElementById('device-status-label');
+      const t = translations[currentLang];
       const psi = parseInt(psiValue);
 
       if (isNaN(psi)) return;
 
-      // automation logic: if PSI > 100 (Unhealthy/Haze), turn on device
+      // 1. Define the possible IoT ecosystem
+      const allDevices = ["Air Purifier", "Smart AirCon", "Ventilation Intake", "Air Ionizer", "Smart Blinds"];
+      
+      // 2. Randomly pick how many different TYPES of devices are in this home (e.g., 2 to 4 types)
+      const numberOfTypes = Math.floor(Math.random() * 3) + 2; 
+      
+      // 3. Shuffle and pick unique device types
+      const shuffled = allDevices.sort(() => 0.5 - Math.random());
+      const selectedDevices = shuffled.slice(0, numberOfTypes);
+      
+      // Update the label to show the list of different devices connected
+      deviceLabel.innerText = `${t.deviceLabel || "Devices"}: ${selectedDevices.join(", ")}`;
+
+      // 4. Automation Logic
       if (psi >= 101) {
-        iotDeviceOn = true;
         statusBadge.innerText = "AUTO ACTIVE";
         statusBadge.style.background = "#ef4444";
         
-        // Natalie: This now updates every time based on the PSI severity
         let duration = psi >= 200 ? "Continuous (Severe)" : "2 Hours (Moderate)";
-        log.innerHTML = `<span style="color:#b45309">⚠️ PSI ${psi} detected. Purifier switched ON.</span><br><b>Duration:</b> ${duration}`;
         
+        // Generate a detailed list for the log
+        let deviceListHtml = selectedDevices.map(d => `<li>Syncing ${d}... <span style="color:#059669">OK</span></li>`).join('');
+
+        log.innerHTML = `
+          <div style="color:#b45309; font-weight:bold; margin-bottom:5px;">⚠️ PSI ${psi} - High Demand Mode</div>
+          <ul style="margin: 5px 0; padding-left: 15px; font-size: 0.85rem; list-style-type: disc;">
+            ${deviceListHtml}
+          </ul>
+          <div style="font-size: 0.8rem; margin-top:5px; border-top: 1px dashed #ccc; pt-2">
+            <b>Ecosystem Runtime:</b> ${duration}
+          </div>
+        `;
       } else {
-        // Situation improved: Auto switch off
-        iotDeviceOn = false;
+        // Safe conditions
         statusBadge.innerText = "STANDBY";
         statusBadge.style.background = "#10b981";
-        log.innerHTML = `<span style="color:#059669">✅ PSI ${psi} is safe. Purifier switched OFF.</span>`;
+        log.innerHTML = `<span style="color:#059669">✅ PSI ${psi} is safe. Multi-device ecosystem in eco-mode.</span>`;
       }
     }
   
