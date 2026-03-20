@@ -210,18 +210,16 @@
     </div>
 
     <div class="widget" id="iot-panel" style="border-left: 5px solid #10b981; margin-top: 20px;">
-      <h3 style="margin-top: 0; font-size: 1.1rem;">🏠 Home IoT Control</h3>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div id="device-status-label" style="font-size: 0.85rem; color: #475569; margin-bottom: 5px;">Detecting Home IoT Ecosystem...</div>
+      <h3 style="margin-top: 0; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center;">
+        <span id="iot-title-text">🏠 Home IoT Control</span>
         <span id="iot-status-badge" style="background: #64748b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">OFFLINE</span>
-      </div>
+      </h3>
       
-      <div style="margin-top: 15px; display: flex; gap: 10px;">
-        <button id="iot-on-btn" class="lang-btn" style="background: #10b981; flex: 1; border: none;" onclick="manualIotControl(true)">Manual ON</button>
-        <button id="iot-off-btn" class="lang-btn" style="background: #ef4444; flex: 1; border: none;" onclick="manualIotControl(false)">Manual OFF</button>
+      <div id="iot-device-list" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 0.85rem; color: #64748b; font-style: italic;">Detecting Home IoT Ecosystem...</div>
       </div>
 
-      <div class="small-note" id="iot-automation-log" style="margin-top: 10px; font-style: italic;">
+      <div class="small-note" id="iot-automation-log" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
         Waiting for haze data...
       </div>
     </div>
@@ -790,73 +788,80 @@
 
 
     // IoT Simulation Logic - Fixed to update on every click
-    let iotDeviceOn = false;
+    let activeDevices = {}; // Store states of current devices
 
 
     // Diverse IoT Ecosystem Randomization for Judges
     function updateIotStatus(psiValue) {
       const statusBadge = document.getElementById('iot-status-badge');
       const log = document.getElementById('iot-automation-log');
-      const deviceLabel = document.getElementById('device-status-label');
+      const deviceListContainer = document.getElementById('iot-device-list');
       const t = translations[currentLang];
       const psi = parseInt(psiValue);
 
       if (isNaN(psi)) return;
 
-      // 1. Define the possible IoT ecosystem
-      const allDevices = ["Air Purifier", "Smart AirCon", "Ventilation Intake", "Air Ionizer", "Smart Blinds"];
-      
-      // 2. Randomly pick how many different TYPES of devices are in this home (e.g., 2 to 4 types)
-      const numberOfTypes = Math.floor(Math.random() * 3) + 2; 
-      
-      // 3. Shuffle and pick unique device types
-      const shuffled = allDevices.sort(() => 0.5 - Math.random());
-      const selectedDevices = shuffled.slice(0, numberOfTypes);
-      
-      // Update the label to show the list of different devices connected
-      deviceLabel.innerText = `${t.deviceLabel || "Devices"}: ${selectedDevices.join(", ")}`;
+      // 1. Define and Randomize the ecosystem
+      const allPossible = ["Air Purifier", "Smart AirCon", "Ventilation Intake", "Air Ionizer", "Smart Blinds"];
+      const numTypes = Math.floor(Math.random() * 3) + 2; 
+      const shuffled = allPossible.sort(() => 0.5 - Math.random());
+      const currentDevices = shuffled.slice(0, numTypes);
 
-      // 4. Automation Logic
-      if (psi >= 101) {
-        statusBadge.innerText = "AUTO ACTIVE";
-        statusBadge.style.background = "#ef4444";
-        
-        let duration = psi >= 200 ? "Continuous (Severe)" : "2 Hours (Moderate)";
-        
-        // Generate a detailed list for the log
-        let deviceListHtml = selectedDevices.map(d => `<li>Syncing ${d}... <span style="color:#059669">OK</span></li>`).join('');
+      // 2. Automation Logic: Determine if AI should turn them ON
+      const shouldBeOn = psi >= 101;
+      statusBadge.innerText = shouldBeOn ? "AUTO ACTIVE" : "STANDBY";
+      statusBadge.style.background = shouldBeOn ? "#ef4444" : "#10b981";
 
-        log.innerHTML = `
-          <div style="color:#b45309; font-weight:bold; margin-bottom:5px;">⚠️ PSI ${psi} - High Demand Mode</div>
-          <ul style="margin: 5px 0; padding-left: 15px; font-size: 0.85rem; list-style-type: disc;">
-            ${deviceListHtml}
-          </ul>
-          <div style="font-size: 0.8rem; margin-top:5px; border-top: 1px dashed #ccc; pt-2">
-            <b>Ecosystem Runtime:</b> ${duration}
-          </div>
+      // 3. Generate individual Toggle Buttons for each device
+      deviceListContainer.innerHTML = ""; // Clear old list
+      activeDevices = {}; // Reset state tracking
+
+      currentDevices.forEach(device => {
+        activeDevices[device] = shouldBeOn; // AI sets initial state
+        
+        const devRow = document.createElement('div');
+        devRow.style = "display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;";
+        
+        // Use a checkbox styled as a toggle or simple button
+        devRow.innerHTML = `
+          <span style="font-size: 0.9rem; font-weight: 500;">${device}</span>
+          <button id="toggle-${device.replace(/\s+/g, '')}" 
+                  onclick="toggleSingleDevice('${device}')"
+                  style="padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s;
+                  background: ${shouldBeOn ? '#fee2e2' : '#f1f5f9'}; color: ${shouldBeOn ? '#ef4444' : '#64748b'};">
+            ${shouldBeOn ? 'ON' : 'OFF'}
+          </button>
         `;
+        deviceListContainer.appendChild(devRow);
+      });
+
+      // 4. Update the Log
+      if (shouldBeOn) {
+        let duration = psi >= 200 ? "Continuous (Severe)" : "2 Hours (Moderate)";
+        log.innerHTML = `<span style="color:#b45309"><b>AI Directive:</b> PSI ${psi} is high. Protective ecosystem engaged for ${duration}.</span>`;
       } else {
-        // Safe conditions
-        statusBadge.innerText = "STANDBY";
-        statusBadge.style.background = "#10b981";
-        log.innerHTML = `<span style="color:#059669">✅ PSI ${psi} is safe. Multi-device ecosystem in eco-mode.</span>`;
+        log.innerHTML = `<span style="color:#059669">✅ PSI ${psi} is safe. Ecosystem in energy-save mode.</span>`;
       }
     }
-  
 
-    function manualIotControl(turnOn) {
-      iotDeviceOn = turnOn;
-      const statusBadge = document.getElementById('iot-status-badge');
+    // Natalie: Handle individual human intervention
+    function toggleSingleDevice(deviceName) {
+      activeDevices[deviceName] = !activeDevices[deviceName];
+      const newState = activeDevices[deviceName];
+      const btn = document.getElementById(`toggle-${deviceName.replace(/\s+/g, '')}`);
       const log = document.getElementById('iot-automation-log');
+
+      // Update button UI
+      btn.innerText = newState ? 'ON' : 'OFF';
+      btn.style.background = newState ? '#fee2e2' : '#f1f5f9';
+      btn.style.color = newState ? '#ef4444' : '#64748b';
+
+      // Visual feedback in log
+      log.innerHTML = `<span style="color:#3b82f6"><b>Human Intervention:</b> ${deviceName} manually ${newState ? 'started' : 'stopped'}.</span>`;
       
-      statusBadge.innerText = turnOn ? "MANUAL ON" : "MANUAL OFF";
-      statusBadge.style.background = turnOn ? "#3b82f6" : "#64748b";
-      log.innerText = turnOn ? "User manually started purifier." : "User manually stopped purifier.";
-      
-      // Flash the box to show interaction
-      const panel = document.getElementById('iot-panel');
-      panel.style.transform = "scale(1.02)";
-      setTimeout(() => panel.style.transform = "scale(1)", 200);
+      // Animate the row slightly
+      btn.parentElement.style.borderColor = "#3b82f6";
+      setTimeout(() => btn.parentElement.style.borderColor = "#e2e8f0", 500);
     }
   </script>
 
