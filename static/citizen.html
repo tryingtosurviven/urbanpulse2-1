@@ -431,6 +431,7 @@
     const translations = {
       'en': {
         advisory: "🤖 Agent Advisory", agentLog: "Agent log captured:", citizenAdvice: "Citizen advice:", dataUrl: "Data source: NEA / data.gov.sg",
+        adviceHaze: "Limit outdoor activity if PSI is elevated; wear a mask if needed.", stepsSuffix: "steps executed.",
         hazeTitle: "📍 Live Monitoring", hazeHint: "Tap a region marker to view PSI and the health advisory.",
         hazeAutomation: "<b>Automation proof:</b> Haze decision logic runs server-side.",
         healthTip: "Health Tip:", next6Hours: "Next 6 hours:", back: "← Back to Home", logout: "Logout",
@@ -451,10 +452,12 @@
         dengueNextHigh: "Check drains and containers. Intensified inspection recommended.",
         dengueNextMed: "Do a quick 10-minute home inspection for breeding spots.",
         dengueNextLow: "No urgent action required. Maintain routine control.",
-        dengueRiskLabel: "Dengue Risk", caseLabel: "Projected Cases"
+        dengueRiskLabel: "Dengue Risk", caseLabel: "Projected Cases",
+        watsonxLive: "live reasoning used", watsonxFallback: "fallback mode used"
       },
       'zh': {
         advisory: "🤖 智能助手建议", agentLog: "已捕获代理日志:", citizenAdvice: "市民建议:", dataUrl: "数据来源: NEA / data.gov.sg",
+        adviceHaze: "如果 PSI 指数升高，请限制户外活动；必要时佩戴口罩。", stepsSuffix: "步已执行。",
         hazeTitle: "📍 实时监测", hazeHint: "点击区域标记以查看 PSI 指数和健康建议。",
         hazeAutomation: "<b>自动化证明：</b>雾霾决策逻辑在服务器端运行。",
         healthTip: "健康提示:", next6Hours: "未来6小时预测:", back: "← 返回主页", logout: "退出登录",
@@ -475,11 +478,13 @@
         dengueNextHigh: "检查排水沟和容器。建议加强检查。",
         dengueNextMed: "花10分钟快速检查家中是否有滋生点。",
         dengueNextLow: "无需紧急行动。保持常规控制。",
-        dengueRiskLabel: "登革热风险", caseLabel: "预计病例"
+        dengueRiskLabel: "登革热风险", caseLabel: "预计病例",
+        watsonxLive: "已使用实时推理", watsonxFallback: "已使用后备模式"
       },
       'ms': {
         advisory: "🤖 Nasihat Ejen", agentLog: "Log ejen ditangkap:", citizenAdvice: "Nasihat rakyat:", dataUrl: "Sumber data: NEA / data.gov.sg",
-        hazeTitle: "📍 Pemantauan Langsung", hazeHint: "Ketik penanda untuk melihat PSI dan nasihat.",
+        adviceHaze: "Hadkan aktiviti luar jika PSI meningkat; pakai pelitup muka jika perlu.", stepsSuffix: "langkah dilaksanakan.",
+        hazeTitle: "📍 Pemantauan Langsung", hazeHint: "Ketik penanda untuk melihat PSI và nasihat.",
         hazeAutomation: "<b>Bukti automasi:</b> Logik keputusan jerebu di sisi pelayan.",
         healthTip: "Tip Kesihatan:", next6Hours: "6 jam seterusnya:", back: "← Kembali", logout: "Log Keluar",
         dengueTitle: "🦟 Risiko Denggi", dengueHint: "Ketik penanda untuk info risiko.",
@@ -495,14 +500,16 @@
         dengueLow: "Keadaan stabil. Memantau kluster baru.",
         dengueTipHigh: "Buang air bertakung, guna ubat nyamuk, jumpa doktor segera.",
         dengueTipMed: "Guna ubat nyamuk dan periksa tempat takungan air.",
-        dengueTipLow: "Teruskan pencegahan asas dan bersihkan bekas air.",
-        dengueNextHigh: "Periksa longkang dan bekas. Pemeriksaan rapi disyorkan.",
+        dengueTipLow: "Teruskan pencegahan asas và bersihkan bekas air.",
+        dengueNextHigh: "Periksa longkang và bekas. Pemeriksaan rapi disyorkan.",
         dengueNextMed: "Lakukan pemeriksaan rumah 10 minit untuk pembiakan.",
         dengueNextLow: "Tiada tindakan segera. Kekalkan kawalan rutin.",
-        dengueRiskLabel: "Risiko Denggi", caseLabel: "Kes Unjuran"
+        dengueRiskLabel: "Risiko Denggi", caseLabel: "Kes Unjuran",
+        watsonxLive: "penaakulan langsung digunakan", watsonxFallback: "mod sandaran digunakan"
       },
       'ta': {
         advisory: "🤖 முகவர் ஆலோசனை", agentLog: "பதிவு கைப்பற்றப்பட்டது:", citizenAdvice: "குடிமக்கள் ஆலோசனை:", dataUrl: "ஆதாரம்: NEA / data.gov.sg",
+        adviceHaze: "PSI அதிகரித்தால் வெளிப்புற செயல்பாடுகளைக் கட்டுப்படுத்துங்கள்; தேவைப்பட்டால் முகமூடி அணியுங்கள்.", stepsSuffix: "படிகள் செயல்படுத்தப்பட்டன.",
         hazeTitle: "📍 நேரடி கண்காணிப்பு", hazeHint: "PSI மற்றும் ஆலோசனையைக் காண தட்டவும்.",
         hazeAutomation: "<b>ஆட்டோமேஷன்:</b> முடிவெடுக்கும் தர்க்கம் சர்வர் பக்கத்தில் உள்ளது.",
         healthTip: "சுகாதார குறிப்பு:", next6Hours: "அடுத்த 6 மணிநேரம்:", back: "← திரும்பு", logout: "வெளியேறு",
@@ -526,7 +533,7 @@
         dengueRiskLabel: "டெங்கு ஆபத்து", caseLabel: "கணிக்கப்பட்ட வழக்குகள்",
         watsonxLive: "நேரடி பகுத்தறிவு பயன்படுத்தப்பட்டது", watsonxFallback: "பின்பற்றப்பட்ட பயன்முறை பயன்படுத்தப்பட்டது"
       }
-    }
+    };
 
     function changeLang(lang, btn) {
         currentLang = lang; // Store selection
@@ -649,14 +656,25 @@
       const t = translations[currentLang]; // Use the selected dictionary
 
       // 1. Prepare Meta Data (Logs/Watsonx)
+      // 1. Prepare Meta Data (Logs/Watsonx)
       const watsonxStatus = fullResult.watsonx?.used ? (t.watsonxLive || "live reasoning used") : (t.watsonxFallback || "fallback mode used");
-      const proofLine = `<div class="small-note"><b>${t.agentLog}</b> ${fullResult.logs?.length || 0} steps executed.</div>`;
+      
+      // Natalie: Translating the log steps text
+      const stepsCount = fullResult.logs?.length || 0;
+      const proofLine = `<div class="small-note"><b>${t.agentLog}</b> ${stepsCount} ${t.stepsSuffix}</div>`;
+      
       const watsonxLine = fullResult?.watsonx
         ? `<div class="small-note"><b>watsonx:</b> ${watsonxStatus}${fullResult.watsonx.error ? ` · ${fullResult.watsonx.error}` : ""}</div>`
         : "";
 
-      const citizenAdvice = fullResult?.healthcare_alerts?.citizen_advice 
-        ? `<div class="small-note"><b>${t.citizenAdvice}</b> ${fullResult.healthcare_alerts.citizen_advice}</div>` 
+      // Natalie: Checking for standard Haze advice to translate server response
+      let adviceTextFromServer = fullResult?.healthcare_alerts?.citizen_advice || "";
+      if (adviceTextFromServer.includes("Limit outdoor activity")) {
+          adviceTextFromServer = t.adviceHaze;
+      }
+      
+      const citizenAdvice = adviceTextFromServer 
+        ? `<div class="small-note"><b>${t.citizenAdvice}</b> ${adviceTextFromServer}</div>` 
         : "";
 
       let headerBadge = "";
