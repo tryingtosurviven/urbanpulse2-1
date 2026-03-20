@@ -232,9 +232,8 @@
         cursor:pointer; font-weight:600; font-size:0.8rem;
       ">Logout</button>
     </div>
-    <div id="broadcast-ticker" style="display:none; background:#ef4444; color:white; padding:10px; font-weight:800; text-align:center; position:relative; overflow:hidden; z-index: 99; border-bottom: 2px solid #b91c1c;">
-        <span id="ticker-text" style="font-size:0.9rem; letter-spacing: 0.5px;">📢 MOH DIRECTIVE: [System Message]</span>
-    </div>
+    </div> <div id="broadcast-ticker" style="display:none; background:#ef4444; color:white; padding:12px; font-weight:800; text-align:center; z-index: 9999; border-bottom: 3px solid #b91c1c; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <span id="ticker-text" style="font-size:1rem; letter-spacing: 0.5px; text-transform: uppercase;"></span>
   </div>
 
   <div id="admin-only-panel" style="
@@ -452,7 +451,18 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="hq-alert-popup" style="display:none; z-index: 99999;">
+    <div class="modal" style="border-top: 10px solid #ef4444; text-align: center; width: 500px;">
+      <div style="font-size: 4rem; margin-bottom: 10px;">📢</div>
+      <h2 style="color: #b91c1c; font-weight: 800; margin-bottom: 15px;">MOH HQ DIRECTIVE</h2>
+      <div id="hq-alert-text" style="background: #fef2f2; padding: 25px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; color: #0f172a; border: 1px solid #fee2e2; font-size: 1.2rem; line-height: 1.4;">
+        </div>
+      <button onclick="document.getElementById('hq-alert-popup').style.display='none'" style="background: #0f172a; color: white; padding: 15px; width: 100%; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-size: 1rem;">ACKNOWLEDGE DIRECTIVE</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="success-overlay" style="display:none;">
+   
     <div class="modal po-modal">
       <span class="po-icon">✅</span>
       <h2 style="margin:0 0 10px 0; color:#166534">Order Confirmed</h2>
@@ -597,14 +607,33 @@
 
         const data = await res.json();
         
+        // --- Natalie: HQ BROADCAST POPUP LOGIC ---
         const ticker = document.getElementById('broadcast-ticker');
         const tickerTxt = document.getElementById('ticker-text');
+        const hqPopup = document.getElementById('hq-alert-popup'); // Correct ID
+        const hqText = document.getElementById('hq-alert-text');   // Correct ID
+
         if (data.broadcast_msg && data.broadcast_msg.trim() !== "") {
+            // Natalie: Use window variable to track if message has changed since last poll
+            if (window._lastBroadcastReceived !== data.broadcast_msg) {
+                if (!isAdmin) {
+                    hqText.innerText = data.broadcast_msg; // Inject the actual message
+                    hqPopup.style.display = 'flex';        // Show the popup
+                    
+                    // Standard notification sound
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    audio.play().catch(e => console.log("Audio deferred"));
+                }
+                window._lastBroadcastReceived = data.broadcast_msg;
+            }
             ticker.style.display = 'block';
-            tickerTxt.innerText = "📢 MOH DIRECTIVE: " + data.broadcast_msg;
+            tickerTxt.innerText = "🚨 MOH URGENT DIRECTIVE: " + data.broadcast_msg;
         } else {
+            window._lastBroadcastReceived = "";
             ticker.style.display = 'none';
+            if (hqPopup) hqPopup.style.display = 'none';
         }
+        // --- End of HQ Logic ---
 
         const statusEl = document.getElementById('live-status-indicator');
         const badge = document.getElementById('global-status'); // Header Badge
@@ -652,7 +681,6 @@
               document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
 
           } else {
-              // normal/low state - unchanged
               if (statusEl) {
                   if (data.psi > 0 || (data.draft && data.draft.active)) {
                       statusEl.innerHTML = `● SITUATION: LOW RISK (CLEAR)`; statusEl.style.color = "#10b981";
@@ -673,14 +701,12 @@
           }
         }
 
-        // Auto-trigger redirect for Autonomous Severe Haze
         if (protocol === "autonomous" && !isAdmin && !isAutoOrdering) {
             executeAutoOrder(data.draft ? data.draft.qty : 1200);
         }
 
         if (data.current_view === 'logistics') { window.location.href = '/logistics'; }
 
-        // Handle Draft PO Appearance
         if (Date.now() > suppressDraftPopupUntil && !userDraftVisible && data.draft && data.draft.active && data.protocol !== 'autonomous' && !isAdmin) {
           showDraftPanel(data.draft);
           const riskLevel = data.draft.risk_level || "UNKNOWN";
@@ -696,12 +722,9 @@
               chatAdd(`🤖 [AI DECISION] Claude AI recommended ${qty} units prevention packs.`);
               chatAdd(`🗺️ [ZONES] Affected districts flagged — see advisory below.`);
               chatAdd(`📋 [ACTION REQUIRED] Please review and approve the Draft PO below.`);
-              
-              // Show dengue map panel
               if (data.draft.dengue_data) {
                   showDenguePanel(data.draft.dengue_data);
                   switchTab('dengue');
-
               }
           } else {
               chatAdd(`🚨 [ALERT] MOH System has detected a haze surge event.`);
@@ -886,15 +909,31 @@
 
     // Admin Broadcast Functions ---
     async function sendBroadcast() {
-        const msg = document.getElementById('broadcast-msg').value;
+        const msgInput = document.getElementById('broadcast-msg');
+        const msg = msgInput.value;
         if (!msg) return;
         
-        await fetch('/api/admin-broadcast', {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ message: msg })
-        });
-        chatAdd(`📡 [HQ] Broadcast directive sent to all terminals.`);
+        try {
+            const response = await fetch('/api/admin-broadcast', {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ message: msg })
+            });
+            
+            if (response.ok) {
+                chatAdd(`📡 [HQ] Broadcast directive sent to all terminals.`);
+                chatAdd(`🔴 DIRECTIVE: "${msg}" is now live on all clinic dashboards.`);
+                
+                // Clear input after success
+                msgInput.value = "";
+                
+                // Visual feedback for Admin: Flash the input box green
+                msgInput.style.border = "2px solid #22c55e";
+                setTimeout(() => { msgInput.style.border = "1px solid #312e81"; }, 2000);
+            }
+        } catch (e) {
+            chatAdd(`❌ Failed to send broadcast: ${e.message}`);
+        }
     }
 
     async function clearBroadcast() {
@@ -904,7 +943,9 @@
             body: JSON.stringify({ message: "" })
         });
         document.getElementById('broadcast-msg').value = "";
-        chatAdd(`🔄 [HQ] Broadcast cleared.`);
+        // Natalie: Remove shadow from dengue tab if it was there
+        document.getElementById('tab-dengue').style.boxShadow = "none";
+        chatAdd(`🔄 [HQ] Broadcast cleared. All clinic tickers hidden.`);
     }
 
     // --- PSI HELPERS ---
