@@ -274,6 +274,9 @@
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
+    let currentLang = 'en';
+    let lastClickedRegion = null;
+
     function logoutUser() {
       try {
         localStorage.removeItem('token');
@@ -424,68 +427,142 @@
           : `<b>${region.label}</b><br>Tap to load PSI...`
       );
     });
+    
+    const translations = {
+      'en': {
+        advisory: "🤖 Agent Advisory", agentLog: "Agent log captured:", citizenAdvice: "Citizen advice:", dataUrl: "Data source: NEA / data.gov.sg",
+        hazeTitle: "📍 Live Monitoring", hazeHint: "Tap a region marker to view PSI and the health advisory.",
+        hazeAutomation: "<b>Automation proof:</b> Haze decision logic runs server-side.",
+        healthTip: "Health Tip:", next6Hours: "Next 6 hours:", back: "← Back to Home", logout: "Logout",
+        dengueTitle: "🦟 Dengue Risk Monitoring", dengueHint: "Tap district marker for risk info.",
+        dengueAutomation: "<b>Automation proof:</b> Dengue orchestration is server-side.",
+        hazeAlert: "Haze activity detected. Limit outdoor exposure and prepare masks.",
+        hazeClear: "Air quality is stable. Agents continue monitoring.",
+        hazeTipBad: "Wear an N95 mask outdoors and avoid strenuous activity.",
+        hazeTipGood: "Conditions are generally safe; stay hydrated.",
+        hazeNextBad: "Reduce outdoor activity and check on elderly residents.",
+        hazeNextGood: "No urgent action required. Monitoring PSI trends.",
+        dengueHigh: "UrbanPulse has identified elevated transmission risk. Action recommended.",
+        dengueMed: "Dengue risk is elevated. Take preventive steps and monitor updates.",
+        dengueLow: "Conditions are stable. Monitoring for emerging clusters.",
+        dengueTipHigh: "Remove stagnant water, use repellent, and seek medical attention early.",
+        dengueTipMed: "Use repellent and inspect home for water collection points.",
+        dengueTipLow: "Continue basic prevention and keep containers clear.",
+        dengueNextHigh: "Check drains and containers. Intensified inspection recommended.",
+        dengueNextMed: "Do a quick 10-minute home inspection for breeding spots.",
+        dengueNextLow: "No urgent action required. Maintain routine control.",
+        dengueRiskLabel: "Dengue Risk", caseLabel: "Projected Cases"
+      },
+      'zh': {
+        advisory: "🤖 智能助手建议", agentLog: "已捕获代理日志:", citizenAdvice: "市民建议:", dataUrl: "数据来源: NEA / data.gov.sg",
+        hazeTitle: "📍 实时监测", hazeHint: "点击区域标记以查看 PSI 指数和健康建议。",
+        hazeAutomation: "<b>自动化证明：</b>雾霾决策逻辑在服务器端运行。",
+        healthTip: "健康提示:", next6Hours: "未来6小时预测:", back: "← 返回主页", logout: "退出登录",
+        dengueTitle: "🦟 登革热风险监测", dengueHint: "点击区域标记查看风险信息。",
+        dengueAutomation: "<b>自动化证明：</b>登革热编排由服务器端处理。",
+        hazeAlert: "检测到雾霾。建议限制户外活动并准备口罩。",
+        hazeClear: "空气质量稳定。代理继续监测。",
+        hazeTipBad: "户外请佩戴 N95 口罩，并避免剧烈运动。",
+        hazeTipGood: "状况基本安全；请保持水分。",
+        hazeNextBad: "减少户外活动，并检查老年居民的情况。",
+        hazeNextGood: "无需紧急行动。持续监测 PSI 趋势。",
+        dengueHigh: "UrbanPulse 发现该地区传播风险升高。建议采取行动。",
+        dengueMed: "登革热风险升高。请采取预防措施并密切关注更新。",
+        dengueLow: "状况稳定。正在监测新集群。",
+        dengueTipHigh: "清除积水，使用驱蚊剂，如有症状尽早求医。",
+        dengueTipMed: "使用驱蚊剂，并检查家中是否有积水点。",
+        dengueTipLow: "继续基本的预防措施，保持容器清洁。",
+        dengueNextHigh: "检查排水沟和容器。建议加强检查。",
+        dengueNextMed: "花10分钟快速检查家中是否有滋生点。",
+        dengueNextLow: "无需紧急行动。保持常规控制。",
+        dengueRiskLabel: "登革热风险", caseLabel: "预计病例"
+      },
+      'ms': {
+        advisory: "🤖 Nasihat Ejen", agentLog: "Log ejen ditangkap:", citizenAdvice: "Nasihat rakyat:", dataUrl: "Sumber data: NEA / data.gov.sg",
+        hazeTitle: "📍 Pemantauan Langsung", hazeHint: "Ketik penanda untuk melihat PSI dan nasihat.",
+        hazeAutomation: "<b>Bukti automasi:</b> Logik keputusan jerebu di sisi pelayan.",
+        healthTip: "Tip Kesihatan:", next6Hours: "6 jam seterusnya:", back: "← Kembali", logout: "Log Keluar",
+        dengueTitle: "🦟 Risiko Denggi", dengueHint: "Ketik penanda untuk info risiko.",
+        dengueAutomation: "<b>Bukti automasi:</b> Orkestrasi denggi di sisi pelayan.",
+        hazeAlert: "Aktiviti jerebu dikesan. Hadkan pendedahan luar dan sediakan pelitup muka.",
+        hazeClear: "Kualiti udara stabil. Ejen terus memantau.",
+        hazeTipBad: "Pakai pelitup muka N95 di luar dan elakkan aktiviti berat.",
+        hazeTipGood: "Keadaan umumnya selamat; kekal hidrasi.",
+        hazeNextBad: "Kurangkan aktiviti luar dan periksa penduduk warga emas.",
+        hazeNextGood: "Tiada tindakan segera. Memantau trend PSI.",
+        dengueHigh: "Risiko jangkitan tinggi dikesan. Tindakan disyorkan.",
+        dengueMed: "Risiko denggi meningkat. Ambil langkah pencegahan.",
+        dengueLow: "Keadaan stabil. Memantau kluster baru.",
+        dengueTipHigh: "Buang air bertakung, guna ubat nyamuk, jumpa doktor segera.",
+        dengueTipMed: "Guna ubat nyamuk dan periksa tempat takungan air.",
+        dengueTipLow: "Teruskan pencegahan asas dan bersihkan bekas air.",
+        dengueNextHigh: "Periksa longkang dan bekas. Pemeriksaan rapi disyorkan.",
+        dengueNextMed: "Lakukan pemeriksaan rumah 10 minit untuk pembiakan.",
+        dengueNextLow: "Tiada tindakan segera. Kekalkan kawalan rutin.",
+        dengueRiskLabel: "Risiko Denggi", caseLabel: "Kes Unjuran"
+      },
+      'ta': {
+        advisory: "🤖 முகவர் ஆலோசனை", agentLog: "பதிவு கைப்பற்றப்பட்டது:", citizenAdvice: "குடிமக்கள் ஆலோசனை:", dataUrl: "ஆதாரம்: NEA / data.gov.sg",
+        hazeTitle: "📍 நேரடி கண்காணிப்பு", hazeHint: "PSI மற்றும் ஆலோசனையைக் காண தட்டவும்.",
+        hazeAutomation: "<b>ஆட்டோமேஷன்:</b> முடிவெடுக்கும் தர்க்கம் சர்வர் பக்கத்தில் உள்ளது.",
+        healthTip: "சுகாதார குறிப்பு:", next6Hours: "அடுத்த 6 மணிநேரம்:", back: "← திரும்பு", logout: "வெளியேறு",
+        dengueTitle: "🦟 டெங்கு ஆபத்து", dengueHint: "தகவலுக்கு குறியீட்டைத் தட்டவும்.",
+        dengueAutomation: "<b>ஆட்டோமேஷன்:</b> டெங்கு ஒர்கெஸ்ட்ரேஷன் சர்வர் பக்கத்தில் உள்ளது.",
+        hazeAlert: "புகைமூட்டம் கண்டறியப்பட்டது. வெளிப்புற வெளிப்பாட்டைக் குறைத்து முகமூடிகளைத் தயார் செய்யவும்.",
+        hazeClear: "காற்றின் தரம் சீராக உள்ளது. முகவர்கள் தொடர்ந்து கண்காணிக்கின்றனர்.",
+        hazeTipBad: "N95 முகமூடியை அணியுங்கள் மற்றும் கடினமான செயல்பாடுகளைத் தவிர்க்கவும்.",
+        hazeTipGood: "நிலைமை பாதுகாப்பானது; தண்ணீரை அதிகம் குடியுங்கள்.",
+        hazeNextBad: "வெளியில் செல்வதைக் குறைத்து, முதியவர்களைக் கவனியுங்கள்.",
+        hazeNextGood: "உடனடி நடவடிக்கை தேவையில்லை. PSI ஐக் கண்காணிக்கிறோம்.",
+        dengueHigh: "அதிக ஆபத்து கண்டறியப்பட்டது. தடுப்பு நடவடிக்கை தேவை.",
+        dengueMed: "ஆபத்து அதிகரித்துள்ளது. தடுப்பு நடவடிக்கைகளை எடுக்கவும்.",
+        dengueLow: "நிலைமை சீராக உள்ளது. புதிய கண்காணிப்பு தொடர்கிறது.",
+        dengueTipHigh: "தேங்கிய நீரை அகற்றவும், மருந்து தெளிக்கவும், மருத்துவரை அணுகவும்.",
+        dengueTipMed: "மருந்து தெளிக்கவும், நீர் தேங்கும் இடங்களைச் சோதிக்கவும்.",
+        dengueTipLow: "அடிப்படைத் தடுப்பு மற்றும் கொள்கலன்களைச் சுத்தமாக வைக்கவும்.",
+        dengueNextHigh: "சாக்கடைகள் மற்றும் கொள்கலன்களைச் சோதிக்கவும்.",
+        dengueNextMed: "வீட்டில் 10 நிமிடம் சோதனையை மேற்கொள்ளவும்.",
+        dengueNextLow: "உடனடி நடவடிக்கை தேவையில்லை. வழக்கமான கட்டுப்பாடு போதும்.",
+        dengueRiskLabel: "டெங்கு ஆபத்து", caseLabel: "கணிக்கப்பட்ட வழக்குகள்",
+        watsonxLive: "நேரடி பகுத்தறிவு பயன்படுத்தப்பட்டது", watsonxFallback: "பின்பற்றப்பட்ட பயன்முறை பயன்படுத்தப்பட்டது"
+      }
+    }
 
     function changeLang(lang, btn) {
-      document.querySelectorAll('.lang-btn').forEach(b => {
-        b.classList.remove('active');
-      });
-      btn.classList.add('active');
+        currentLang = lang; // Store selection
+        
+        // UI Feedback: Change button color
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
 
-      const translations = {
-        'en': {
-          hazeTitle: "📍 Live Monitoring",
-          hazeHint: "Tap a region marker to view PSI and the citizen health advisory generated by UrbanPulse agents.",
-          hazeAutomation: "<b>Automation proof:</b> When a haze scenario triggers, the advisory updates without manual calculation. The decision logic runs server-side (agent orchestration).",
-          dengueTitle: "🦟 Dengue Risk Monitoring",
-          dengueHint: "Tap a district marker to view dengue risk and the citizen advisory generated by UrbanPulse agents.",
-          dengueAutomation: "<b>Automation proof:</b> When a dengue surge scenario triggers, UrbanPulse updates district risk guidance automatically using server-side agent orchestration.",
-          back: "← Back to Home",
-          logout: "Logout"
-        },
-        'zh': {
-          hazeTitle: "📍 实时监测",
-          hazeHint: "点击区域标记以查看 PSI 指数和 UrbanPulse 代理生成的公民健康建议。",
-          hazeAutomation: "<b>自动化证明：</b>当雾霾场景触发时，建议会自动更新，无需人工计算。决策逻辑在服务器端运行（代理编排）。",
-          dengueTitle: "🦟 登革热风险监测",
-          dengueHint: "点击区域标记以查看登革热风险和 UrbanPulse 代理生成的公民建议。",
-          dengueAutomation: "<b>自动化证明：</b>当登革热情境触发时，UrbanPulse 会通过服务器端代理编排自动更新地区风险指引。",
-          back: "← 返回主页",
-          logout: "退出登录"
-        },
-        'ms': {
-          hazeTitle: "📍 Pemantauan Langsung",
-          hazeHint: "Ketik penanda wilayah untuk melihat PSI dan nasihat kesihatan warga yang dijana oleh ejen UrbanPulse.",
-          hazeAutomation: "<b>Bukti automasi:</b> Apabila senario jerebu dicetuskan, nasihat dikemas kini tanpa pengiraan manual. Logik keputusan berjalan di sisi pelayan (orkestrasi ejen).",
-          dengueTitle: "🦟 Pemantauan Risiko Denggi",
-          dengueHint: "Ketik penanda daerah untuk melihat risiko denggi dan nasihat warga yang dijana oleh ejen UrbanPulse.",
-          dengueAutomation: "<b>Bukti automasi:</b> Apabila senario denggi dicetuskan, UrbanPulse mengemas kini panduan risiko daerah secara automatik melalui orkestrasi ejen di pelayan.",
-          back: "← Kembali ke Laman Utama",
-          logout: "Log Keluar"
-        },
-        'ta': {
-          hazeTitle: "📍 நேரடி கண்காணிப்பு",
-          hazeHint: "PSI மற்றும் UrbanPulse முகவர்களால் உருவாக்கப்பட்ட சுகாதார ஆலோசனையைக் காண பிராந்திய குறிப்பானைத் தட்டவும்.",
-          hazeAutomation: "<b>ஆட்டோமேஷன் ஆதாரம்:</b> புகைமூட்ட சூழ்நிலை ஏற்படும் போது, கையேடு கணக்கீடு இல்லாமல் ஆலோசனை புதுப்பிக்கப்படும். முடிவெடுக்கும் தர்க்கம் சர்வர் பக்கத்தில் இயங்குகிறது.",
-          dengueTitle: "🦟 டெங்கு ஆபத்து கண்காணிப்பு",
-          dengueHint: "டெங்கு ஆபத்து மற்றும் UrbanPulse முகவர்களால் உருவாக்கப்பட்ட குடிமக்கள் ஆலோசனையை காண மாவட்ட குறிப்பானைத் தட்டவும்.",
-          dengueAutomation: "<b>ஆட்டோமேஷன் ஆதாரம்:</b> டெங்கு சூழ்நிலை தொடங்கும்போது, சர்வர் பக்க ஏஜென்ட் ஒர்கெஸ்ட்ரேஷன் மூலம் UrbanPulse மாவட்ட ஆபத்து வழிகாட்டலை தானாகப் புதுப்பிக்கிறது.",
-          back: "← முகப்புப்பக்கத்திற்குத் திரும்பு",
-          logout: "வெளியேறு"
+        const t = translations[lang];
+        if (!t) return; // Safety check: if language doesn't exist, stop.
+
+        // Update Sidebar Header Elements
+        const backHome = document.getElementById('back-home');
+        const logoutBtn = document.getElementById('logout-btn');
+        if (backHome) backHome.innerText = t.back;
+        if (logoutBtn) logoutBtn.innerText = t.logout;
+
+        // Update Mode-Specific Text
+        const title = document.getElementById('monitoring-title');
+        const hint = document.getElementById('monitoring-hint');
+        const autoBox = document.getElementById('automation-box');
+
+        if (currentMode === 'dengue') {
+            if (title) title.innerText = t.dengueTitle;
+            if (hint) hint.innerText = t.dengueHint;
+            if (autoBox) autoBox.innerHTML = t.dengueAutomation;
+        } else {
+            if (title) title.innerText = t.hazeTitle;
+            if (hint) hint.innerText = t.hazeHint;
+            if (autoBox) autoBox.innerHTML = t.hazeAutomation;
         }
-      };
 
-      document.getElementById('back-home').innerText = translations[lang].back;
-      document.getElementById('logout-btn').innerText = translations[lang].logout || "Logout";
-
-      if (currentMode === 'dengue') {
-        document.getElementById('monitoring-title').innerText = translations[lang].dengueTitle;
-        document.getElementById('monitoring-hint').innerText = translations[lang].dengueHint;
-        document.getElementById('automation-box').innerHTML = translations[lang].dengueAutomation;
-      } else {
-        document.getElementById('monitoring-title').innerText = translations[lang].hazeTitle;
-        document.getElementById('monitoring-hint').innerText = translations[lang].hazeHint;
-        document.getElementById('automation-box').innerHTML = translations[lang].hazeAutomation;
-      }
+        // IMPORTANT: Re-render the active sidebar content if a region was selected
+        if (lastClickedRegion && typeof updateSidebar === 'function') {
+            updateSidebar(lastClickedRegion.data, lastClickedRegion.result);
+        }
     }
 
     async function refreshRegion(region, updateSidebarFlag = false) {
@@ -543,14 +620,13 @@
         }
 
         if (updateSidebarFlag) {
-          updateSidebar({
-            name: region.label,
-            value: primaryValue,
-            risk: String(riskLevel)
-          }, result);
+          const sidebarData = { name: region.label, value: primaryValue, risk: String(riskLevel) };
+          lastClickedRegion = { region, data: sidebarData, result };
 
+          updateSidebar(sidebarData, result);
           marker.openPopup();
         }
+
       } catch (error) {
         console.error(`Error loading ${region.id}:`, error);
         if (updateSidebarFlag) {
@@ -570,18 +646,17 @@
       const panel = document.getElementById('info-panel');
       const color = getStatusColor(data.risk);
       const riskUpper = data.risk.toUpperCase();
+      const t = translations[currentLang]; // Use the selected dictionary
 
-      const hasLogs = Array.isArray(fullResult?.logs) && fullResult.logs.length > 0;
-      const proofLine = hasLogs
-        ? `<div class="small-note"><b>Agent log captured:</b> ${fullResult.logs.length} steps executed server-side.</div>`
-        : `<div class="small-note"><b>Agent execution:</b> advisory generated by server-side orchestration.</div>`;
-
-      const citizenAdvice = fullResult?.healthcare_alerts?.citizen_advice
-        ? `<div class="small-note"><b>Citizen advice:</b> ${fullResult.healthcare_alerts.citizen_advice}</div>`
+      // 1. Prepare Meta Data (Logs/Watsonx)
+      const watsonxStatus = fullResult.watsonx?.used ? (t.watsonxLive || "live reasoning used") : (t.watsonxFallback || "fallback mode used");
+      const proofLine = `<div class="small-note"><b>${t.agentLog}</b> ${fullResult.logs?.length || 0} steps executed.</div>`;
+      const watsonxLine = fullResult?.watsonx
+        ? `<div class="small-note"><b>watsonx:</b> ${watsonxStatus}${fullResult.watsonx.error ? ` · ${fullResult.watsonx.error}` : ""}</div>`
         : "";
 
-      const watsonxLine = fullResult?.watsonx
-        ? `<div class="small-note"><b>watsonx:</b> ${fullResult.watsonx.used ? "live reasoning used" : "fallback mode used"}${fullResult.watsonx.error ? ` · ${fullResult.watsonx.error}` : ""}</div>`
+      const citizenAdvice = fullResult?.healthcare_alerts?.citizen_advice 
+        ? `<div class="small-note"><b>${t.citizenAdvice}</b> ${fullResult.healthcare_alerts.citizen_advice}</div>` 
         : "";
 
       let headerBadge = "";
@@ -589,96 +664,50 @@
       let healthTipHtml = "";
       let nextSteps = "";
 
+      // 2. Logic for Dengue vs Haze
       if (currentMode === 'dengue') {
-        const highRisk = riskUpper.includes('HIGH') || riskUpper.includes('SEVERE') || riskUpper.includes('CRITICAL');
-        const mediumRisk = riskUpper.includes('MEDIUM') || riskUpper.includes('MODERATE') || riskUpper.includes('ELEVATED');
+        headerBadge = `${t.dengueRiskLabel}: ${data.risk} · ${t.caseLabel}: ${data.value}`;
 
-        headerBadge = `Dengue Risk: ${data.risk} · Projected Cases: ${data.value}`;
-
-        if (highRisk) {
-          advisoryText = `UrbanPulse has identified elevated dengue transmission risk in this district. Preventive action is strongly recommended for households and vulnerable residents.`;
-          healthTipHtml = `
-            <p style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;border-left:4px solid #ef4444;">
-              <b>Health Tip:</b> Remove stagnant water, use mosquito repellent, wear long sleeves, and seek medical attention early if fever or body aches develop.
-            </p>
-          `;
-          nextSteps = `
-            <div class="small-note">
-              <b>Next 6 hours:</b> Check drains, trays, pails, and plant containers. UrbanPulse recommends intensified household inspection in this zone.
-            </div>
-          `;
-        } else if (mediumRisk) {
-          advisoryText = `Dengue risk is elevated. Residents should take preventive steps and monitor updates closely.`;
-          healthTipHtml = `
-            <p style="background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;border-left:4px solid #f59e0b;">
-              <b>Health Tip:</b> Use repellent, inspect your home for water collection points, and monitor symptoms.
-            </p>
-          `;
-          nextSteps = `
-            <div class="small-note">
-              <b>Next 6 hours:</b> Do a quick 10-minute home inspection and continue checking for breeding spots after rainfall.
-            </div>
-          `;
+        if (riskUpper.includes('HIGH') || riskUpper.includes('SEVERE') || riskUpper.includes('CRITICAL')) {
+          advisoryText = t.dengueHigh;
+          healthTipHtml = `<p style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;border-left:4px solid #ef4444;"><b>${t.healthTip}</b> ${t.dengueTipHigh}</p>`;
+          nextSteps = `<div class="small-note"><b>${t.next6Hours}</b> ${t.dengueNextHigh}</div>`;
+        } else if (riskUpper.includes('MEDIUM') || riskUpper.includes('MODERATE') || riskUpper.includes('ELEVATED')) {
+          advisoryText = t.dengueMed;
+          healthTipHtml = `<p style="background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;border-left:4px solid #f59e0b;"><b>${t.healthTip}</b> ${t.dengueTipMed}</p>`;
+          nextSteps = `<div class="small-note"><b>${t.next6Hours}</b> ${t.dengueNextMed}</div>`;
         } else {
-          advisoryText = `Dengue conditions are currently stable, but UrbanPulse continues monitoring for emerging clusters.`;
-          healthTipHtml = `
-            <p style="background:#d1fae5;color:#065f46;padding:10px;border-radius:8px;border-left:4px solid #10b981;">
-              <b>Health Tip:</b> Continue basic mosquito prevention and keep drains and containers clear.
-            </p>
-          `;
-          nextSteps = `
-            <div class="small-note">
-              <b>Next 6 hours:</b> No urgent action required. Maintain routine household mosquito control.
-            </div>
-          `;
+          advisoryText = t.dengueLow;
+          healthTipHtml = `<p style="background:#d1fae5;color:#065f46;padding:10px;border-radius:8px;border-left:4px solid #10b981;"><b>${t.healthTip}</b> ${t.dengueTipLow}</p>`;
+          nextSteps = `<div class="small-note"><b>${t.next6Hours}</b> ${t.dengueNextLow}</div>`;
         }
-
-        panel.innerHTML = `
-          <h2 style="color:${color}; margin-bottom: 8px;">${data.name}</h2>
-          <div class="psi-badge" style="background:${color}">${headerBadge}</div>
-          <hr style="margin: 18px 0; border: 0; border-top: 1px solid #eee;">
-          <h4 style="margin: 0 0 8px 0;">🦟 Agent Advisory</h4>
-          <p style="margin-top:0;">${advisoryText}</p>
-          ${healthTipHtml}
-          ${citizenAdvice}
-          ${nextSteps}
-          ${proofLine}
-          ${watsonxLine}
-        `;
       } else {
         const isHazard = riskUpper.includes('CRITICAL') || riskUpper.includes('MODERATE') || riskUpper.includes('SEVERE') || riskUpper.includes('UNHEALTHY');
-
         headerBadge = `${data.risk} (PSI: ${data.value})`;
+        advisoryText = isHazard ? t.hazeAlert : t.hazeClear;
 
-        advisoryText = isHazard
-          ? `Haze activity detected. UrbanPulse agents recommend limiting outdoor exposure and preparing masks.`
-          : `Air quality is stable. UrbanPulse agents continue background monitoring.`;
-
-        healthTipHtml = riskUpper.includes('CRITICAL') || riskUpper.includes('SEVERE')
-          ? `<p style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;border-left:4px solid #ef4444;">
-               <b>Health Tip:</b> Wear an N95 mask outdoors and avoid strenuous activity.
-             </p>`
-          : `<p style="background:#d1fae5;color:#065f46;padding:10px;border-radius:8px;border-left:4px solid #10b981;">
-               <b>Health Tip:</b> Conditions are generally safe; stay hydrated and monitor updates.
-             </p>`;
-
-        nextSteps = riskUpper.includes('CRITICAL') || riskUpper.includes('SEVERE')
-          ? `<div class="small-note"><b>Next 6 hours:</b> Reduce outdoor activity and check on elderly family members or residents with respiratory conditions.</div>`
-          : `<div class="small-note"><b>Next 6 hours:</b> No urgent action required. UrbanPulse will continue monitoring PSI trends.</div>`;
-
-        panel.innerHTML = `
-          <h2 style="color:${color}; margin-bottom: 8px;">${data.name}</h2>
-          <div class="psi-badge" style="background:${color}">${headerBadge}</div>
-          <hr style="margin: 18px 0; border: 0; border-top: 1px solid #eee;">
-          <h4 style="margin: 0 0 8px 0;">🤖 Agent Advisory</h4>
-          <p style="margin-top:0;">${advisoryText}</p>
-          ${healthTipHtml}
-          ${citizenAdvice}
-          ${nextSteps}
-          ${proofLine}
-          ${watsonxLine}
-        `;
+        if (riskUpper.includes('CRITICAL') || riskUpper.includes('SEVERE')) {
+          healthTipHtml = `<p style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;border-left:4px solid #ef4444;"><b>${t.healthTip}</b> ${t.hazeTipBad}</p>`;
+          nextSteps = `<div class="small-note"><b>${t.next6Hours}</b> ${t.hazeNextBad}</div>`;
+        } else {
+          healthTipHtml = `<p style="background:#d1fae5;color:#065f46;padding:10px;border-radius:8px;border-left:4px solid #10b981;"><b>${t.healthTip}</b> ${t.hazeTipGood}</p>`;
+          nextSteps = `<div class="small-note"><b>${t.next6Hours}</b> ${t.hazeNextGood}</div>`;
+        }
       }
+
+      // 3. Render to UI
+      panel.innerHTML = `
+        <h2 style="color:${color}; margin-bottom: 8px;">${data.name}</h2>
+        <div class="psi-badge" style="background:${color}">${headerBadge}</div>
+        <hr style="margin: 18px 0; border: 0; border-top: 1px solid #eee;">
+        <h4 style="margin: 0 0 8px 0;">${t.advisory}</h4>
+        <p style="margin-top:0;">${advisoryText}</p>
+        ${healthTipHtml}
+        ${citizenAdvice}
+        ${nextSteps}
+        ${proofLine}
+        ${watsonxLine}
+      `;
     }
 
     function updateClock() {
