@@ -377,13 +377,15 @@
               </div>
           </div>
 
+          <div id="admin-log" style="background: #1e293b; color: #38bdf8; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: none; border-left: 5px solid #0ea5e9;">
+              <small style="font-weight: 800; letter-spacing: 1px;">🔔 SYSTEM LOG / ADMIN DIRECTIVE:</small>
+              <p id="admin-msg" style="margin: 5px 0 0 0; font-family: monospace; font-size: 0.9rem;"></p>
+          </div>
+
           <div class="dengue-action-box">
               <h4>📋 Clinic Action Required</h4>
-              <ul>
-                  <li>Order <strong>repellent packs</strong> (DEET-based) for distribution to high-risk residents</li>
-                  <li>Display <strong>NEA dengue advisory posters</strong> at clinic entrance</li>
-                  <li>Advise patients from <span id="dengue-red-zones">affected districts</span> to check for standing water</li>
-                  <li>Report any <strong>dengue fever cases</strong> to MOH within 24 hours</li>
+              <ul id="ai-todo-list">
+                  <li style="color: #92400e; font-style: italic;">Waiting for AI assessment...</li>
               </ul>
           </div>
 
@@ -463,7 +465,6 @@
   </div>
 
   <div class="modal-overlay" id="success-overlay" style="display:none;">
-   
     <div class="modal po-modal">
       <span class="po-icon">✅</span>
       <h2 style="margin:0 0 10px 0; color:#166534">Order Confirmed</h2>
@@ -471,6 +472,7 @@
 
       <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; text-align:left; margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Facility:</span><strong>Tan Tock Seng Hospital</strong></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Item:</span><strong id="confirmed-item-name">---</strong></div>
         <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Quantity:</span><strong id="confirmed-qty-disp">---</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>Status:</span><strong style="color:#0ea5e9">Dispatched</strong></div>
       </div>
@@ -608,30 +610,63 @@
 
         const data = await res.json();
         
-        // --- Natalie: HQ BROADCAST POPUP LOGIC ---
+        // --- DYNAMIC TO-DO & ADMIN LOG LOGIC ---
+        // --- DYNAMIC TO-DO & ADMIN LOG LOGIC ---
+        const todoContainer = document.getElementById('ai-todo-list');
+        const adminLogBox = document.getElementById('admin-log');
+        const adminMsg = document.getElementById('admin-msg');
+
+        if (data.draft && data.draft.active) {
+            // 1. Show the Admin Governance Message
+            if (data.draft.governance_log) {
+                adminLogBox.style.display = 'block';
+                adminMsg.innerText = data.draft.governance_log;
+            }
+
+            // 2. Clear and fill the To-Do List
+            const tasks = data.draft.todo_list || (data.draft.projected_cases ? 
+                ["Prepare repellent distribution point", "Display Dengue advisory posters", "Update cluster case counts"] : 
+                ["Check N95 respirator stock", "Review patient protocols", "Verify ventilation"]);
+
+            if (todoContainer) {
+                todoContainer.innerHTML = ''; // CRITICAL: This clears the "Waiting..." or old text
+                tasks.forEach(task => {
+                    todoContainer.innerHTML += `
+                        <li style="margin-bottom: 8px; list-style: none; display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;"> 
+                            <span style="font-size: 0.9rem; color: #1e293b;">${task}</span>
+                            <span style="background: #f59e0b; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 800;">PENDING</span>
+                        </li>`;
+                });
+            }
+        } else {
+            if (adminLogBox) adminLogBox.style.display = 'none';
+            if (todoContainer) {
+                todoContainer.innerHTML = '<li style="color: #94a3b8; font-style: italic;">Monitoring for incoming directives...</li>';
+            }
+        }
+
+        // --- HQ BROADCAST POPUP LOGIC (Natalie: Keep this below the Log logic) ---
         const ticker = document.getElementById('broadcast-ticker');
         const tickerTxt = document.getElementById('ticker-text');
-        const hqPopup = document.getElementById('hq-alert-popup'); // Correct ID
-        const hqText = document.getElementById('hq-alert-text');   // Correct ID
+        const hqPopup = document.getElementById('hq-alert-popup');
+        const hqText = document.getElementById('hq-alert-text');
 
         if (data.broadcast_msg && data.broadcast_msg.trim() !== "") {
-            // Natalie: Use window variable to track if message has changed since last poll
             if (window._lastBroadcastReceived !== data.broadcast_msg) {
                 if (!isAdmin) {
-                    hqText.innerText = data.broadcast_msg; // Inject the actual message
-                    hqPopup.style.display = 'flex';        // Show the popup
-                    
-                    // Standard notification sound
+                    if (hqText) hqText.innerText = data.broadcast_msg;
+                    if (hqPopup) hqPopup.style.display = 'flex';
                     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                     audio.play().catch(e => console.log("Audio deferred"));
                 }
                 window._lastBroadcastReceived = data.broadcast_msg;
             }
-            ticker.style.display = 'block';
-            tickerTxt.innerText = "🚨 MOH URGENT DIRECTIVE: " + data.broadcast_msg;
+            if (ticker) ticker.style.display = 'block';
+            if (tickerTxt) tickerTxt.innerText = "🚨 MOH URGENT DIRECTIVE: " + data.broadcast_msg;
         } else {
             window._lastBroadcastReceived = "";
-            ticker.style.display = 'none';
+            if (ticker) ticker.style.display = 'none';
             if (hqPopup) hqPopup.style.display = 'none';
         }
         // --- End of HQ Logic ---
@@ -809,38 +844,31 @@
     }
 
     async function approveDraft() {
-      const newQty = document.getElementById('draft-qty').value;
-      await fetch('/api/clinic-confirm-order', {
-        method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ confirmed_qty: newQty })
-      });
+        const newQty = document.getElementById('draft-qty').value;
+        
+        // BETTER LOGIC: Check the actual AI Chat box or current broadcast to see if it's Haze or Dengue
+        const chatContent = document.getElementById('assistant-chat').innerText.toUpperCase();
+        const isHaze = chatContent.includes("HAZE") || chatContent.includes("PSI");
+        
+        // Set the label based on the actual scenario content
+        const finalLabel = isHaze ? "N95 Respiratory Masks" : "Bottles of Mosquito Repellent";
 
-      document.getElementById('draft-panel').classList.remove('visible');
-      suppressDraftPopupUntil = Date.now() + 8000;
-      userDraftVisible = true;
+        await fetch('/api/clinic-confirm-order', {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ confirmed_qty: newQty })
+        });
 
-      // Natalie: Check which view is active to set correct label
-      const isDengueScenario = document.getElementById('dengue-panel') && document.getElementById('dengue-panel').style.display !== 'none';
-      const finalLabel = isDengueScenario ? "Dengue Prevention Packs" : "N95 Masks";
-      
-      // Natalie: Fixed variable name to newQty
-      document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (" + finalLabel + ")";
+        document.getElementById('draft-panel').classList.remove('visible');
+        
+        // Update the Success Modal
+        document.getElementById('confirmed-item-name').innerText = finalLabel; 
+        document.getElementById('confirmed-qty-disp').innerText = newQty + " Units";
 
-      const modal = document.querySelector('.po-modal');
-      modal.style.border = "none";
-      document.querySelector('.po-icon').innerText = "✅";
-      document.querySelector('.po-modal h2').innerText = "Order Confirmed";
-      document.querySelector('.po-modal h2').style.color = "#166534";
-
-      setLogisticsButtonLink({ id: "ttsh", qty: newQty });
-      document.getElementById('success-overlay').style.display = 'flex';
-
-      const poParagraph = document.querySelector('.po-modal p');
-      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched.';
-
-      const closeBtn = document.getElementById('po-close-btn');
-      if (closeBtn) closeBtn.style.display = 'inline-block';
+        // Show the success overlay
+        document.getElementById('success-overlay').style.display = 'flex';
+        
+        setLogisticsButtonLink({ id: "ttsh", qty: newQty });
     }
 
     async function rejectDraft() {

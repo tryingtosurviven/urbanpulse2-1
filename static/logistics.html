@@ -115,8 +115,9 @@
         const newOrderQty = urlParams.get('qty'); 
         const target = locations[facilityId] || locations['ttsh'];
 
-        const isDengue = document.referrer.includes('dengue') || (newOrderQty && newOrderQty < 500);
-        const itemLabel = isDengue ? "Dengue Packs" : "N95 Masks";
+        const newOrderQtyInt = parseInt(newOrderQty);
+        const isDengue = (newOrderQtyInt === 850) || document.referrer.includes('dengue');
+        const itemLabel = isDengue ? "Bottles of Mosquito Repellent" : "N95 Masks";
 
         // --- 2. STORAGE & INITIALIZATION ---
         const storageKey = 'trucks_' + facilityId;
