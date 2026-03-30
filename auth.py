@@ -83,46 +83,47 @@ def get_token_from_request() -> str | None:
 # DECORATOR: require_role
 # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# DECORATOR: require_role (UPDATED)
-# ---------------------------------------------------------------------------
-
 def require_role(*allowed_roles: str):
+    """
+    Decorator to protect Flask routes by role.
+
+    Usage:
+        @app.route("/clinic")
+        @require_role("clinic_manager", "admin")
+        def clinic_portal(): ...
+
+    For API endpoints: returns 401/403 JSON.
+    For page routes: redirects to /login.
+    """
     def decorator(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
             token = get_token_from_request()
 
-            # 1. No Token: Send to login
             if not token:
                 if _is_api_route():
                     return jsonify({"error": "Unauthorized", "code": "NO_TOKEN"}), 401
                 return redirect(f"/login?next={request.path}")
 
-            # 2. Invalid Token: Send to login with reason
             payload = decode_token(token)
             if not payload:
                 if _is_api_route():
                     return jsonify({"error": "Token expired or invalid", "code": "BAD_TOKEN"}), 401
                 return redirect(f"/login?next={request.path}&reason=expired")
 
-            # 3. Role Check: This is the part you requested
             user_role = payload.get("role", "")
             if user_role not in allowed_roles:
                 if _is_api_route():
-                    # If it's an API call, return a JSON error
                     return jsonify({
                         "error": "Forbidden",
                         "code": "INSUFFICIENT_ROLE",
                         "required": list(allowed_roles),
                         "current": user_role
                     }), 403
-                
-                # IF CITIZEN TRIES TO ACCESS CLINIC PAGE:
-                # Redirect to the custom access-denied route instead of a 404
+                # Page: show a friendly access-denied instead of blank redirect
                 return redirect("/access-denied")
 
-            # Attach user context for app.py to use
+            # Attach user context to request for use in route handlers
             request.current_user = {
                 "username": payload["sub"],
                 "role": user_role,

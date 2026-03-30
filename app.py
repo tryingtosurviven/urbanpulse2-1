@@ -264,9 +264,9 @@ def _build_dengue_watsonx_prompt(scenario_key: str, dengue_data: Dict[str, int])
 You are "UrbanPulse PublicHealthSentinel", supporting Singapore dengue monitoring.
 
 Context:
-- Urban problem: Dengue cluster activity increases mosquito-borne infection risk.
-- Objective: Classify district risk, coordinate mosquito repellent logistics, and trigger pest control (NEA coordination).
-- Safety policy: Dengue scenarios remain human-in-loop.
+- Urban problem: dengue cluster activity increases mosquito-borne infection risk.
+- Objective: classify district risk, estimate response stock quantity, and generate a citizen advisory.
+- Safety policy: Dengue scenarios remain human-in-loop and do NOT auto-dispatch.
 
 Inputs:
 scenario_key: "{scenario_key}"
@@ -274,32 +274,32 @@ Projected dengue cases by district:
 {json.dumps(dengue_data, indent=2)}
 
 Output:
-Return STRICT JSON only:
+Return STRICT JSON only with these keys:
 {{
   "risk_level": "LOW|MEDIUM|HIGH",
   "highest_cases": <int>,
   "affected_regions": [<district strings>],
-  "recommended_qty": <int>, 
+  "recommended_qty": <int>,
   "justification": "<1-3 sentences>",
-  "dispatch_action": "Dispatch mosquito repellent to clinics for citizen self-collection.",
-  "pest_control": "Request NEA Pest Control deployment for thermal fogging in affected clusters.",
-  "citizen_advice": "High cluster activity. Collect free repellent at your nearest clinic. Remove stagnant water.",
-  "clinic_todo": [
-      "Prepare repellent distribution point",
-      "Display Dengue Symptom posters",
-      "Update cluster case counts on public dashboard"
-  ],
+  "citizen_advice": "<1-2 sentences>",
+  "clinic_action": "<1-2 sentences>",
+  "data_sources": ["NEA / MOH-style demo scenarios", "Vector surveillance signals (simulated)"],
   "governance": {{
     "human_in_loop": true,
     "auto_dispatch_allowed": false,
-    "why": "Medical logistics and pest control deployment require Admin authorization."
+    "why": "Dengue scenarios require manual review."
   }}
 }}
 
 Rules:
-- recommended_qty refers to bottles of repellent.
-- If highest_cases >= 20, set risk to HIGH and recommend qty 1000+.
-"""
+- Use the highest projected district case count as the main driver.
+- Risk guidance:
+  - LOW if highest_cases < 10
+  - MEDIUM if highest_cases 10-19
+  - HIGH if highest_cases >= 20
+- Choose affected_regions where cases >= (highest_cases - 3).
+- recommended_qty is a generic preparedness stock estimate for repellent / prevention packs.
+""".strip()
 
 
 # ==============================================================================
@@ -523,9 +523,7 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         display_reason = f"{zone_label} | {decision.get('justification', '')}"
     else:
         display_reason = f"{status_msg} | {decision.get('justification', '')}"
-    # NEW: Logic for Dengue specific items
-    item_name = "Bottles of Mosquito Repellent" if is_dengue else "N95 Respiratory Masks"
-    
+
     clinic_state["draft"] = {
         "active": True,
         "facility": "Tan Tock Seng Hospital (HQ)",
@@ -539,9 +537,6 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         "risk_level": risk_level,
         "governance_log": governance_note,
         "dengue_data": scenario.get("dengue_data") if is_dengue else None,
-        "todo_list": decision.get("clinic_todo", []),
-        "pest_control": decision.get("pest_control", "Monitoring"),
-        "dispatch_status": "AWAITING ADMIN APPROVAL"
     }
 
     write_governance_log(clinic_state["draft"])

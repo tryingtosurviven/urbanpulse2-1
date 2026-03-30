@@ -115,6 +115,7 @@
         const newOrderQty = urlParams.get('qty'); 
         const target = locations[facilityId] || locations['ttsh'];
 
+        // BETTER LOGIC: Catch the specific 850 qty for Dengue, otherwise default to Masks
         const newOrderQtyInt = parseInt(newOrderQty);
         const isDengue = (newOrderQtyInt === 850) || document.referrer.includes('dengue');
         const itemLabel = isDengue ? "Bottles of Mosquito Repellent" : "N95 Masks";
@@ -140,6 +141,8 @@
                     name: "Truck #0" + nextId,
                     qty: newOrderQty,
                     destination: target.name,
+                    // SAVE THE ITEM LABEL HERE:
+                    item: (newOrderQty == "850") ? "Bottles of Mosquito Repellent" : "N95 Masks",
                     timestamp: Date.now()
                 };
                 activeTrucks.unshift(newTruck); 
@@ -184,7 +187,7 @@
                         <span class="card-label">ETA:</span> <strong style="color:#d97706">${eta}</strong>
                     </div>
                     <div class="status-row">
-                        <span class="card-label">Payload:</span> <strong style="color:#0f172a">${truck.qty} Units (${itemLabel})</strong>
+                        <span class="card-label">Payload:</span> <strong style="color:#0f172a">${truck.qty} Units (${truck.item || 'Emergency Supplies'})</strong>
                     </div>
                 `;
                 
