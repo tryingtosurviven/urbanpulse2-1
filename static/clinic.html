@@ -496,19 +496,10 @@
         const scenarioButtons = document.getElementById('scenario-buttons');
         if (scenarioButtons) scenarioButtons.style.display = 'none';
     } else {
-        const scenarioButtons = document.getElementById('scenario-buttons');
-        if (scenarioButtons) scenarioButtons.style.display = 'none';
         const tabs = document.getElementById('scenario-tabs');
         if (tabs) tabs.style.display = 'block';
-
         const subText = document.getElementById('ai-sub-text');
-        if (subText) subText.innerHTML = `
-            📡 <strong>Live Agent Feed</strong> — This panel shows real-time notifications 
-            from the MOH system. When a haze or dengue alert is triggered, the AI agent 
-            will assess the situation and notify you here with a recommended action.
-            <br><br>
-            <span id="live-status-indicator" style="color:#10b981; font-weight:600;">● Monitoring for incoming alerts...</span>
-        `;
+        if (subText) subText.innerHTML = `📡 <strong>Live Agent Feed</strong> — Monitoring for incoming alerts...<br><br><span id="live-status-indicator" style="color:#10b981; font-weight:600;">● Monitoring for incoming alerts...</span>`;
     }
 
     // --- AUTH HELPERS ---
@@ -518,20 +509,59 @@
       return { ...(token ? { "Authorization": `Bearer ${token}` } : {}), ...extra };
     }
 
-    // --- ROLE BADGE & LOGOUT ---
-    const role = localStorage.getItem("urbanpulse_role") || "unknown";
-    const userName = localStorage.getItem("urbanpulse_name") || "";
     const roleBadge = document.getElementById("role-badge");
     if (roleBadge) {
-        roleBadge.innerText = `${userName} (${role.replace("_", " ").toUpperCase()})`;
+        roleBadge.innerText = `${localStorage.getItem("urbanpulse_name") || ""} (${currentRole.toUpperCase()})`;
         roleBadge.style.background = isAdmin ? '#7c3aed' : '#1e40af';
     }
 
     window.logoutUser = function() {
       localStorage.clear();
-      document.cookie = "urbanpulse_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       window.location.href = "/login";
     }
+
+    // --- ALERT MODES ---
+    function activateAlertMode(isSevere = true) {
+      const badge = document.getElementById('global-status');
+      if (!badge) return;
+      if (isSevere) {
+          badge.className = 'status-badge critical';
+          badge.innerHTML = '<span class="dot" style="background:#ef4444;"></span> ⚠️ SEVERE HAZE';
+          document.querySelectorAll('.card').forEach(c => { c.classList.remove('moderate'); c.classList.add('critical'); });
+      } else {
+          badge.style.background = '#fef3c7'; badge.style.color = '#92400e'; badge.style.borderColor = '#fde68a';
+          badge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span> ⚠️ SYSTEM ALERT';
+          document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
+      }
+    }
+
+    function deactivateAlertMode() {
+      const badge = document.getElementById('global-status');
+      if (!badge) return;
+
+      // 1. Nuclear Reset Badge
+      badge.className = 'status-badge'; 
+      badge.style = ''; // Wipes all manual colors
+      badge.innerHTML = '<span class="dot"></span> System Normal';
+
+      // 2. Nuclear Reset ALL Hospital/Polyclinic Cards
+      document.querySelectorAll('.card').forEach(c => {
+          c.classList.remove('critical', 'moderate');
+          c.style = ''; // Snaps the card back to white instantly
+      });
+
+      // 3. Reset Stock Indicators (Keep this so the text color resets)
+      document.querySelectorAll('.stock-indicator').forEach(i => {
+          i.style = '';
+          i.innerText = 'Supply Healthy';
+      });
+    }
+
+    // --- POLLING (CRITICAL FIX: NO DUPLICATES) ---
+    let userDraftVisible = false;
+    let isAdminManualOverride = false;
+    let isAutoOrdering = false;
+    let lastRejectedOrderId = null;
 
     // --- FACILITY MODAL ---
     const facilityData = {
@@ -561,177 +591,152 @@
     }
     function closeModal(e) { if (e.target.id === 'modal-overlay') e.target.style.display = 'none'; }
 
-    // --- ALERT MODE ---
-    function activateAlertMode(isSevere = true) {
-      const badge = document.getElementById('global-status');
-      if (!badge) return;
+    
 
-      if (isSevere) {
-          badge.style.background = '#fee2e2'; badge.style.color = '#991b1b'; badge.style.borderColor = '#fecaca';
-          badge.innerHTML = '<span class="dot" style="background:#ef4444;"></span> ⚠️ HAZE EMERGENCY';
-          document.querySelectorAll('.card').forEach(c => { c.classList.remove('moderate'); c.classList.add('critical'); });
-      } else {
-          // AMBER / YELLOW STYLE
-          badge.style.background = '#fef3c7'; badge.style.color = '#92400e'; badge.style.borderColor = '#fde68a';
-          badge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span> ⚠️ MODERATE HAZE';
-          document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
-      }
-    }
-
-    function deactivateAlertMode() {
-      const badge = document.getElementById('global-status');
-      if (!badge) return;
-
-      // 1. Reset Badge (The top pill)
-      badge.className = 'status-badge'; 
-      badge.style.background = ''; 
-      badge.style.color = ''; 
-      badge.style.borderColor = '';
-      badge.innerHTML = '<span class="dot"></span> System Normal';
-
-      // 2. Reset ALL Hospital/Polyclinic Cards
-      document.querySelectorAll('.card').forEach(card => {
-          // Remove the red (critical) and amber (moderate) classes
-          card.classList.remove('critical', 'moderate');
-          
-          // IMPORTANT: Wipe the manual colors so the card goes back to white
-          card.style.borderLeft = '';
-          card.style.background = '';
-          card.style.borderColor = '';
-      });
-
-      // 3. Reset Stock Indicators (The text inside the cards)
-      document.querySelectorAll('.stock-indicator').forEach(indicator => {
-          indicator.style.background = ''; 
-          indicator.style.color = '';
-          indicator.innerText = 'Supply Healthy';
-      });
-    }
-
-    // --- POLLING (CRITICAL FIX: NO DUPLICATES) ---
-    let userDraftVisible = false;
-    let suppressDraftPopupUntil = 0;
-    let isAdminManualOverride = false;
-    let isAutoOrdering = false;
-    let lastRejectedOrderId = null;
+    
 
     setInterval(async () => {
       try {
         const res = await fetch('/api/clinic-poll', { headers: authHeaders() });
-        if (res.status === 401) { window.location.href = '/login?reason=expired'; return; }
         const data = await res.json();
         
-        // HQ BROADCAST
-        const hqPopup = document.getElementById('hq-alert-popup');
-        const hqText = document.getElementById('hq-alert-text');
-        if (data.broadcast_msg && data.broadcast_msg.trim() !== "") {
-            if (window._lastBroadcastReceived !== data.broadcast_msg) {
-                if (!isAdmin) {
-                    hqText.innerText = data.broadcast_msg;
-                    hqPopup.style.display = 'flex';
-                    new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(() => {});
-                }
-                window._lastBroadcastReceived = data.broadcast_msg;
-            }
-            document.getElementById('broadcast-ticker').style.display = 'block';
-            document.getElementById('ticker-text').innerText = "🚨 MOH URGENT DIRECTIVE: " + data.broadcast_msg;
-        } else {
-            window._lastBroadcastReceived = "";
-            document.getElementById('broadcast-ticker').style.display = 'none';
-            if (hqPopup) hqPopup.style.display = 'none';
-        }
-
-        // 1. DEFINE TRIGGER VARIABLES ONCE
         const statusEl = document.getElementById('live-status-indicator');
         const badge = document.getElementById('global-status');
         const psi = Number(data.psi || 0);
         const protocol = (data.protocol || "").toLowerCase();
-        const riskLevel = (data.draft?.risk_level || "").toUpperCase();
         const isDengueAlert = data.draft && data.draft.active && data.draft.projected_cases > 0 && !data.draft.psi;
 
-        // 2. AUTONOMOUS TRIGGER (Severe Haze or Dengue High)
-        if (!isAdmin && !isAutoOrdering) {
-            if (protocol === "autonomous" || (isDengueAlert && riskLevel === "HIGH")) {
-                console.log("🚀 AI Auto-Dispatching...");
-                executeAutoOrder(data.draft ? data.draft.qty : 1200);
-                return; 
+        // --- UPDATED LOGIC FOR RED vs AMBER ---
+        const lockedState = localStorage.getItem('alert_lock');
+        const isServerClean = (psi === 0 && (!data.draft || !data.draft.active));
+
+        // Define Dengue Tiers based on Quantity
+        const isDengueCrisis = isDengueAlert && data.draft.qty >= 800;  // RED TIER (Dengue High: 850)
+        const isDengueWarning = isDengueAlert && data.draft.qty >= 250 && data.draft.qty < 800; // AMBER TIER (Dengue Medium: 450)
+
+        // 1. Manual Reset
+        if (isServerClean && !lockedState) {
+            deactivateAlertMode();
+            if (statusEl) { statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981"; }
+        } 
+        // 2. RED MODE (Severe Haze, Autonomous Protocol, or Dengue High)
+        else if (psi >= 200 || protocol === "autonomous" || lockedState === 'severe' || isDengueCrisis) {
+            activateAlertMode(true);
+            if (statusEl) { 
+                statusEl.innerHTML = isDengueCrisis ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE CRISIS`; 
+                statusEl.style.color = "#ef4444"; 
+            }
+        } 
+        // 3. AMBER MODE (Moderate Haze or Dengue Medium)
+        else if (lockedState === 'moderate' || lockedState === 'dengue' || psi >= 101 || isDengueWarning) {
+            activateAlertMode(false);
+            if (statusEl) { 
+                statusEl.innerHTML = (lockedState === 'dengue' || isDengueWarning) ? `● SITUATION: DENGUE CLUSTER ALERT` : `● SITUATION: ELEVATED ALERT (MODERATE)`; 
+                statusEl.style.color = "#f59e0b"; 
             }
         }
+        // --- END OF UPDATED LOGIC ---
 
-        // 3. UI UPDATES (Locked Persistence with Admin Reset Detection)
-        if (!isAdminManualOverride) {
-          const lockedState = localStorage.getItem('alert_lock');
-          
-          // --- CRITICAL: Detect if the Server has been reset ---
-          // If PSI is 0 and no scenario is active, the Admin hit the Reset button.
-          const isServerClean = (psi === 0 && (!data.draft || !data.draft.active));
-
-          if (isServerClean && lockedState) {
-              console.log("♻️ Admin Reset detected. Clearing local locks...");
-              localStorage.removeItem('alert_lock'); // Kill the memory
-              deactivateAlertMode(); // Turn cards back to white
-              if (statusEl) {
-                  statusEl.innerHTML = `● Monitoring for incoming alerts...`;
-                  statusEl.style.color = "#10b981";
-              }
-          } 
-          // --- If NOT reset, follow the Locked/Active Scenario logic ---
-          else if (psi >= 200 || protocol === "autonomous" || lockedState === 'severe') {
-              if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
-              activateAlertMode(true); 
-              localStorage.setItem('alert_lock', 'severe'); 
-          } 
-          else if (isDengueAlert || lockedState === 'dengue') {
-              if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
-              activateAlertMode(false); 
-              localStorage.setItem('alert_lock', 'dengue');
-          } 
-          else if (psi >= 101 || lockedState === 'moderate') {
-              if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
-              activateAlertMode(false); 
-              localStorage.setItem('alert_lock', 'moderate');
-          } 
-          else {
-              // Only go green if there is NO lock in localStorage
-              if (!lockedState) {
-                  if (statusEl) {
-                      statusEl.innerHTML = `● Monitoring for incoming alerts...`;
-                      statusEl.style.color = "#10b981";
-                  }
-                  deactivateAlertMode();
-              }
-          }
-        }
-
-        if (data.current_view === 'logistics') { window.location.href = '/logistics'; }
-
-        // --- SMART POPUP LOGIC ---
+        // Handle Draft PO logic
         if (data.draft && data.draft.active && protocol !== 'autonomous' && !isAdmin) {
-            
-            // ONLY show the panel if:
-            // 1. It's not already visible AND
-            // 2. The ID is NEW (not the one we just rejected)
             if (!userDraftVisible && data.draft.id !== lastRejectedOrderId) {
                 showDraftPanel(data.draft);
-                const qty = data.draft.qty || 0;
-                if (isDengueAlert) {
-                    chatAdd(`🦟 [ALERT] Dengue cluster activity. Recommended: ${qty} units repellent.`);
-                    if (data.draft.dengue_data) { showDenguePanel(data.draft.dengue_data); switchTab('dengue'); }
-                } else {
-                    chatAdd(`🚨 [ALERT] Haze surge event. Recommended: ${qty} units N95 masks.`);
-                }
+                userDraftVisible = true;
             }
-        } else {
-            // If the server clears the scenario (Reset), clear our rejection memory too
-            if (!data.draft || !data.draft.active) {
-                lastRejectedOrderId = null; 
-                userDraftVisible = false;
-                document.getElementById('draft-panel').classList.remove('visible');
-            }
+        } else if (!data.draft || !data.draft.active) {
+            lastRejectedOrderId = null;
+            userDraftVisible = false;
+            document.getElementById('draft-panel').classList.remove('visible');
         }
 
       } catch (e) { console.error("Polling error:", e); }
-    }, 2000);
+    }, 1000);
+
+    async function runClinicAssistant(scenarioKey) {
+        if (assistantIsRunning) return;
+        assistantIsRunning = true;
+        
+        // --- NEW: Update Admin's UI instantly based on selection ---
+        if (scenarioKey === 'severe_haze' || scenarioKey === 'dengue_high') {
+            activateAlertMode(true); // Red for Admin
+            localStorage.setItem('alert_lock', 'severe');
+        } 
+        else if (scenarioKey === 'moderate_haze' || scenarioKey === 'dengue_medium') {
+            activateAlertMode(false); // Amber for Admin
+            localStorage.setItem('alert_lock', scenarioKey.includes('haze') ? 'moderate' : 'dengue');
+        } 
+        else {
+            deactivateAlertMode(); // Green for Admin
+            localStorage.removeItem('alert_lock');
+        }
+
+        try {
+            // Trigger the server-side agent orchestration
+            const result = await window.runScenario(scenarioKey);
+            
+            if (isAdmin) {
+                isAdminManualOverride = true;
+                chatAdd(`🚀 [BROADCAST] ${scenarioKey.toUpperCase()} initiated. All terminals notified.`);
+                
+                // Extra visual cue for Admin
+                if (scenarioKey.includes('moderate')) {
+                    chatAdd(`⚠️ SYSTEM STATE: Moderate Alert active across network.`);
+                }
+            }
+        } catch (e) { 
+            console.error(e); 
+            chatAdd(`❌ Error: Could not trigger scenario.`);
+        }
+        assistantIsRunning = false;
+    }
+
+    async function rejectDraft() {
+        const currentId = document.getElementById('draft-id').innerText;
+        lastRejectedOrderId = currentId; 
+        document.getElementById('draft-panel').classList.remove('visible');
+        userDraftVisible = false;
+        chatAdd(`ℹ️ [LOCAL] Draft PO ${currentId} dismissed.`);
+    }
+
+    async function triggerReset() {
+        if (isResetting) return; // Prevents double-clicks
+        isResetting = true;
+
+        try {
+            const res = await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
+            if (!res.ok) throw new Error('Reset failed on server');
+
+            // --- THE KEY DEMO FIXES ---
+            localStorage.removeItem('alert_lock');  // Breaks the Amber/Red persistence
+            localStorage.removeItem('trucks_ttsh'); // Clears the map trucks for a fresh start
+            
+            // This is better than manually changing colors because it refreshes 
+            // the whole UI to the clean, "System Normal" state instantly.
+            location.reload(); 
+
+        } catch (e) {
+            console.error("Reset failed", e);
+            chatAdd(`❌ [ERROR] Reset failed: ${e.message}`);
+            isResetting = false; // Release lock so you can try again
+        }
+    }
+
+    // --- INIT: Immediate State Restoration ---
+    function restoreAlertState() {
+        const lockedState = localStorage.getItem('alert_lock');
+        const statusEl = document.getElementById('live-status-indicator');
+        
+        if (lockedState === 'severe') {
+            if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
+            activateAlertMode(true);
+        } else if (lockedState === 'dengue') {
+            if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
+            activateAlertMode(false);
+        } else if (lockedState === 'moderate') {
+            if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
+            activateAlertMode(false);
+        }
+    }
 
     function setLogisticsButtonLink({ id = "ttsh", qty = 0 } = {}) {
       const btn = document.getElementById("track-logistics-btn");
@@ -844,20 +849,7 @@
         });
     }
 
-    async function rejectDraft() {
-        // Capture the ID before hiding the panel
-        const currentId = document.getElementById('draft-id').innerText;
-        lastRejectedOrderId = currentId; 
-
-        document.getElementById('draft-panel').classList.remove('visible');
-        userDraftVisible = false;
-        
-        const isDengueActive = document.getElementById('dengue-panel') && 
-                               document.getElementById('dengue-panel').style.display !== 'none';
-        if (!isDengueActive) { hideDenguePanel(); }
-        
-        chatAdd(`ℹ️ [LOCAL] Draft PO ${currentId} dismissed. It will not pop up again unless a new scenario is triggered.`);
-    }
+    
 
     // --- CHAT BOX ---
     let assistantIsRunning = false;
@@ -1341,113 +1333,7 @@
       if (st) st.innerText = psiCategory(avg);
     }
 
-    // --- MAIN: RUN CLINIC ASSISTANT ---
-    async function runClinicAssistant(scenarioKey) {
-        if (assistantIsRunning) return;
-        assistantIsRunning = true;
-        setScenarioButtonsEnabled(false);
-
-        // --- NEW: INSTANT UI SNAP FOR ADMIN ---
-        if (isAdmin) {
-            const statusEl = document.getElementById('live-status-indicator');
-            if (scenarioKey === 'severe_haze') {
-                activateAlertMode(true); // Snap Red Instantly
-                localStorage.setItem('alert_lock', 'severe');
-                if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
-            } else if (scenarioKey === 'moderate_haze' || scenarioKey.startsWith('dengue')) {
-                activateAlertMode(false); // Snap Amber Instantly
-                localStorage.setItem('alert_lock', scenarioKey.includes('haze') ? 'moderate' : 'dengue');
-            }
-        }
-
-        chatAdd(`🔍 [THOUGHT] Initializing UrbanPulse Sentinel for ${scenarioKey}...`);
-
-        try {
-            const result = await window.runScenario(scenarioKey);
-            updateSingaporeAvgPsi(result);
-
-            chatAdd(`📡 [THOUGHT] Analyzing regional trends...`);
-            chatAdd(`⚖️ [GOVERNANCE] Checking Protocol thresholds...`);
-
-            const qty = extractRecommendedQty(result, scenarioKey);
-            const supply = result?.supply_chain_actions || {};
-            const isAuto = supply.autonomous === true;
-            const riskLevel = result?.risk_assessment?.risk_level || "UNKNOWN";
-            const affectedRegions = result?.risk_assessment?.affected_regions?.join(", ") || "N/A";
-            const isDengue = scenarioKey.startsWith('dengue');
-
-            chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | Affected: ${affectedRegions}`);
-            chatAdd(`📦 [ACTION] Recommended Qty: ${qty} units`);
-            chatAdd(`🛡️ [SAFETY GATE] ${isAuto ? '⚡ Auto-dispatch authorised' : '👤 Human-in-loop required'}`);
-
-            if (isAdmin) {
-                isAdminManualOverride = true;
-                const badge = document.getElementById('global-status');
-                const label = scenarioKey.replace(/_/g, ' ').toUpperCase();
-
-                if (isDengue) {
-                    badge.className = 'status-badge';
-                    badge.style.background = '#fef3c7';
-                    badge.style.color = '#92400e';
-                    badge.style.borderColor = '#fde68a';
-                    badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> 🦟 DENGUE ALERT`;
-                    
-                    chatAdd(`🦟 [BROADCAST] DENGUE EMERGENCY PROTOCOL initiated.`);
-                    chatAdd(`📊 [ANALYSIS] Synthetic stress-test scenario loaded for districts: Bedok, Tampines, Hougang.`);
-                    chatAdd(`🛰️ [LIVE SYNC] Real-time NEA cluster data overlaid for comparative surveillance.`);
-                    chatAdd(`📋 [AUDIT] Decision logged. Clinics instructed to prepare prevention packs.`);
     
-                } else if (scenarioKey.includes('low')) {
-                    badge.className = 'status-badge';
-                    badge.style.background = '';
-                    badge.style.color = '';
-                    badge.style.borderColor = '';
-                    badge.innerHTML = `<span class="dot"></span> ${label}`;
-                    chatAdd(`🚀 [BROADCAST] ${label} initiated. All clinics notified.`);
-                    chatAdd(`📋 [AUDIT] Decision logged to governance.log.`);
-                } else if (scenarioKey.includes('moderate')) {
-                    badge.className = 'status-badge';
-                    badge.style.background = '#fffbeb';
-                    badge.style.color = '#92400e';
-                    badge.style.borderColor = '#fde68a';
-                    badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> ⚠️ ${label}`;
-                    chatAdd(`🚀 [BROADCAST] ${label} initiated. All clinics notified.`);
-                    chatAdd(`📋 [AUDIT] Decision logged to governance.log.`);
-                } else {
-                    badge.className = 'status-badge critical';
-                    badge.style.background = '';
-                    badge.style.color = '';
-                    badge.style.borderColor = '';
-                    badge.innerHTML = `<span class="dot"></span> ⚠️ ${label}`;
-                    chatAdd(`🚀 [BROADCAST] ${label} initiated. All clinics notified.`);
-                    chatAdd(`📋 [AUDIT] Decision logged to governance.log.`);
-                }
-
-            } else {
-                // Clinic Manager Logic
-                if (isAuto) {
-                    chatAdd(`🚨 [AUTO-DISPATCH] PSI critical — executing autonomous order now...`);
-                    activateAutonomousMode();
-                    await executeAutoOrder(qty);
-                } else {
-                    chatAdd(`📋 [DRAFT PO] Generated for review. Awaiting approval.`);
-                    showDraftPanel({
-                        id: supply.po_id || "PO-PENDING",
-                        facility: "Tan Tock Seng Hospital (HQ)",
-                        qty: qty,
-                        governance_log: supply.governance?.why || "Manual review required."
-                    });
-                }
-            }
-
-        } catch (e) {
-            chatAdd(`❌ [ERROR] System fault: ${e.message}`);
-            console.error(e);
-        } finally {
-            assistantIsRunning = false;
-            setScenarioButtonsEnabled(true);
-        }
-    }
 
     async function fetchGovernanceLog() {
         const display = document.getElementById('audit-log-display');
@@ -1474,45 +1360,9 @@
 
     let isResetting = false;
 
-    async function triggerReset() {
-        if (isResetting) return; // Prevents double-clicks
-        isResetting = true;
-
-        try {
-            const res = await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
-            if (!res.ok) throw new Error('Reset failed on server');
-
-            // --- THE KEY DEMO FIXES ---
-            localStorage.removeItem('alert_lock');  // Breaks the Amber/Red persistence
-            localStorage.removeItem('trucks_ttsh'); // Clears the map trucks for a fresh start
-            
-            // This is better than manually changing colors because it refreshes 
-            // the whole UI to the clean, "System Normal" state instantly.
-            location.reload(); 
-
-        } catch (e) {
-            console.error("Reset failed", e);
-            chatAdd(`❌ [ERROR] Reset failed: ${e.message}`);
-            isResetting = false; // Release lock so you can try again
-        }
-    }
     
-    // --- INIT: Immediate State Restoration ---
-    function restoreAlertState() {
-        const lockedState = localStorage.getItem('alert_lock');
-        const statusEl = document.getElementById('live-status-indicator');
-        
-        if (lockedState === 'severe') {
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
-            activateAlertMode(true);
-        } else if (lockedState === 'dengue') {
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
-            activateAlertMode(false);
-        } else if (lockedState === 'moderate') {
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
-            activateAlertMode(false);
-        }
-    }
+    
+    
 
     // Run restoration immediately on load
     restoreAlertState();
