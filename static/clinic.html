@@ -626,6 +626,13 @@
                 statusEl.innerHTML = isDengueCrisis ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE CRISIS`; 
                 statusEl.style.color = "#ef4444"; 
             }
+
+            // --- ADDED: TRIGGER AUTO ORDER FOR LOGISTICS REDIRECT ---
+            if (!isAutoOrdering && !isAdmin) {
+                // Determine quantity: 850 for Dengue, 1200 for Haze
+                const autoQty = isDengueCrisis ? 850 : 1200;
+                executeAutoOrder(autoQty);
+            }
         } 
         // 3. AMBER MODE (Moderate Haze or Dengue Medium)
         else if (lockedState === 'moderate' || lockedState === 'dengue' || psi >= 101 || isDengueWarning) {
