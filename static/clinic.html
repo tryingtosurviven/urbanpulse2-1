@@ -470,9 +470,10 @@
       <p style="color:#64748b; margin-bottom:20px;">Official PO has been generated and dispatched.</p>
 
       <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; text-align:left; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Facility:</span><strong>Tan Tock Seng Hospital</strong></div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Quantity:</span><strong id="confirmed-qty-disp">---</strong></div>
-        <div style="display:flex; justify-content:space-between;"><span>Status:</span><strong style="color:#0ea5e9">Dispatched</strong></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Facility:</span><strong>Tan Tock Seng Hospital</strong></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Item:</span><strong id="confirmed-item-name">---</strong></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Quantity:</span><strong id="confirmed-qty-disp">---</strong></div>
+            <div style="display:flex; justify-content:space-between;"><span>Status:</span><strong style="color:#0ea5e9">Dispatched</strong></div>
       </div>
 
       <button id="track-logistics-btn" class="po-track-btn">🚚 Track on Logistics Map</button>
@@ -809,38 +810,41 @@
     }
 
     async function approveDraft() {
-      const newQty = document.getElementById('draft-qty').value;
-      await fetch('/api/clinic-confirm-order', {
-        method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ confirmed_qty: newQty })
-      });
+        const currentQty = document.getElementById('draft-qty').value;
+        
+        // 1. Determine Context (Haze vs Dengue)
+        const denguePanel = document.getElementById('dengue-panel');
+        const isDengueActive = (denguePanel && denguePanel.style.display !== 'none');
+        const itemName = isDengueActive ? "Bottles of Mosquito Repellent" : "N95 Respiratory Masks";
 
-      document.getElementById('draft-panel').classList.remove('visible');
-      suppressDraftPopupUntil = Date.now() + 8000;
-      userDraftVisible = true;
+        // 2. Generate a UNIQUE ID for this specific transaction
+        // This ensures the truck appears on the map once and only once
+        const orderId = Date.now();
 
-      // Natalie: Check which view is active to set correct label
-      const isDengueScenario = document.getElementById('dengue-panel') && document.getElementById('dengue-panel').style.display !== 'none';
-      const finalLabel = isDengueScenario ? "Dengue Prevention Packs" : "N95 Masks";
-      
-      // Natalie: Fixed variable name to newQty
-      document.getElementById('confirmed-qty-disp').innerText = newQty + " Units (" + finalLabel + ")";
+        // 3. Update the Success Modal UI labels
+        document.getElementById('confirmed-item-name').innerText = itemName;
+        document.getElementById('confirmed-qty-disp').innerText = currentQty + " Units";
 
-      const modal = document.querySelector('.po-modal');
-      modal.style.border = "none";
-      document.querySelector('.po-icon').innerText = "✅";
-      document.querySelector('.po-modal h2').innerText = "Order Confirmed";
-      document.querySelector('.po-modal h2').style.color = "#166534";
+        // 4. ATTACH THE SMART LINK TO THE TRACK BUTTON
+        // This is the bridge that sends the data to logistics.html
+        const trackBtn = document.getElementById("track-logistics-btn");
+        if (trackBtn) {
+            trackBtn.onclick = function() {
+                const url = `/logistics?id=ttsh&qty=${currentQty}&item=${encodeURIComponent(itemName)}&orderId=${orderId}`;
+                window.location.href = url;
+            };
+        }
+        
+        // 5. Fire the API call to notify the backend
+        await fetch('/api/clinic-confirm-order', {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ confirmed_qty: currentQty })
+        });
 
-      setLogisticsButtonLink({ id: "ttsh", qty: newQty });
-      document.getElementById('success-overlay').style.display = 'flex';
-
-      const poParagraph = document.querySelector('.po-modal p');
-      if (poParagraph) poParagraph.innerText = 'Official PO has been generated and dispatched.';
-
-      const closeBtn = document.getElementById('po-close-btn');
-      if (closeBtn) closeBtn.style.display = 'inline-block';
+        // 6. Show the success overlay and hide the draft panel
+        document.getElementById('draft-panel').classList.remove('visible');
+        document.getElementById('success-overlay').style.display = 'flex';
     }
 
     async function rejectDraft() {
