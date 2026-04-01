@@ -491,20 +491,13 @@
 
     // Show admin-only panel if admin
     if (isAdmin) {
-        // Show admin dark panel
         const adminPanel = document.getElementById('admin-only-panel');
         if (adminPanel) adminPanel.style.display = 'block';
-
-        // Hide duplicate scenario buttons (admin uses dark panel instead)
         const scenarioButtons = document.getElementById('scenario-buttons');
         if (scenarioButtons) scenarioButtons.style.display = 'none';
-
     } else {
-        // Clinic manager — hide trigger buttons, change subtitle
         const scenarioButtons = document.getElementById('scenario-buttons');
         if (scenarioButtons) scenarioButtons.style.display = 'none';
-
-        // Show scenario tabs for clinic manager
         const tabs = document.getElementById('scenario-tabs');
         if (tabs) tabs.style.display = 'block';
 
@@ -531,14 +524,11 @@
     const roleBadge = document.getElementById("role-badge");
     if (roleBadge) {
         roleBadge.innerText = `${userName} (${role.replace("_", " ").toUpperCase()})`;
-        // Purple for admin, blue for clinic manager
         roleBadge.style.background = isAdmin ? '#7c3aed' : '#1e40af';
     }
 
     window.logoutUser = function() {
-      localStorage.removeItem("urbanpulse_token");
-      localStorage.removeItem("urbanpulse_role");
-      localStorage.removeItem("urbanpulse_name");
+      localStorage.clear();
       document.cookie = "urbanpulse_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       window.location.href = "/login";
     }
@@ -597,149 +587,94 @@
       document.querySelectorAll('.card').forEach(card => card.classList.remove('critical'));
     }
 
-    // --- POLLING (with auth) ---
+    // --- POLLING (CRITICAL FIX: NO DUPLICATES) ---
     let userDraftVisible = false;
     let suppressDraftPopupUntil = 0;
     let isAdminManualOverride = false;
+    let isAutoOrdering = false;
 
     setInterval(async () => {
       try {
         const res = await fetch('/api/clinic-poll', { headers: authHeaders() });
         if (res.status === 401) { window.location.href = '/login?reason=expired'; return; }
-
         const data = await res.json();
         
-        // --- Natalie: HQ BROADCAST POPUP LOGIC ---
-        const ticker = document.getElementById('broadcast-ticker');
-        const tickerTxt = document.getElementById('ticker-text');
-        const hqPopup = document.getElementById('hq-alert-popup'); // Correct ID
-        const hqText = document.getElementById('hq-alert-text');   // Correct ID
-
+        // HQ BROADCAST
+        const hqPopup = document.getElementById('hq-alert-popup');
+        const hqText = document.getElementById('hq-alert-text');
         if (data.broadcast_msg && data.broadcast_msg.trim() !== "") {
-            // Natalie: Use window variable to track if message has changed since last poll
             if (window._lastBroadcastReceived !== data.broadcast_msg) {
                 if (!isAdmin) {
-                    hqText.innerText = data.broadcast_msg; // Inject the actual message
-                    hqPopup.style.display = 'flex';        // Show the popup
-                    
-                    // Standard notification sound
-                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-                    audio.play().catch(e => console.log("Audio deferred"));
+                    hqText.innerText = data.broadcast_msg;
+                    hqPopup.style.display = 'flex';
+                    new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(() => {});
                 }
                 window._lastBroadcastReceived = data.broadcast_msg;
             }
-            ticker.style.display = 'block';
-            tickerTxt.innerText = "🚨 MOH URGENT DIRECTIVE: " + data.broadcast_msg;
+            document.getElementById('broadcast-ticker').style.display = 'block';
+            document.getElementById('ticker-text').innerText = "🚨 MOH URGENT DIRECTIVE: " + data.broadcast_msg;
         } else {
             window._lastBroadcastReceived = "";
-            ticker.style.display = 'none';
+            document.getElementById('broadcast-ticker').style.display = 'none';
             if (hqPopup) hqPopup.style.display = 'none';
         }
-        // --- End of HQ Logic ---
 
+        // 1. DEFINE TRIGGER VARIABLES ONCE
         const statusEl = document.getElementById('live-status-indicator');
-        const badge = document.getElementById('global-status'); // Header Badge
-
+        const badge = document.getElementById('global-status');
         const psi = Number(data.psi || 0);
         const protocol = (data.protocol || "").toLowerCase();
+        const riskLevel = (data.draft?.risk_level || "").toUpperCase();
+        const isDengueAlert = data.draft && data.draft.active && data.draft.projected_cases > 0 && !data.draft.psi;
 
+        // 2. AUTONOMOUS TRIGGER (Severe Haze or Dengue High)
+        if (!isAdmin && !isAutoOrdering) {
+            if (protocol === "autonomous" || (isDengueAlert && riskLevel === "HIGH")) {
+                console.log("🚀 AI Auto-Dispatching...");
+                executeAutoOrder(data.draft ? data.draft.qty : 1200);
+                return; 
+            }
+        }
+
+        // 3. UI UPDATES
         if (!isAdminManualOverride) {
-          const isDengueAlert = data.draft && data.draft.active && 
-                                data.draft.projected_cases > 0 && 
-                                !data.draft.psi;
-
           if (psi >= 200 || protocol === "autonomous") {
               if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
-              if (badge) {
-                  badge.className = 'status-badge critical';
-                  badge.innerHTML = '<span class="dot"></span> ⚠️ SEVERE HAZE';
-                  badge.style.background = '';
-              }
               activateAlertMode();
-
           } else if (isDengueAlert) {
               if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
               if (badge) {
                   badge.className = 'status-badge';
-                  badge.style.background = '#fef3c7';
-                  badge.style.color = '#92400e';
-                  badge.style.borderColor = '#fde68a';
+                  badge.style.background = '#fef3c7'; badge.style.color = '#92400e'; badge.style.borderColor = '#fde68a';
                   badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> 🦟 DENGUE ALERT`;
               }
-              document.querySelectorAll('.card').forEach(c => {
-                  c.classList.remove('critical');
-                  c.classList.add('moderate');
-              });
-
+              document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
           } else if (psi >= 101) {
               if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
-              if (badge) {
-                  badge.className = 'status-badge';
-                  badge.style.background = '#fffbeb';
-                  badge.style.color = '#92400e';
-                  badge.style.borderColor = '#fde68a';
-                  badge.innerHTML = `<span class="dot" style="background: #f59e0b;"></span> ⚠️ MODERATE HAZE`;
-              }
-              document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
-
+              activateAlertMode();
           } else {
               if (statusEl) {
-                  if (data.psi > 0 || (data.draft && data.draft.active)) {
-                      statusEl.innerHTML = `● SITUATION: LOW RISK (CLEAR)`; statusEl.style.color = "#10b981";
-                      if (badge) { badge.innerHTML = '<span class="dot"></span> LOW HAZE'; }
-                  } else {
-                      statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981";
-                      if (badge) {
-                          badge.className = 'status-badge';
-                          badge.style.background = '';
-                          badge.style.color = '';
-                          badge.style.borderColor = '';
-                          badge.innerHTML = '<span class="dot"></span> System Normal';
-                      }
-                  }
+                  statusEl.innerHTML = (data.psi > 0 || (data.draft && data.draft.active)) ? `● SITUATION: LOW RISK` : `● Monitoring...`;
+                  statusEl.style.color = "#10b981";
               }
-              document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical', 'moderate'); c.style.borderLeft = ''; c.style.background = ''; });
-              document.querySelectorAll('.stock-indicator').forEach(i => { i.style.background = ''; i.style.color = ''; i.innerText = 'Supply Healthy'; });
+              deactivateAlertMode();
           }
-        }
-
-        if (protocol === "autonomous" && !isAdmin && !isAutoOrdering) {
-            executeAutoOrder(data.draft ? data.draft.qty : 1200);
         }
 
         if (data.current_view === 'logistics') { window.location.href = '/logistics'; }
 
-        if (Date.now() > suppressDraftPopupUntil && !userDraftVisible && data.draft && data.draft.active && data.protocol !== 'autonomous' && !isAdmin) {
+        if (Date.now() > suppressDraftPopupUntil && !userDraftVisible && data.draft && data.draft.active && protocol !== 'autonomous' && !isAdmin) {
           showDraftPanel(data.draft);
-          const riskLevel = data.draft.risk_level || "UNKNOWN";
           const qty = data.draft.qty || 0;
-          const isDengue = data.draft.projected_cases != null && data.draft.psi == null;
-          const metricVal = isDengue 
-              ? `Projected Cases: ${data.draft.projected_cases}` 
-              : `PSI: ${data.draft.psi}`;
-
-          if (isDengue) {
-              chatAdd(`🦟 [ALERT] MOH has detected elevated dengue cluster activity.`);
-              chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | ${metricVal}`);
-              chatAdd(`🤖 [AI DECISION] Claude AI recommended ${qty} units prevention packs.`);
-              chatAdd(`🗺️ [ZONES] Affected districts flagged — see advisory below.`);
-              chatAdd(`📋 [ACTION REQUIRED] Please review and approve the Draft PO below.`);
-              if (data.draft.dengue_data) {
-                  showDenguePanel(data.draft.dengue_data);
-                  switchTab('dengue');
-              }
+          if (isDengueAlert) {
+              chatAdd(`🦟 [ALERT] Dengue cluster activity. Recommended: ${qty} units repellent.`);
+              if (data.draft.dengue_data) { showDenguePanel(data.draft.dengue_data); switchTab('dengue'); }
           } else {
-              chatAdd(`🚨 [ALERT] MOH System has detected a haze surge event.`);
-              chatAdd(`📊 [DATA] Risk Level: ${riskLevel} | ${metricVal}`);
-              chatAdd(`🤖 [AI DECISION] Claude AI recommended ${qty} units N95 masks.`);
-              chatAdd(`📋 [ACTION REQUIRED] Please review the Draft PO below.`);
+              chatAdd(`🚨 [ALERT] Haze surge event. Recommended: ${qty} units N95 masks.`);
           }
         }
       } catch (e) { console.error("Polling error:", e); }
     }, 2000);
-
-    // --- LOGISTICS BUTTON ---
-    let isAutoOrdering = false;
 
     function setLogisticsButtonLink({ id = "ttsh", qty = 0 } = {}) {
       const btn = document.getElementById("track-logistics-btn");
@@ -754,31 +689,54 @@
       if (isAutoOrdering) return;
       isAutoOrdering = true;
 
+      // --- IMPROVED CONTEXT CHECK ---
+      // We look at the actual Draft data from the server to decide the item
+      const pollRes = await fetch('/api/clinic-poll', { headers: authHeaders() });
+      const pollData = await pollRes.json();
+      
+      // If projected_cases exists, it's DENGUE. Otherwise, it's HAZE.
+      const isDengueCrisis = pollData.draft && pollData.draft.projected_cases > 0;
+      const itemName = isDengueCrisis ? "Bottles of Mosquito Repellent" : "N95 Respiratory Masks";
+      
+      const orderId = Date.now();
+      const confirmedQty = qty || 850;
+
+      // SAVE TO STORAGE (So it shows correctly on the Logistics page)
+      const storageKey = 'trucks_ttsh';
+      let activeTrucks = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      activeTrucks.unshift({ 
+          idNum: activeTrucks.length + 5, 
+          name: "Truck #0" + (activeTrucks.length + 5), 
+          qty: confirmedQty, 
+          destination: "Tan Tock Seng Hospital", 
+          item: itemName, 
+          timestamp: orderId,
+          orderId: orderId,
+          eta: "12"
+      });
+      localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
+
+      // API Call
       await fetch('/api/clinic-confirm-order', {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ confirmed_qty: qty })
+        body: JSON.stringify({ confirmed_qty: confirmedQty })
       });
 
-      document.getElementById('confirmed-qty-disp').innerText = qty + " Units (N95)";
-
+      // UI UPDATE (This fixes the text in your image!)
+      document.getElementById('confirmed-item-name').innerText = itemName;
+      document.getElementById('confirmed-qty-disp').innerText = confirmedQty + " Units";
+      
       const modal = document.querySelector('.po-modal');
       modal.style.border = "4px solid #a855f7";
       document.querySelector('.po-icon').innerText = "⚡";
       document.querySelector('.po-modal h2').innerText = "AI Auto-Dispatch";
-      document.querySelector('.po-modal h2').style.color = "#7e22ce";
-
-      setLogisticsButtonLink({ id: "ttsh", qty });
+      
       document.getElementById('success-overlay').style.display = 'flex';
 
-      const poParagraph = document.querySelector('.po-modal p');
-      if (poParagraph) poParagraph.innerText = 'PO auto-dispatched. Redirecting to tracking...';
-
-      const closeBtn = document.getElementById('po-close-btn');
-      if (closeBtn) closeBtn.style.display = 'none';
-
+      // Redirect to map
       setTimeout(() => {
-        window.location.href = '/logistics?id=ttsh&qty=' + qty;
+        window.location.href = '/logistics?id=ttsh';
       }, 3000);
 
       setTimeout(() => { isAutoOrdering = false; }, 5000);

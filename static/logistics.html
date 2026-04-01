@@ -86,8 +86,7 @@
         }
 
         // --- TRANSACTIONAL LOGIC ---
-        // This is the important part: only add if we have a NEW ID from the Clinic
-        if (newOrderQty && orderId && !processedOrders.includes(orderId)) {
+        if (newOrderQty && orderId && !processedOrders.includes(orderId.toString())) {
             const nextId = activeTrucks.length + 4;
             activeTrucks.unshift({ 
                 idNum: nextId, 
@@ -96,12 +95,10 @@
                 destination: target.name, 
                 item: itemLabel, 
                 timestamp: Date.now(),
+                orderId: orderId,
                 eta: "12"
             });
-            
-            // Save this ID so we never add it again on refresh
-            processedOrders.push(orderId);
-            
+            processedOrders.push(orderId.toString());
             localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
             localStorage.setItem(processedOrdersKey, JSON.stringify(processedOrders));
         }
