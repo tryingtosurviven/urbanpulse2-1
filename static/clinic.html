@@ -581,19 +581,31 @@
     function deactivateAlertMode() {
       const badge = document.getElementById('global-status');
       if (!badge) return;
-      badge.className = 'status-badge'; badge.style.background = ''; badge.style.color = ''; badge.style.borderColor = '';
-      badge.innerHTML = '<span class="dot"></span> System Normal';
-      document.querySelectorAll('.card').forEach(card => card.classList.remove('critical', 'moderate'));
-    }
 
-    function deactivateAlertMode() {
-      const badge = document.getElementById('global-status');
-      badge.className = 'status-badge';
-      badge.style.background = '';
-      badge.style.color = '';
+      // 1. Reset Badge (The top pill)
+      badge.className = 'status-badge'; 
+      badge.style.background = ''; 
+      badge.style.color = ''; 
       badge.style.borderColor = '';
       badge.innerHTML = '<span class="dot"></span> System Normal';
-      document.querySelectorAll('.card').forEach(card => card.classList.remove('critical'));
+
+      // 2. Reset ALL Hospital/Polyclinic Cards
+      document.querySelectorAll('.card').forEach(card => {
+          // Remove the red (critical) and amber (moderate) classes
+          card.classList.remove('critical', 'moderate');
+          
+          // IMPORTANT: Wipe the manual colors so the card goes back to white
+          card.style.borderLeft = '';
+          card.style.background = '';
+          card.style.borderColor = '';
+      });
+
+      // 3. Reset Stock Indicators (The text inside the cards)
+      document.querySelectorAll('.stock-indicator').forEach(indicator => {
+          indicator.style.background = ''; 
+          indicator.style.color = '';
+          indicator.innerText = 'Supply Healthy';
+      });
     }
 
     // --- POLLING (CRITICAL FIX: NO DUPLICATES) ---
@@ -645,28 +657,41 @@
             }
         }
 
-        // 3. UI UPDATES (With Persistence Lock)
+        // 3. UI UPDATES (Locked Persistence with Admin Reset Detection)
         if (!isAdminManualOverride) {
-          // Check localStorage first to see if we are in a "Locked" state
           const lockedState = localStorage.getItem('alert_lock');
+          
+          // --- CRITICAL: Detect if the Server has been reset ---
+          // If PSI is 0 and no scenario is active, the Admin hit the Reset button.
+          const isServerClean = (psi === 0 && (!data.draft || !data.draft.active));
 
-          if (psi >= 200 || protocol === "autonomous" || lockedState === 'severe') {
+          if (isServerClean && lockedState) {
+              console.log("♻️ Admin Reset detected. Clearing local locks...");
+              localStorage.removeItem('alert_lock'); // Kill the memory
+              deactivateAlertMode(); // Turn cards back to white
+              if (statusEl) {
+                  statusEl.innerHTML = `● Monitoring for incoming alerts...`;
+                  statusEl.style.color = "#10b981";
+              }
+          } 
+          // --- If NOT reset, follow the Locked/Active Scenario logic ---
+          else if (psi >= 200 || protocol === "autonomous" || lockedState === 'severe') {
               if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
-              activateAlertMode(true); // Red
+              activateAlertMode(true); 
               localStorage.setItem('alert_lock', 'severe'); 
           } 
           else if (isDengueAlert || lockedState === 'dengue') {
               if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
-              activateAlertMode(false); // Amber
+              activateAlertMode(false); 
               localStorage.setItem('alert_lock', 'dengue');
           } 
           else if (psi >= 101 || lockedState === 'moderate') {
               if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
-              activateAlertMode(false); // Amber
+              activateAlertMode(false); 
               localStorage.setItem('alert_lock', 'moderate');
           } 
           else {
-              // ONLY go green if there is NO lock in localStorage
+              // Only go green if there is NO lock in localStorage
               if (!lockedState) {
                   if (statusEl) {
                       statusEl.innerHTML = `● Monitoring for incoming alerts...`;
