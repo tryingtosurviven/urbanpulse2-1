@@ -613,6 +613,7 @@
     let suppressDraftPopupUntil = 0;
     let isAdminManualOverride = false;
     let isAutoOrdering = false;
+    let lastRejectedOrderId = null;
 
     setInterval(async () => {
       try {
@@ -704,16 +705,31 @@
 
         if (data.current_view === 'logistics') { window.location.href = '/logistics'; }
 
-        if (Date.now() > suppressDraftPopupUntil && !userDraftVisible && data.draft && data.draft.active && protocol !== 'autonomous' && !isAdmin) {
-          showDraftPanel(data.draft);
-          const qty = data.draft.qty || 0;
-          if (isDengueAlert) {
-              chatAdd(`🦟 [ALERT] Dengue cluster activity. Recommended: ${qty} units repellent.`);
-              if (data.draft.dengue_data) { showDenguePanel(data.draft.dengue_data); switchTab('dengue'); }
-          } else {
-              chatAdd(`🚨 [ALERT] Haze surge event. Recommended: ${qty} units N95 masks.`);
-          }
+        // --- SMART POPUP LOGIC ---
+        if (data.draft && data.draft.active && protocol !== 'autonomous' && !isAdmin) {
+            
+            // ONLY show the panel if:
+            // 1. It's not already visible AND
+            // 2. The ID is NEW (not the one we just rejected)
+            if (!userDraftVisible && data.draft.id !== lastRejectedOrderId) {
+                showDraftPanel(data.draft);
+                const qty = data.draft.qty || 0;
+                if (isDengueAlert) {
+                    chatAdd(`🦟 [ALERT] Dengue cluster activity. Recommended: ${qty} units repellent.`);
+                    if (data.draft.dengue_data) { showDenguePanel(data.draft.dengue_data); switchTab('dengue'); }
+                } else {
+                    chatAdd(`🚨 [ALERT] Haze surge event. Recommended: ${qty} units N95 masks.`);
+                }
+            }
+        } else {
+            // If the server clears the scenario (Reset), clear our rejection memory too
+            if (!data.draft || !data.draft.active) {
+                lastRejectedOrderId = null; 
+                userDraftVisible = false;
+                document.getElementById('draft-panel').classList.remove('visible');
+            }
         }
+
       } catch (e) { console.error("Polling error:", e); }
     }, 2000);
 
@@ -738,21 +754,35 @@
       const confirmedQty = qty || 850;
       const orderId = Date.now();
 
-      // --- REMOVED: No more manual localStorage push here ---
-
+      // 1. Fire API Call
       await fetch('/api/clinic-confirm-order', {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ confirmed_qty: confirmedQty })
       });
 
+      // 2. Update UI Modal text
       document.getElementById('confirmed-item-name').innerText = itemName;
       document.getElementById('confirmed-qty-disp').innerText = confirmedQty + " Units";
       
-      // Auto-dispatch needs to pass the data through the URL for the redirect
+      // 3. AI Branding (Purple glow and Bolt icon)
+      const modal = document.querySelector('.po-modal');
+      if (modal) {
+          modal.style.border = "4px solid #a855f7"; // AI Purple
+          document.querySelector('.po-icon').innerText = "⚡";
+          document.querySelector('.po-modal h2').innerText = "AI Auto-Dispatch";
+          document.querySelector('.po-modal h2').style.color = "#7e22ce";
+      }
+      
+      // 4. SHOW THE MODAL
+      document.getElementById('success-overlay').style.display = 'flex';
+
+      // 5. WAIT BEFORE REDIRECT (Increase to 4000ms so judges see the success)
       setTimeout(() => {
         window.location.href = `/logistics?id=ttsh&qty=${confirmedQty}&item=${encodeURIComponent(itemName)}&orderId=${orderId}`;
-      }, 3000);
+      }, 4000); 
+
+      setTimeout(() => { isAutoOrdering = false; }, 6000);
     }
 
     // --- DRAFT PANEL ---
@@ -815,17 +845,18 @@
     }
 
     async function rejectDraft() {
+        // Capture the ID before hiding the panel
+        const currentId = document.getElementById('draft-id').innerText;
+        lastRejectedOrderId = currentId; 
+
         document.getElementById('draft-panel').classList.remove('visible');
         userDraftVisible = false;
         
         const isDengueActive = document.getElementById('dengue-panel') && 
                                document.getElementById('dengue-panel').style.display !== 'none';
-        if (!isDengueActive) {
-            hideDenguePanel();
-        }
+        if (!isDengueActive) { hideDenguePanel(); }
         
-        chatAdd(`ℹ️ [LOCAL] Draft PO hidden. Situation remains active until Admin reset.`);
-        suppressDraftPopupUntil = Date.now() + 60000;
+        chatAdd(`ℹ️ [LOCAL] Draft PO ${currentId} dismissed. It will not pop up again unless a new scenario is triggered.`);
     }
 
     // --- CHAT BOX ---
@@ -1315,6 +1346,19 @@
         if (assistantIsRunning) return;
         assistantIsRunning = true;
         setScenarioButtonsEnabled(false);
+
+        // --- NEW: INSTANT UI SNAP FOR ADMIN ---
+        if (isAdmin) {
+            const statusEl = document.getElementById('live-status-indicator');
+            if (scenarioKey === 'severe_haze') {
+                activateAlertMode(true); // Snap Red Instantly
+                localStorage.setItem('alert_lock', 'severe');
+                if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
+            } else if (scenarioKey === 'moderate_haze' || scenarioKey.startsWith('dengue')) {
+                activateAlertMode(false); // Snap Amber Instantly
+                localStorage.setItem('alert_lock', scenarioKey.includes('haze') ? 'moderate' : 'dengue');
+            }
+        }
 
         chatAdd(`🔍 [THOUGHT] Initializing UrbanPulse Sentinel for ${scenarioKey}...`);
 
