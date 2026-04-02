@@ -595,7 +595,7 @@
 
     
 
-    setInterval(async () => {
+   setInterval(async () => {
       try {
         const res = await fetch('/api/clinic-poll', { headers: authHeaders() });
         const data = await res.json();
@@ -604,47 +604,44 @@
         const badge = document.getElementById('global-status');
         const psi = Number(data.psi || 0);
         const protocol = (data.protocol || "").toLowerCase();
+        
+        // 1. DEFINE THE TIERS (CRITICAL FIX)
         const isDengueAlert = data.draft && data.draft.active && data.draft.projected_cases > 0 && !data.draft.psi;
-
-        // --- UPDATED LOGIC FOR RED vs AMBER ---
+        const isDengueCrisis = isDengueAlert && data.draft.qty >= 800; // RED TIER
+        
         const lockedState = localStorage.getItem('alert_lock');
         const isServerClean = (psi === 0 && (!data.draft || !data.draft.active));
 
-        // Define Dengue Tiers based on Quantity
-        const isDengueCrisis = isDengueAlert && data.draft.qty >= 800;  // RED TIER (Dengue High: 850)
-        const isDengueWarning = isDengueAlert && data.draft.qty >= 250 && data.draft.qty < 800; // AMBER TIER (Dengue Medium: 450)
-
-        // 1. Manual Reset
+        // 2. LOGIC FLOW
+        // Manual Reset
         if (isServerClean && !lockedState) {
             deactivateAlertMode();
             if (statusEl) { statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981"; }
         } 
-        // 2. RED MODE (Severe Haze, Autonomous Protocol, or Dengue High)
-        else if (psi >= 200 || protocol === "autonomous" || lockedState === 'severe' || isDengueCrisis) {
+        // RED MODE (Severe Haze OR Dengue High OR Admin Force Red)
+        else if (lockedState === 'severe' || psi >= 200 || protocol === "autonomous" || isDengueCrisis) {
             activateAlertMode(true);
             if (statusEl) { 
                 statusEl.innerHTML = isDengueCrisis ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE CRISIS`; 
                 statusEl.style.color = "#ef4444"; 
             }
 
-            // --- ADDED: TRIGGER AUTO ORDER FOR LOGISTICS REDIRECT ---
+            // AUTO-PILOT REDIRECT TRIGGER
             if (!isAutoOrdering && !isAdmin) {
-                // Determine quantity: 850 for Dengue, 1200 for Haze
                 const autoQty = isDengueCrisis ? 850 : 1200;
                 executeAutoOrder(autoQty);
             }
         } 
-        // 3. AMBER MODE (Moderate Haze or Dengue Medium)
-        else if (lockedState === 'moderate' || lockedState === 'dengue' || psi >= 101 || isDengueWarning) {
+        // AMBER MODE (Moderate Haze OR Dengue Medium OR Admin Force Amber)
+        else if (lockedState === 'moderate' || lockedState === 'dengue' || psi >= 101 || isDengueAlert) {
             activateAlertMode(false);
             if (statusEl) { 
-                statusEl.innerHTML = (lockedState === 'dengue' || isDengueWarning) ? `● SITUATION: DENGUE CLUSTER ALERT` : `● SITUATION: ELEVATED ALERT (MODERATE)`; 
+                statusEl.innerHTML = (lockedState === 'dengue' || isDengueAlert) ? `● SITUATION: DENGUE CLUSTER ALERT` : `● SITUATION: ELEVATED ALERT (MODERATE)`; 
                 statusEl.style.color = "#f59e0b"; 
             }
         }
-        // --- END OF UPDATED LOGIC ---
 
-        // Handle Draft PO logic
+        // 3. DRAFT PO UI (Keep this part as it was)
         if (data.draft && data.draft.active && protocol !== 'autonomous' && !isAdmin) {
             if (!userDraftVisible && data.draft.id !== lastRejectedOrderId) {
                 showDraftPanel(data.draft);
@@ -653,7 +650,7 @@
         } else if (!data.draft || !data.draft.active) {
             lastRejectedOrderId = null;
             userDraftVisible = false;
-            document.getElementById('draft-panel').classList.remove('visible');
+            if (document.getElementById('draft-panel')) document.getElementById('draft-panel').classList.remove('visible');
         }
 
       } catch (e) { console.error("Polling error:", e); }
@@ -728,20 +725,18 @@
         }
     }
 
-    // --- INIT: Immediate State Restoration ---
     function restoreAlertState() {
         const lockedState = localStorage.getItem('alert_lock');
         const statusEl = document.getElementById('live-status-indicator');
         
+        if (!lockedState) return; // Do nothing if no lock
+
         if (lockedState === 'severe') {
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE HAZE CRISIS`; statusEl.style.color = "#ef4444"; }
-            activateAlertMode(true);
-        } else if (lockedState === 'dengue') {
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: DENGUE CLUSTER ALERT`; statusEl.style.color = "#f59e0b"; }
-            activateAlertMode(false);
-        } else if (lockedState === 'moderate') {
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: ELEVATED HAZE (MODERATE)`; statusEl.style.color = "#f59e0b"; }
-            activateAlertMode(false);
+            activateAlertMode(true); // Force Red
+            if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE CRISIS`; statusEl.style.color = "#ef4444"; }
+        } else {
+            activateAlertMode(false); // Force Amber
+            if (statusEl) { statusEl.innerHTML = `● SITUATION: SYSTEM ALERT`; statusEl.style.color = "#f59e0b"; }
         }
     }
 
@@ -854,6 +849,8 @@
             headers: authHeaders({'Content-Type':'application/json'}), 
             body: JSON.stringify({ confirmed_qty: currentQty }) 
         });
+        
+        setTimeout(fetchGovernanceLog, 1500);
     }
 
     
@@ -1345,20 +1342,38 @@
     async function fetchGovernanceLog() {
         const display = document.getElementById('audit-log-display');
         display.style.display = 'block';
-        display.innerText = 'Loading audit log...';
+        display.innerHTML = '<div style="color:#93c5fd; font-weight:800; margin-bottom:8px;">📁 SECURITY AUDIT TRAIL - ACCESS GRANTED</div>';
+        
         try {
-            const res = await fetch('/api/governance-log', {
-                headers: authHeaders()
-            });
+            // Add a timestamp to the URL to force the browser to get fresh data from the server
+            const res = await fetch('/api/governance-log?t=' + Date.now(), { headers: authHeaders() });
             const data = await res.json();
             if (data.entries && data.entries.length > 0) {
-                display.innerText = data.entries
-                    .slice(-10)  // show last 10 entries
-                    .reverse()
-                    .map(e => `[${e.timestamp}] ${e.po_id} | Risk: ${e.risk_level} | Qty: ${e.qty} | ${e.governance_note}`)
-                    .join('\n');
+                const table = data.entries.slice(-10).reverse().map(e => {
+                    // --- IMPROVED AUTHORIZER LOGIC ---
+                    let authorizer = "";
+                    let color = "";
+
+                    if (e.qty >= 850) {
+                        authorizer = "🤖 AI_AGENT_ALPHA";
+                        color = "#a855f7"; // Purple for AI
+                    } else {
+                        // Show the specific name of whoever is logged in (e.g., System Admin)
+                        authorizer = `👤 ${localStorage.getItem("urbanpulse_name") || "USER_AUTH"}`;
+                        color = "#10b981"; // Green for Human
+                    }
+
+                    return `<div style="border-bottom: 1px solid #1e293b; padding: 6px 0;">
+                        <span style="color:#64748b;">[${e.timestamp}]</span> 
+                        <span style="color:${color}; font-weight:700;">${authorizer}</span> | 
+                        <span style="color:#e2e8f0;">PO: ${e.po_id}</span> | 
+                        <span style="color:#f59e0b;">Qty: ${e.qty}</span>
+                        <div style="font-size:0.7rem; color:#94a3b8; padding-left:20px;">↳ Note: ${e.governance_note}</div>
+                    </div>`;
+                }).join('');
+                display.innerHTML += table;
             } else {
-                display.innerText = 'No audit entries yet.';
+                display.innerHTML += 'No audit entries yet.';
             }
         } catch(e) {
             display.innerText = 'Error loading log: ' + e.message;
