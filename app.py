@@ -673,9 +673,9 @@ def admin_portal():
     return send_from_directory("static", "clinic.html")
 
 @app.get("/api/governance-log")
-@require_role("admin")
+@require_role("clinic_manager", "admin")
 def get_governance_log():
-    """Returns last 50 governance log entries for admin audit view."""
+    """Returns last 50 governance log entries for clinic manager and admin audit view."""
     entries = []
     try:
         with open("governance.log", "r", encoding="utf-8") as f:

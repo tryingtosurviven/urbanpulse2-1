@@ -267,20 +267,10 @@
             <button onclick="runClinicAssistant('dengue_low')" style="background:#065f46; color:white; padding:10px; border-radius:8px; cursor:pointer;">🦟 Dengue Low</button>
             <button onclick="runClinicAssistant('dengue_medium')" style="background:#92400e; color:white; padding:10px; border-radius:8px; cursor:pointer;">🦟 Dengue Medium</button>
             <button onclick="runClinicAssistant('dengue_high')" style="background:#7f1d1d; color:white; padding:10px; border-radius:8px; cursor:pointer;">🦟 Dengue High</button>
-          <button onclick="fetchGovernanceLog()" style="
-              background:#374151; color:white; border:none;
-              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
-              📋 View Audit Log
-          </button>
           <button onclick="triggerReset()" style="
               background:#4b5563; color:white; border:1px solid #9ca3af;
               padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
               🔄 Reset System
-          </button>
-          <button onclick="downloadAuditCSV()" style="
-              background:#0ea5e9; color:white; border:none; solid #9ca3af;
-              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
-              📥 Export for Auditor (Excel)
           </button>
       </div>
 
@@ -296,13 +286,40 @@
           </button>
       </div>
 
-      <div id="audit-log-display" style="
-          display:none; margin-top:12px;
-          background:#0f172a; padding:12px;
-          border-radius:8px; font-size:0.75rem;
-          color:#94a3b8; max-height:150px;
-          overflow-y:auto; font-family:monospace;
-      "></div>
+  </div>
+
+  <!-- CLINIC MANAGER AUDIT SECTION -->
+  <div id="clinic-audit-section" style="
+      max-width:1400px; margin: 12px auto 0 auto; padding: 0 30px;
+  ">
+    <div style="
+        background:#1e1b4b; color:white;
+        padding:14px 20px; border-radius:12px;
+        border:1px solid #4f46e5;
+        display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    ">
+      <span style="font-size:0.75rem; color:#a5b4fc; font-weight:700; letter-spacing:1px; margin-right:4px;">📁 AUDIT &amp; COMPLIANCE</span>
+      <button onclick="fetchGovernanceLog()" style="
+          background:#374151; color:white; border:none;
+          padding:9px 16px; border-radius:8px; font-weight:700; cursor:pointer;">
+          📋 View Audit Log
+      </button>
+      <button onclick="downloadAuditCSV()" style="
+          background:#0ea5e9; color:white; border:none;
+          padding:9px 16px; border-radius:8px; font-weight:700; cursor:pointer;">
+          📥 Export for Auditor (CSV)
+      </button>
+    </div>
+    <div id="audit-log-display" style="
+        display:none; margin-top:8px;
+        background:#020617; padding:16px;
+        border-radius:8px; font-size:0.75rem;
+        color:#94a3b8; max-height:400px;
+        min-height:100px;
+        overflow-y:auto; font-family:monospace;
+        border:1px solid #1e3a5f;
+        box-shadow:0 0 12px rgba(99,102,241,0.15);
+    "></div>
   </div>
 
   <div class="ai-panel">
