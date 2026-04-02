@@ -277,6 +277,11 @@
               padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
               🔄 Reset System
           </button>
+          <button onclick="downloadAuditCSV()" style="
+              background:#0ea5e9; color:white; border:none; solid #9ca3af;
+              padding:10px 18px; border-radius:8px; font-weight:700; cursor:pointer;">
+              📥 Export for Auditor (Excel)
+          </button>
       </div>
 
       <div style="display:flex; gap:8px; width:100%; margin-top:16px; border-top:1px solid #4f46e5; padding-top:16px; align-items: center;">
@@ -686,6 +691,10 @@
                 if (scenarioKey.includes('moderate')) {
                     chatAdd(`⚠️ SYSTEM STATE: Moderate Alert active across network.`);
                 }
+
+                if (scenarioKey.includes('dengue')) {
+                    chatAdd(`> [SYSTEM] NEA Vector Surveillance active. Monitoring clusters...`);
+                }
             }
         } catch (e) { 
             console.error(e); 
@@ -844,15 +853,20 @@
         document.getElementById('draft-panel').classList.remove('visible');
         document.getElementById('success-overlay').style.display = 'flex';
 
-        await fetch('/api/clinic-confirm-order', { 
+        // --- AMENDED: Added 'const confirmRes =' and 'await' to ensure sync ---
+        const confirmRes = await fetch('/api/clinic-confirm-order', { 
             method: 'POST', 
             headers: authHeaders({'Content-Type':'application/json'}), 
             body: JSON.stringify({ confirmed_qty: currentQty }) 
         });
-        
-        setTimeout(fetchGovernanceLog, 1500);
-    }
 
+        // --- ADDED: Verification logic to refresh audit log only after success ---
+        if (confirmRes.ok) {
+            // We wait 2 seconds to allow the backend file-write operation to settle
+            setTimeout(fetchGovernanceLog, 2000); 
+        }
+        // --- END OF CHANGES ---
+    }
     
 
     // --- CHAT BOX ---
@@ -1346,7 +1360,7 @@
         
         try {
             // Add a timestamp to the URL to force the browser to get fresh data from the server
-            const res = await fetch('/api/governance-log?t=' + Date.now(), { headers: authHeaders() });
+            const res = await fetch(`/api/governance-log?t=${Date.now()}`, { headers: authHeaders() });
             const data = await res.json();
             if (data.entries && data.entries.length > 0) {
                 const table = data.entries.slice(-10).reverse().map(e => {
@@ -1380,15 +1394,48 @@
         }
     }
 
+    // --- ADDED: EXCEL EXPORT FUNCTION FOR CLINIC PAGE ---
+    async function downloadAuditCSV() {
+        try {
+            const res = await fetch(`/api/governance-log?t=${Date.now()}`, { headers: authHeaders() });
+            const data = await res.json();
+            
+            if (!data.entries || data.entries.length === 0) {
+                alert("No logs found to export.");
+                return;
+            }
+
+            let csv = "Timestamp,PO_ID,Facility,Authorizer,Threat_Level,Quantity\n";
+            data.entries.forEach(e => {
+                let authorizer = e.qty >= 850 ? "AI_AGENT_ALPHA" : "HUMAN_OVERRIDE";
+                csv += `${e.timestamp},${e.po_id},${e.facility},${authorizer},${e.risk_level},${e.qty}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `UrbanPulse_Audit_${new Date().getTime()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            alert("Export Error: " + e.message);
+        }
+    }
+
     let isResetting = false;
 
     
     
     
 
-    // Run restoration immediately on load
-    restoreAlertState();
-    setFakeSingaporeAvgPsi();
+    // Ensure elements are fully loaded before restoring colors
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(restoreAlertState, 150); 
+        setFakeSingaporeAvgPsi();
+    });
 
   </script>
 
