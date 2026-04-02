@@ -539,7 +539,8 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         "dengue_data": scenario.get("dengue_data") if is_dengue else None,
     }
 
-    write_governance_log(clinic_state["draft"])
+    # NOTE: Governance log is written on confirm/reject, not at draft creation
+    # This ensures the audit captures the FINAL human decision, not just AI recommendation
 
     if is_dengue:
         agent_logs.extend([
@@ -675,7 +676,7 @@ def admin_portal():
 @app.get("/api/governance-log")
 @require_role("clinic_manager", "admin")
 def get_governance_log():
-    """Returns last 50 governance log entries for clinic manager and admin audit view."""
+    """Returns governance log entries — only CONFIRMED/REJECTED/OVERRIDE/AUTO actions (not AI drafts)."""
     entries = []
     try:
         with open("governance.log", "r", encoding="utf-8") as f:
@@ -683,7 +684,20 @@ def get_governance_log():
                 line = line.strip()
                 if line:
                     try:
-                        entries.append(json.loads(line))
+                        entry = json.loads(line)
+                        # Only show entries where a human (or auto-dispatch) took action
+                        # Filter out AI draft entries that have no action_type
+                        action = entry.get("action_type", "")
+                        # Entries with action_type set = real actions
+                        # Entries without action_type but with confirmed_by_name = legacy confirms
+                        # Entries from auto-dispatch (autonomous=True, no action_type) = show them
+                        if action in ("CONFIRMED", "REJECTED", "HUMAN_OVERRIDE", "AI_AUTO_ORDER"):
+                            entries.append(entry)
+                        elif entry.get("autonomous") and not action:
+                            entries.append(entry)  # legacy auto-dispatch entries
+                        elif entry.get("confirmed_by_name") and not action:
+                            entries.append(entry)  # legacy confirmed entries
+                        # else: skip pure AI draft entries
                     except json.JSONDecodeError:
                         pass
     except FileNotFoundError:
@@ -787,28 +801,101 @@ def clinic_poll():
 def confirm_order():
     data = request.json or {}
     confirmed = int(data.get("confirmed_qty") or 0)
+    ai_recommended = int(data.get("ai_recommended_qty") or 0)
 
     user = getattr(request, "current_user", {})
+    username = user.get("username", "unknown")
+    display_name = user.get("name", username)
+
     print(
-        f"[AUDIT] Order confirmed: qty={confirmed} "
-        f"by={user.get('username', 'unknown')} "
-        f"role={user.get('role', 'unknown')}"
+        f"[AUDIT] Order confirmed: final_qty={confirmed} ai_recommended={ai_recommended} "
+        f"by={username} ({display_name}) role={user.get('role', 'unknown')}"
     )
+
+    draft = clinic_state.get("draft", {})
+
+    # Determine action type: auto-dispatch, human override, or standard confirm
+    is_autonomous = draft.get("autonomous", False)
+
+    if is_autonomous:
+        action_note = (
+            f"AI AUTO-DISPATCH: qty={confirmed} ordered automatically (severe haze protocol). "
+            + (draft.get("governance_log") or "")
+        )
+        action_type = "AI_AUTO_ORDER"
+    elif confirmed != ai_recommended and ai_recommended > 0:
+        action_note = (
+            f"HUMAN OVERRIDE by {display_name}: Final qty={confirmed} "
+            f"(AI recommended {ai_recommended}). "
+            + (draft.get("governance_log") or "")
+        )
+        action_type = "HUMAN_OVERRIDE"
+    else:
+        action_note = (
+            f"ORDER CONFIRMED by {display_name}: qty={confirmed}. "
+            + (draft.get("governance_log") or "")
+        )
+        action_type = "CONFIRMED"
+
+    # Write governance log with the FINAL confirmed qty (not AI recommended)
+    log_entry = {
+        "id": draft.get("id"),
+        "facility": draft.get("facility"),
+        "qty": confirmed,
+        "ai_recommended_qty": ai_recommended,
+        "risk_level": draft.get("risk_level"),
+        "psi": draft.get("psi"),
+        "projected_cases": draft.get("projected_cases"),
+        "autonomous": draft.get("autonomous"),
+        "governance_log": action_note,
+        "confirmed_by_name": display_name,
+        "confirmed_by_username": username,
+        "action_type": action_type,
+    }
+    write_governance_log(log_entry)
 
     clinic_state["view"] = "approved"
     clinic_state["draft"]["active"] = False
     return jsonify({
         "status": "success",
         "confirmed_qty": confirmed,
-        "confirmed_by": user.get("username"),
+        "confirmed_by": username,
     })
 
 
 @app.post("/api/clinic-reject-order")
 @require_role("clinic_manager", "admin")
 def reject_order():
+    data = request.json or {}
+    ai_recommended = int(data.get("ai_recommended_qty") or 0)
+
     user = getattr(request, "current_user", {})
-    print(f"[AUDIT] Order rejected by={user.get('username', 'unknown')}")
+    username = user.get("username", "unknown")
+    display_name = user.get("name", username)
+    print(f"[AUDIT] Order rejected by={username} ai_recommended={ai_recommended}")
+
+    draft = clinic_state.get("draft", {})
+    action_note = (
+        f"ORDER REJECTED by {display_name}: AI recommended qty={ai_recommended} was declined. "
+        + (draft.get("governance_log") or "")
+    )
+
+    log_entry = {
+        "id": draft.get("id"),
+        "facility": draft.get("facility"),
+        "qty": 0,
+        "ai_recommended_qty": ai_recommended,
+        "risk_level": draft.get("risk_level"),
+        "psi": draft.get("psi"),
+        "projected_cases": draft.get("projected_cases"),
+        "autonomous": draft.get("autonomous"),
+        "governance_log": action_note,
+        "confirmed_by_name": display_name,
+        "confirmed_by_username": username,
+        "action_type": "REJECTED",
+    }
+    write_governance_log(log_entry)
+
     clinic_state["draft"]["active"] = False
     return jsonify({"status": "success"})
 
