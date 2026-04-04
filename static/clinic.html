@@ -621,58 +621,86 @@
       try {
         const res = await fetch('/api/clinic-poll', { headers: authHeaders() });
         const data = await res.json();
-        
-        const statusEl = document.getElementById('live-status-indicator');
-        const badge = document.getElementById('global-status');
-        const psi = Number(data.psi || 0);
-        const protocol = (data.protocol || "").toLowerCase();
-        
-        // 1. DEFINE THE TIERS (CRITICAL FIX)
-        const isDengueAlert = data.draft && data.draft.active && data.draft.projected_cases > 0 && !data.draft.psi;
-        const isDengueCrisis = isDengueAlert && data.draft.qty >= 800; // RED TIER
-        
-        const lockedState = localStorage.getItem('alert_lock');
-        const isServerClean = (psi === 0 && (!data.draft || !data.draft.active));
 
-        // 2. LOGIC FLOW
-        // Manual Reset
-        if (isServerClean && !lockedState) {
+        const statusEl = document.getElementById('live-status-indicator');
+        const scenarioKey = data.scenario_key || "";
+        const riskLevel   = (data.risk_level || "LOW").toUpperCase();
+        const protocol    = (data.protocol || "").toLowerCase();
+        const draftActive = data.draft && data.draft.active;
+
+        // ── COLOUR LOGIC (server-driven — no localStorage locks needed) ──
+        // LOW haze / LOW dengue  → NO colour change (stay green)
+        // MODERATE haze / MEDIUM dengue → AMBER
+        // SEVERE haze / HIGH dengue    → RED + auto-order
+
+        const isLow      = !scenarioKey || scenarioKey === 'low_haze' || scenarioKey === 'dengue_low'
+                           || (riskLevel === 'LOW' && !draftActive);
+        const isSevere   = scenarioKey === 'severe_haze' || scenarioKey === 'dengue_high'
+                           || riskLevel === 'SEVERE' || riskLevel === 'HIGH'
+                           || protocol === 'autonomous';
+        const isModerate = !isLow && !isSevere && (
+                           scenarioKey === 'moderate_haze' || scenarioKey === 'dengue_medium'
+                           || riskLevel === 'MODERATE' || riskLevel === 'MEDIUM');
+
+        if (isLow) {
             deactivateAlertMode();
             if (statusEl) { statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981"; }
-        } 
-        // RED MODE (Severe Haze OR Dengue High OR Admin Force Red)
-        else if (lockedState === 'severe' || psi >= 200 || protocol === "autonomous" || isDengueCrisis) {
-            activateAlertMode(true);
-            if (statusEl) { 
-                statusEl.innerHTML = isDengueCrisis ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE CRISIS`; 
-                statusEl.style.color = "#ef4444"; 
+        } else if (isSevere) {
+            activateAlertMode(true); // RED
+            const isDengueCrisis = scenarioKey.startsWith('dengue') || (data.draft && data.draft.projected_cases > 0 && !data.draft.psi);
+            if (statusEl) {
+                statusEl.innerHTML = isDengueCrisis ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE HAZE CRISIS`;
+                statusEl.style.color = "#ef4444";
             }
-
-            // AUTO-PILOT REDIRECT TRIGGER
-            if (!isAutoOrdering && !isAdmin) {
-                const autoQty = isDengueCrisis ? 850 : 1200;
-                executeAutoOrder(autoQty);
+            // ── AUTO-ORDER FIX: use sessionStorage so redirect doesn't re-trigger ──
+            if (!isAdmin && draftActive) {
+                const currentPoId = data.draft.id;
+                const donePoId    = sessionStorage.getItem('autoOrderDone');
+                if (currentPoId && donePoId !== currentPoId) {
+                    sessionStorage.setItem('autoOrderDone', currentPoId);
+                    const autoQty = data.draft.qty || (isDengueCrisis ? 850 : 1200);
+                    executeAutoOrder(autoQty);
+                }
             }
-        } 
-        // AMBER MODE (Moderate Haze OR Dengue Medium OR Admin Force Amber)
-        else if (lockedState === 'moderate' || lockedState === 'dengue' || psi >= 101 || isDengueAlert) {
-            activateAlertMode(false);
-            if (statusEl) { 
-                statusEl.innerHTML = (lockedState === 'dengue' || isDengueAlert) ? `● SITUATION: DENGUE CLUSTER ALERT` : `● SITUATION: ELEVATED ALERT (MODERATE)`; 
-                statusEl.style.color = "#f59e0b"; 
+        } else if (isModerate) {
+            activateAlertMode(false); // AMBER
+            const isDengueAlert = scenarioKey.startsWith('dengue') || (data.draft && data.draft.projected_cases > 0 && !data.draft.psi);
+            if (statusEl) {
+                statusEl.innerHTML = isDengueAlert ? `● SITUATION: DENGUE CLUSTER ALERT` : `● SITUATION: ELEVATED ALERT (MODERATE)`;
+                statusEl.style.color = "#f59e0b";
             }
         }
 
-        // 3. DRAFT PO UI (Keep this part as it was)
-        if (data.draft && data.draft.active && protocol !== 'autonomous' && !isAdmin) {
+        // ── BROADCAST TICKER ──
+        const ticker    = document.getElementById('broadcast-ticker');
+        const tickerTxt = document.getElementById('ticker-text');
+        if (data.broadcast_msg && data.broadcast_msg.trim()) {
+            if (ticker)    ticker.style.display = 'block';
+            if (tickerTxt) tickerTxt.innerText = `⚠️ MOH HQ DIRECTIVE: ${data.broadcast_msg}`;
+            const hqPopup = document.getElementById('hq-alert-popup');
+            const hqText  = document.getElementById('hq-alert-text');
+            if (hqPopup && hqText && !hqPopup._shown) {
+                hqText.innerText = data.broadcast_msg;
+                hqPopup.style.display = 'flex';
+                hqPopup._shown = true;
+            }
+        } else {
+            if (ticker) ticker.style.display = 'none';
+            const hqPopup = document.getElementById('hq-alert-popup');
+            if (hqPopup) hqPopup._shown = false;
+        }
+
+        // ── DRAFT PANEL (clinic manager only, non-autonomous) ──
+        if (draftActive && protocol !== 'autonomous' && !isAdmin) {
             if (!userDraftVisible && data.draft.id !== lastRejectedOrderId) {
                 showDraftPanel(data.draft);
                 userDraftVisible = true;
             }
-        } else if (!data.draft || !data.draft.active) {
+        } else if (!draftActive) {
             lastRejectedOrderId = null;
             userDraftVisible = false;
-            if (document.getElementById('draft-panel')) document.getElementById('draft-panel').classList.remove('visible');
+            const dp = document.getElementById('draft-panel');
+            if (dp) dp.classList.remove('visible');
         }
 
       } catch (e) { console.error("Polling error:", e); }
@@ -681,20 +709,17 @@
     async function runClinicAssistant(scenarioKey) {
         if (assistantIsRunning) return;
         assistantIsRunning = true;
-        
-        // --- NEW: Update Admin's UI instantly based on selection ---
+
+        // Update Admin's own UI instantly while server processes the scenario
         if (scenarioKey === 'severe_haze' || scenarioKey === 'dengue_high') {
-            activateAlertMode(true); // Red for Admin
-            localStorage.setItem('alert_lock', 'severe');
-        } 
-        else if (scenarioKey === 'moderate_haze' || scenarioKey === 'dengue_medium') {
-            activateAlertMode(false); // Amber for Admin
-            localStorage.setItem('alert_lock', scenarioKey.includes('haze') ? 'moderate' : 'dengue');
-        } 
-        else {
-            deactivateAlertMode(); // Green for Admin
-            localStorage.removeItem('alert_lock');
+            activateAlertMode(true);   // Red
+        } else if (scenarioKey === 'moderate_haze' || scenarioKey === 'dengue_medium') {
+            activateAlertMode(false);  // Amber
+        } else {
+            deactivateAlertMode();     // Green (low/normal)
         }
+        // Clinic manager colour is driven purely by server poll (scenario_key in draft)
+        // No localStorage locks needed — avoids cross-browser state bleed
 
         try {
             // Trigger the server-side agent orchestration
@@ -749,12 +774,9 @@
             const res = await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
             if (!res.ok) throw new Error('Reset failed on server');
 
-            // --- THE KEY DEMO FIXES ---
-            localStorage.removeItem('alert_lock');  // Breaks the Amber/Red persistence
+            // Clear session-level auto-order lock so next scenario can auto-order again
+            sessionStorage.removeItem('autoOrderDone');
             localStorage.removeItem('trucks_ttsh'); // Clears the map trucks for a fresh start
-            
-            // This is better than manually changing colors because it refreshes 
-            // the whole UI to the clean, "System Normal" state instantly.
             location.reload(); 
 
         } catch (e) {
@@ -764,20 +786,8 @@
         }
     }
 
-    function restoreAlertState() {
-        const lockedState = localStorage.getItem('alert_lock');
-        const statusEl = document.getElementById('live-status-indicator');
-        
-        if (!lockedState) return; // Do nothing if no lock
-
-        if (lockedState === 'severe') {
-            activateAlertMode(true); // Force Red
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: SEVERE CRISIS`; statusEl.style.color = "#ef4444"; }
-        } else {
-            activateAlertMode(false); // Force Amber
-            if (statusEl) { statusEl.innerHTML = `● SITUATION: SYSTEM ALERT`; statusEl.style.color = "#f59e0b"; }
-        }
-    }
+    // restoreAlertState removed — colour is now driven purely by server poll (scenario_key)
+    // No localStorage locks needed; eliminates cross-browser state bleed.
 
     function setLogisticsButtonLink({ id = "ttsh", qty = 0 } = {}) {
       const btn = document.getElementById("track-logistics-btn");
@@ -1459,7 +1469,7 @@
                 return;
             }
 
-            let csv = "Timestamp,PO_ID,Facility,Confirmed_By,Action,Threat_Level,AI_Recommended_Qty,Final_Qty,Note\n";
+            let csv = "Timestamp,PO_ID,Facility,Confirmed_By,Action,Threat_Level,Item_Type,AI_Recommended_Qty,Final_Qty,Note\n";
             data.entries.forEach(e => {
                 const isRejected = e.qty === 0 && e.ai_recommended_qty > 0;
                 const isAiAuto   = e.autonomous && !isRejected;
@@ -1467,7 +1477,10 @@
                 const confirmedBy = isAiAuto ? "AI_AGENT_ALPHA" : (e.confirmed_by_name || "UNKNOWN");
                 let action = isRejected ? "REJECTED" : isAiAuto ? "AI_AUTO_ORDER" : isOverride ? "HUMAN_OVERRIDE" : "CONFIRMED";
                 let note = (e.governance_note || "").replace(/"/g, "'").replace(/,/g, ";");
-                csv += `${e.timestamp},${e.po_id},"${e.facility || ""}","${confirmedBy}",${action},${e.risk_level || ""},${e.ai_recommended_qty || ""},${e.qty},"${note}"\n`;
+                // Determine item type from scenario key or risk context
+                const sk = e.scenario_key || "";
+                const itemType = sk.startsWith('dengue') ? "Mosquito Repellent" : "N95 Respiratory Masks";
+                csv += `${e.timestamp},${e.po_id},"${e.facility || ""}","${confirmedBy}",${action},${e.risk_level || ""},"${itemType}",${e.ai_recommended_qty || ""},${e.qty},"${note}"\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1490,10 +1503,10 @@
     
     
 
-    // Ensure elements are fully loaded before restoring colors
     window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(restoreAlertState, 150); 
         setFakeSingaporeAvgPsi();
+        // Clear any stale autoOrder flag if server has reset
+        // (will be refreshed by the first poll tick)
     });
 
   </script>

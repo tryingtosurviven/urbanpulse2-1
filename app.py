@@ -40,8 +40,13 @@ def write_governance_log(entry: Dict[str, Any]):
         "risk_level": entry.get("risk_level"),
         "facility": entry.get("facility"),
         "qty": entry.get("qty"),
+        "ai_recommended_qty": entry.get("ai_recommended_qty"),
         "autonomous": entry.get("autonomous"),
-        "governance_note": entry.get("governance_log"), # Ensure this matches clinic.html
+        "governance_note": entry.get("governance_log"),
+        "confirmed_by_name": entry.get("confirmed_by_name"),
+        "confirmed_by_username": entry.get("confirmed_by_username"),
+        "action_type": entry.get("action_type"),
+        "scenario_key": entry.get("scenario_key", ""),
     }
 
     with open("governance.log", "a", encoding="utf-8") as f:
@@ -210,10 +215,9 @@ def _build_agent_system():
 
 def _policy_autonomous_only_for_severe(scenario_key: str, risk_level: str, highest_value: int) -> bool:
     """
-    ONLY severe haze can fully auto-dispatch.
-    Dengue stays human-in-loop.
+    Severe haze and dengue HIGH both trigger autonomous auto-dispatch.
     """
-    return scenario_key == "severe_haze"
+    return scenario_key in ("severe_haze", "dengue_high")
 
 
 def _build_haze_watsonx_prompt(scenario_key: str, psi_data: Dict[str, int]) -> str:
@@ -537,6 +541,7 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         "risk_level": risk_level,
         "governance_log": governance_note,
         "dengue_data": scenario.get("dengue_data") if is_dengue else None,
+        "scenario_key": scenario_key,  # Pass scenario key so clinic poll knows exact scenario
     }
 
     # NOTE: Governance log is written on confirm/reject, not at draft creation
@@ -779,9 +784,11 @@ def clinic_poll():
             "status": "waiting",
             "current_view": clinic_state["view"],
             "protocol": clinic_state["protocol"],
-            "psi": 0,           # ← ADD THIS
-            "projected_cases": 0,  # ← ADD THIS
-            "draft": {"active": False},  # ← ADD THIS
+            "psi": 0,
+            "projected_cases": 0,
+            "draft": {"active": False},
+            "scenario_key": "",
+            "risk_level": "LOW",
         })
 
     return jsonify({
@@ -793,6 +800,8 @@ def clinic_poll():
         "psi": clinic_state["draft"].get("psi", 0) or 0,
         "projected_cases": clinic_state["draft"].get("projected_cases", 0) or 0,
         "alert_message": clinic_state["draft"].get("reason", ""),
+        "scenario_key": clinic_state["draft"].get("scenario_key", ""),
+        "risk_level": clinic_state["draft"].get("risk_level", "LOW"),
     })
 
 
@@ -851,11 +860,13 @@ def confirm_order():
         "confirmed_by_name": display_name,
         "confirmed_by_username": username,
         "action_type": action_type,
+        "scenario_key": draft.get("scenario_key", ""),
     }
     write_governance_log(log_entry)
 
     clinic_state["view"] = "approved"
     clinic_state["draft"]["active"] = False
+    clinic_state["draft"]["scenario_key"] = ""
     return jsonify({
         "status": "success",
         "confirmed_qty": confirmed,
@@ -893,10 +904,12 @@ def reject_order():
         "confirmed_by_name": display_name,
         "confirmed_by_username": username,
         "action_type": "REJECTED",
+        "scenario_key": draft.get("scenario_key", ""),
     }
     write_governance_log(log_entry)
 
     clinic_state["draft"]["active"] = False
+    clinic_state["draft"]["scenario_key"] = ""
     return jsonify({"status": "success"})
 
 @app.get("/api/lta-eta/<facility_id>")
@@ -945,6 +958,7 @@ def admin_reset():
     clinic_state["draft"]["risk_level"] = "LOW"
     clinic_state["draft"]["governance_log"] = ""
     clinic_state["draft"]["dengue_data"] = None
+    clinic_state["draft"]["scenario_key"] = ""
     global current_broadcast_message
     current_broadcast_message = ""
     return jsonify({"status": "success"})
