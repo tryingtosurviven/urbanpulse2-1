@@ -91,9 +91,22 @@ app.register_blueprint(login_endpoint)
 # ==============================================================================
 # GLOBAL STATE
 # ==============================================================================
+# AFTER
 clinic_state = {
     "view": "normal",
     "protocol": "standard",
+    "active_scenario": "",       # Persists until admin resets
+    "active_risk_level": "LOW",  # Persists until admin resets
+    "stock": {
+        "ttsh": {"n95": 1200, "repellent": 500},
+        "nuh":  {"n95": 950,  "repellent": 500},
+        "cgh":  {"n95": 1050, "repellent": 500},
+        "ktph": {"n95": 890,  "repellent": 500},
+        "amk":      {"n95": 5000, "repellent": 500},
+        "jurong":   {"n95": 4200, "repellent": 500},
+        "tamp":     {"n95": 4800, "repellent": 500},
+        "woodlands":{"n95": 3900, "repellent": 500},
+    },
     "draft": {
         "active": False,
         "facility": "---",
@@ -610,6 +623,10 @@ def run_scenario_with_watsonx_first(scenario_key: str) -> Dict[str, Any]:
         }
         alert_message = decision.get("clinic_action", "")
         citizen_advice = decision.get("citizen_advice", "")
+    
+    # Persist scenario key and risk for clinic manager colour — cleared only on admin reset
+    clinic_state["active_scenario"] = scenario_key
+    clinic_state["active_risk_level"] = risk_level
 
     return {
         "status": "success",
@@ -779,17 +796,22 @@ def watsonx_scenario():
 @app.get("/api/clinic-poll")
 @require_role("clinic_manager", "admin")
 def clinic_poll():
-    if not clinic_state["draft"].get("active"):
-        return jsonify({
-            "status": "waiting",
-            "current_view": clinic_state["view"],
-            "protocol": clinic_state["protocol"],
-            "psi": 0,
-            "projected_cases": 0,
-            "draft": {"active": False},
-            "scenario_key": "",
-            "risk_level": "LOW",
-        })
+    is_dengue = _is_dengue_scenario(clinic_state.get("active_scenario", ""))
+    return jsonify({
+        "status": "alert_active" if clinic_state["draft"].get("active") else "waiting",
+        "current_view": clinic_state["view"],
+        "protocol": clinic_state["protocol"],
+        "draft": clinic_state["draft"],
+        "broadcast_msg": current_broadcast_message,
+        "psi": clinic_state["draft"].get("psi", 0) or 0,
+        "projected_cases": clinic_state["draft"].get("projected_cases", 0) or 0,
+        "alert_message": clinic_state["draft"].get("reason", ""),
+        # These two now come from active_scenario, NOT draft — persist after draft clears
+        "scenario_key": clinic_state.get("active_scenario", ""),
+        "risk_level": clinic_state.get("active_risk_level", "LOW"),
+        "stock": clinic_state.get("stock", {}),
+        "is_dengue_active": is_dengue,
+    })
 
     return jsonify({
         "status": "alert_active" if clinic_state["draft"]["active"] else "waiting",
@@ -864,6 +886,22 @@ def confirm_order():
     }
     write_governance_log(log_entry)
 
+    # ── INCREMENT STOCK ──────────────────────────────────────────────
+    scenario_key_for_stock = draft.get("scenario_key", "")
+    is_dengue_order = _is_dengue_scenario(scenario_key_for_stock)
+    stock = clinic_state.get("stock", {})
+    # Distribute confirmed qty across all facilities (split evenly, remainder to ttsh)
+    facilities = list(stock.keys())
+    per_facility = confirmed // len(facilities)
+    remainder = confirmed % len(facilities)
+    for i, fid in enumerate(facilities):
+        extra = remainder if i == 0 else 0
+        if is_dengue_order:
+            stock[fid]["repellent"] = stock[fid].get("repellent", 500) + per_facility + extra
+        else:
+            stock[fid]["n95"] = stock[fid].get("n95", 0) + per_facility + extra
+    # ────────────────────────────────────────────────────────────────
+
     clinic_state["view"] = "approved"
     clinic_state["draft"]["active"] = False
     clinic_state["draft"]["scenario_key"] = ""
@@ -871,6 +909,7 @@ def confirm_order():
         "status": "success",
         "confirmed_qty": confirmed,
         "confirmed_by": username,
+        "stock": clinic_state.get("stock", {}),
     })
 
 
@@ -952,6 +991,8 @@ def live_dengue():
 def admin_reset():
     clinic_state["view"] = "normal"
     clinic_state["protocol"] = "standard"
+    clinic_state["active_scenario"] = ""
+    clinic_state["active_risk_level"] = "LOW"
     clinic_state["draft"]["active"] = False
     clinic_state["draft"]["psi"] = 0
     clinic_state["draft"]["projected_cases"] = 0
@@ -959,6 +1000,17 @@ def admin_reset():
     clinic_state["draft"]["governance_log"] = ""
     clinic_state["draft"]["dengue_data"] = None
     clinic_state["draft"]["scenario_key"] = ""
+    # Reset stock to defaults
+    clinic_state["stock"] = {
+        "ttsh": {"n95": 1200, "repellent": 500},
+        "nuh":  {"n95": 950,  "repellent": 500},
+        "cgh":  {"n95": 1050, "repellent": 500},
+        "ktph": {"n95": 890,  "repellent": 500},
+        "amk":      {"n95": 5000, "repellent": 500},
+        "jurong":   {"n95": 4200, "repellent": 500},
+        "tamp":     {"n95": 4800, "repellent": 500},
+        "woodlands":{"n95": 3900, "repellent": 500},
+    }
     global current_broadcast_message
     current_broadcast_message = ""
     return jsonify({"status": "success"})
