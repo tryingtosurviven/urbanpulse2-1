@@ -12,22 +12,72 @@
         .back-link:hover { text-decoration: underline; }
         h1 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.8rem; }
         .subtitle { color: #64748b; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
-        .status-card { background: white; border: 1px solid #e2e8f0; border-left: 5px solid #cbd5e1; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s; cursor: pointer; position: relative; }
+
+        /* ── Active cards ── */
+        .status-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #cbd5e1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
         .status-card:hover { transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.1); }
         .status-card.active-focus { background: #f0f9ff; border-left-color: #0ea5e9; border-color: #bae6fd; box-shadow: 0 8px 15px -3px rgba(14, 165, 233, 0.15); }
-        .status-card h3 { margin: 0 0 5px 0; color: #0f172a; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
+
+        /* ── Completed cards ── */
+        .completed-card {
+            background: #f8faf8;
+            border: 1px solid #d1fae5;
+            border-left: 5px solid #22c55e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        .completed-card:hover { transform: translateY(-2px); box-shadow: 0 5px 10px rgba(34,197,94,0.12); }
+        .completed-card.expanded { background: #f0fdf4; border-color: #86efac; }
+
+        .status-card h3,
+        .completed-card h3 {
+            margin: 0 0 5px 0;
+            color: #0f172a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+        }
+
         .status-badge { background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
         .status-card.active-focus .status-badge { background: #0ea5e9; animation: pulse 2s infinite; }
+        .badge-completed { background: #22c55e !important; }
+        .badge-live      { background: #0ea5e9; animation: pulse 2s infinite; }
+        .badge-enroute   { background: #f59e0b; }
+
         .status-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.9rem; }
         .card-label { color: #64748b; font-size: 0.85rem; }
+
         .delete-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #cbd5e1; font-size: 1.2rem; cursor: pointer; padding: 0; line-height: 1; transition: color 0.2s; z-index: 10; }
         .delete-btn:hover { color: #ef4444; }
-        .history-section { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
-        .history-section h4 { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 0.85rem; color: #94a3b8; border-bottom: 1px solid #f8fafc; }
+
+        /* Completed section */
+        .completed-section { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .section-header h4 { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; }
+        .section-toggle { background: none; border: none; color: #94a3b8; font-size: 0.75rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
+        .section-toggle:hover { background: #f1f5f9; color: #475569; }
+
+        /* Empty state */
+        .empty-state { color: #94a3b8; font-size: 0.85rem; padding: 18px 0; text-align: center; border: 1px dashed #e2e8f0; border-radius: 8px; }
+
         #map { flex: 1; height: 100%; z-index: 1; }
-        .truck-icon { font-size: 35px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); animation: bounce 1s infinite alternate; }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
     </style>
 </head>
@@ -36,197 +86,344 @@
         <a onclick="window.location.href='/clinic'" class="back-link">← Back to Clinic Portal</a>
         <h1>Supply Logistics</h1>
         <p class="subtitle">Live Resupply Operations</p>
+
         <div id="lta-eta-panel" style="background: #0f172a; border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; color: white;">
             <div style="font-size: 0.75rem; color: #7dd3fc; font-weight: 700; letter-spacing: 1px;">🛰 LIVE LTA TRAFFIC DATA</div>
             <div id="eta-display" style="font-size: 1.4rem; font-weight: 800; margin-top: 8px;">Loading ETA...</div>
             <div id="eta-meta" style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Fetching traffic speed bands...</div>
         </div>
-        <div id="truck-list-container"></div>
-        <div class="history-section">
-            <h4>Deliveries This Week (Completed)</h4>
-            <div id="history-list"></div>
+
+        <!-- Active shipments -->
+        <div style="margin-bottom: 6px;">
+            <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; font-weight: 600;">Active Shipments</div>
+            <div id="truck-list-container"></div>
+        </div>
+
+        <!-- Completed deliveries -->
+        <div class="completed-section">
+            <div class="section-header">
+                <h4>Completed Deliveries</h4>
+                <button class="section-toggle" id="completed-toggle" onclick="toggleCompleted()">Hide</button>
+            </div>
+            <div id="completed-list"></div>
         </div>
     </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // ── 1. SETUP ─────────────────────────────────────────────────────────
         const locations = {
-            'ttsh': { name: "Tan Tock Seng Hospital", lat: 1.321, lng: 103.845 },
-            'nuh':  { name: "National University Hosp.", lat: 1.294, lng: 103.783 },
-            'cgh':  { name: "Changi General Hospital", lat: 1.340, lng: 103.963 },
-            'ktph': { name: "Khoo Teck Puat Hospital", lat: 1.424, lng: 103.838 },
-            'amk':  { name: "Ang Mo Kio Polyclinic", lat: 1.374, lng: 103.845 },
-            'jurong': { name: "Jurong Polyclinic", lat: 1.349, lng: 103.743 },
-            'tamp':   { name: "Tampines Polyclinic", lat: 1.355, lng: 103.944 },
-            'woodlands': { name: "Woodlands Polyclinic", lat: 1.442, lng: 103.770 }
+            'ttsh':      { name: "Tan Tock Seng Hospital",     lat: 1.321,  lng: 103.845 },
+            'nuh':       { name: "National University Hosp.",  lat: 1.294,  lng: 103.783 },
+            'cgh':       { name: "Changi General Hospital",    lat: 1.340,  lng: 103.963 },
+            'ktph':      { name: "Khoo Teck Puat Hospital",    lat: 1.424,  lng: 103.838 },
+            'amk':       { name: "Ang Mo Kio Polyclinic",      lat: 1.374,  lng: 103.845 },
+            'jurong':    { name: "Jurong Polyclinic",           lat: 1.349,  lng: 103.743 },
+            'tamp':      { name: "Tampines Polyclinic",         lat: 1.355,  lng: 103.944 },
+            'woodlands': { name: "Woodlands Polyclinic",        lat: 1.442,  lng: 103.770 }
         };
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const facilityId = urlParams.get('id') || 'ttsh'; 
-        const target = locations[facilityId] || locations['ttsh'];
-        const newOrderQty = urlParams.get('qty'); 
-        const urlItemName = urlParams.get('item'); 
-        const orderId = urlParams.get('orderId'); // The unique "Approve" ID
+        const urlParams    = new URLSearchParams(window.location.search);
+        const facilityId   = urlParams.get('id') || 'ttsh';
+        const target       = locations[facilityId] || locations['ttsh'];
+        const newOrderQty  = urlParams.get('qty');
+        const urlItemName  = urlParams.get('item');
+        const orderId      = urlParams.get('orderId');
 
+        // Resolve item label
         let itemLabel = urlItemName || "N95 Masks";
-        if (!urlItemName && (parseInt(newOrderQty) === 850 || parseInt(newOrderQty) === 450 || parseInt(newOrderQty) === 180)) {
-            itemLabel = "Bottles of Mosquito Repellent";
-        }
-
-        const storageKey = 'trucks_' + facilityId;
-        const processedOrdersKey = 'processed_orders_' + facilityId;
-        
-        let activeTrucks = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        let processedOrders = JSON.parse(localStorage.getItem(processedOrdersKey) || '[]');
-
-        // Default truck goes to history (completed), not active
-        if (activeTrucks.length === 0) {
-            truckMarker.remove(); // Hide truck if no active orders
-            const defaultCompleted = JSON.parse(localStorage.getItem('history_' + facilityId) || '[]');
-            if (defaultCompleted.length === 0) {
-                const history = [{ name: "Truck #04", qty: "5,000", item: "N95 Masks", destination: target.name, completedAt: "Mon 07 Apr" }];
-                localStorage.setItem('history_' + facilityId, JSON.stringify(history));
+        if (!urlItemName) {
+            const qty = parseInt(newOrderQty);
+            if (qty === 850 || qty === 450 || qty === 180) {
+                itemLabel = "Bottles of Mosquito Repellent";
             }
         }
 
-        // --- TRANSACTIONAL LOGIC ---
-        if (newOrderQty && orderId && !processedOrders.includes(orderId.toString())) {
-            const nextId = activeTrucks.length + 4;
-            activeTrucks.unshift({ 
-                idNum: nextId, 
-                name: "Truck #0" + nextId, 
-                qty: newOrderQty, 
-                destination: target.name, 
-                item: itemLabel, 
-                timestamp: Date.now(),
-                orderId: orderId,
-                eta: "12"
-            });
-            processedOrders.push(orderId.toString());
-            localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
-            localStorage.setItem(processedOrdersKey, JSON.stringify(processedOrders));
+        const storageKey         = 'trucks_'           + facilityId;
+        const processedOrderKey  = 'processed_orders_' + facilityId;
+        const completedKey       = 'completed_trucks_' + facilityId;
+
+        // ── 2. SEED COMPLETED TRUCKS #01–#04 (first visit only) ──────────────
+        // These are real card objects, not flat history strings.
+        if (!localStorage.getItem(completedKey)) {
+            const seedCompleted = [
+                {
+                    name:        "Truck #01",
+                    qty:         "10,000",
+                    item:        "N95 Masks",
+                    destination: target.name,
+                    completedAt: "Mon 07 Apr",
+                    driver:      "Ahmad bin Yusof",
+                    ref:         "PO-2025-0041"
+                },
+                {
+                    name:        "Truck #02",
+                    qty:         "3,200",
+                    item:        "Surgical Gloves (Box)",
+                    destination: target.name,
+                    completedAt: "Tue 08 Apr",
+                    driver:      "Lim Wei Jian",
+                    ref:         "PO-2025-0042"
+                },
+                {
+                    name:        "Truck #03",
+                    qty:         "850",
+                    item:        "Bottles of Mosquito Repellent",
+                    destination: target.name,
+                    completedAt: "Tue 08 Apr",
+                    driver:      "Ravi s/o Krishnan",
+                    ref:         "PO-2025-0043"
+                },
+                {
+                    name:        "Truck #04",
+                    qty:         "5,000",
+                    item:        "N95 Masks",
+                    destination: target.name,
+                    completedAt: "Wed 09 Apr",
+                    driver:      "Tan Boon Huat",
+                    ref:         "PO-2025-0044"
+                }
+            ];
+            localStorage.setItem(completedKey, JSON.stringify(seedCompleted));
         }
 
-        let selectedTruckIndex = 0;
+        // ── 3. LOAD ACTIVE TRUCKS & PROCESSED ORDER IDS ──────────────────────
+        let activeTrucks    = JSON.parse(localStorage.getItem(storageKey)        || '[]');
+        let processedOrders = JSON.parse(localStorage.getItem(processedOrderKey) || '[]');
 
-        // --- 2. MAP & ANIMATED TRUCK ---
-        var map = L.map('map').setView([target.lat, target.lng], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-        L.marker([target.lat, target.lng], {icon: L.divIcon({html:'<div style="font-size:30px;">🏥</div>', className:'dummy', iconSize:[30,30]})}).addTo(map);
-        
-        var truckMarker = L.marker([target.lat - 0.015, target.lng - 0.015], {
+        // ── 4. ADD NEW ORDER (deduplicated by orderId) ────────────────────────
+        if (newOrderQty && orderId && !processedOrders.includes(orderId.toString())) {
+            // Count existing + completed to get next truck number
+            const completedTrucks = JSON.parse(localStorage.getItem(completedKey) || '[]');
+            const nextNum = completedTrucks.length + activeTrucks.length + 1;
+            const padded  = String(nextNum).padStart(2, '0');
+            activeTrucks.unshift({
+                idNum:       nextNum,
+                name:        `Truck #${padded}`,
+                qty:         parseInt(newOrderQty).toLocaleString(),
+                destination: target.name,
+                item:        itemLabel,
+                timestamp:   Date.now(),
+                orderId:     orderId.toString(),
+                driver:      "—",
+                ref:         `PO-2025-${String(44 + nextNum).padStart(4, '0')}`
+            });
+            processedOrders.push(orderId.toString());
+            localStorage.setItem(storageKey,        JSON.stringify(activeTrucks));
+            localStorage.setItem(processedOrderKey, JSON.stringify(processedOrders));
+        }
+
+        let selectedTruckIndex  = 0;
+        let completedExpanded   = {}; // track which completed cards are expanded
+
+        // ── 5. MAP ────────────────────────────────────────────────────────────
+        const map = L.map('map').setView([target.lat, target.lng], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap & CARTO', subdomains: 'abcd', maxZoom: 19
+        }).addTo(map);
+
+        L.marker([target.lat, target.lng], {
+            icon: L.divIcon({ html: '<div style="font-size:30px;">🏥</div>', className: '', iconSize: [30, 30] })
+        }).addTo(map).bindPopup(`<b>${target.name}</b>`).openPopup();
+
+        const truckMarker = L.marker([target.lat - 0.015, target.lng - 0.015], {
             icon: L.divIcon({
-                html:'<div style="font-size:35px; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));">🚛</div>', 
-                className:'truck-move-icon', 
-                iconSize:[40,40],
-                iconAnchor: [20, 20]
+                html: '<div style="font-size:35px; filter:drop-shadow(2px 2px 2px rgba(0,0,0,0.5));">🚛</div>',
+                className: '', iconSize: [40, 40], iconAnchor: [20, 20]
             })
         }).addTo(map);
 
-        // --- 3. INTERACTIVE UI SYNC ---
-        function updateLtaBox(truck) {
-            const etaDiv = document.getElementById('eta-display');
-            const displayEta = (selectedTruckIndex === 0 && activeTrucks.length > 1) ? "12" : "45";
-            etaDiv.innerText = `Estimated arrival: ${displayEta} mins`;
-            document.getElementById('eta-meta').innerHTML = `🟢 Live LTA data | Speed: 49.1 km/h`;
-        }
-
-        function updateMapTooltip() {
-            if (activeTrucks.length > 0) {
-                const t = activeTrucks[selectedTruckIndex];
-                truckMarker.unbindTooltip().bindTooltip(`<b>${t.name}</b><br>${t.item}`, {permanent: true, direction: 'top', offset: [0, -10]}).openTooltip();
-                updateLtaBox(t);
-            }
-        }
-
-        // --- 4. ANIMATION ENGINE ---
+        // ── 6. ANIMATION ──────────────────────────────────────────────────────
         let step = 0;
         function moveTruck() {
             step = (step + 0.2) % 100;
-            const startOffset = 0.015;
-            const curLat = (target.lat - startOffset) + (startOffset * (step / 100));
-            const curLng = (target.lng - startOffset) + (startOffset * (step / 100));
-            truckMarker.setLatLng([curLat, curLng]);
+            const t = step / 100;
+            truckMarker.setLatLng([
+                (target.lat - 0.015) + (0.015 * t),
+                (target.lng - 0.015) + (0.015 * t)
+            ]);
             requestAnimationFrame(moveTruck);
         }
         moveTruck();
 
-        // --- 5. RENDER SIDEBAR ---
+        // ── 7. ACTIVE TRUCKS ──────────────────────────────────────────────────
+        function updateMapTooltip() {
+            if (activeTrucks.length === 0) { truckMarker.unbindTooltip(); return; }
+            const t = activeTrucks[selectedTruckIndex];
+            truckMarker
+                .unbindTooltip()
+                .bindTooltip(`<b>${t.name}</b><br>${t.qty} units — ${t.item}`, {
+                    permanent: true, direction: 'top', offset: [0, -10]
+                }).openTooltip();
+        }
+
         function renderTrucks() {
             const container = document.getElementById('truck-list-container');
-            container.innerHTML = "";
+            container.innerHTML = '';
+
+            if (activeTrucks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        ⏳ No active shipments<br>
+                        <span style="font-size:0.78rem; margin-top:4px; display:block; color:#cbd5e1;">
+                            Awaiting admin scenario &amp; approval
+                        </span>
+                    </div>`;
+                updateMapTooltip();
+                return;
+            }
+
             activeTrucks.forEach((truck, index) => {
-                const isSelected = (index === selectedTruckIndex);
+                const isSelected = index === selectedTruckIndex;
+                const eta        = index === 0 ? '~12m' : '~45m';
+                const badgeClass = isSelected ? 'badge-live' : 'badge-enroute';
+                const badgeText  = isSelected ? 'LIVE' : 'EN ROUTE';
+
                 const card = document.createElement('div');
                 card.className = isSelected ? 'status-card active-focus' : 'status-card';
-                
-                // Highlight newest truck as Live (12m), others as en route (45m)
-                const cardEta = (index === 0 && activeTrucks.length > 1) ? "~12m" : "~45m";
-
                 card.innerHTML = `
-                    <button class="delete-btn" onclick="deleteTruck(event, ${index})">&times;</button>
-                    <h3><span>${truck.name}</span> <span class="status-badge">${isSelected ? 'LIVE' : 'EN ROUTE'}</span></h3>
-                    <div class="status-row">Payload: <strong>${truck.qty} Units (${truck.item})</strong></div>
-                    <div class="status-row">ETA: <strong style="color:#d97706">${cardEta}</strong></div>
+                    <button class="delete-btn" onclick="cancelTruck(event, ${index})">&times;</button>
+                    <h3>
+                        <span>${truck.name}</span>
+                        <span class="status-badge ${badgeClass}">${badgeText}</span>
+                    </h3>
+                    <div class="status-row"><span class="card-label">Payload</span><strong>${truck.qty} units (${truck.item})</strong></div>
+                    <div class="status-row"><span class="card-label">To</span><strong>${truck.destination}</strong></div>
+                    <div class="status-row"><span class="card-label">ETA</span><strong style="color:#d97706">${eta}</strong></div>
+                    ${truck.ref ? `<div class="status-row"><span class="card-label">Ref</span><span style="color:#94a3b8; font-size:0.8rem;">${truck.ref}</span></div>` : ''}
                 `;
-                card.onclick = () => { selectedTruckIndex = index; renderTrucks(); updateMapTooltip(); };
+                card.onclick = () => {
+                    selectedTruckIndex = index;
+                    renderTrucks();
+                    updateMapTooltip();
+                };
                 container.appendChild(card);
             });
+
             updateMapTooltip();
         }
 
-        function renderHistory() {
-            const container = document.getElementById('history-list');
-            const history = JSON.parse(localStorage.getItem('history_' + facilityId) || '[]');
-            if (history.length === 0) {
+        window.cancelTruck = function(e, index) {
+            e.stopPropagation();
+            if (!confirm('Cancel this shipment?')) return;
+
+            const truck   = activeTrucks.splice(index, 1)[0];
+            localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
+
+            // Move cancelled truck into completed list (top), marked cancelled
+            const completed = JSON.parse(localStorage.getItem(completedKey) || '[]');
+            const today     = new Date().toLocaleDateString('en-SG', { weekday: 'short', day: '2-digit', month: 'short' });
+            completed.unshift({
+                name:        truck.name,
+                qty:         truck.qty,
+                item:        truck.item,
+                destination: truck.destination,
+                completedAt: today,
+                driver:      truck.driver || '—',
+                ref:         truck.ref    || '—',
+                cancelled:   true
+            });
+            localStorage.setItem(completedKey, JSON.stringify(completed));
+
+            if (selectedTruckIndex >= activeTrucks.length) selectedTruckIndex = 0;
+            renderTrucks();
+            renderCompleted();
+        };
+
+        // ── 8. COMPLETED DELIVERIES (interactive cards) ───────────────────────
+        let showCompleted = true;
+
+        window.toggleCompleted = function() {
+            showCompleted = !showCompleted;
+            document.getElementById('completed-toggle').textContent = showCompleted ? 'Hide' : 'Show';
+            document.getElementById('completed-list').style.display = showCompleted ? 'block' : 'none';
+        };
+
+        window.toggleCompletedCard = function(index) {
+            completedExpanded[index] = !completedExpanded[index];
+            renderCompleted();
+        };
+
+        function renderCompleted() {
+            const container = document.getElementById('completed-list');
+            const completed = JSON.parse(localStorage.getItem(completedKey) || '[]');
+
+            if (completed.length === 0) {
                 container.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem;">No completed deliveries.</div>';
                 return;
             }
-            container.innerHTML = history.map(h => `
-                <div class="history-item">
-                    <span>${h.name} — ${h.qty} units (${h.item})</span>
-                    <span>${h.completedAt}</span>
-                </div>
-            `).join('');
+
+            container.innerHTML = completed.map((c, i) => {
+                const isExpanded   = !!completedExpanded[i];
+                const cancelStyle  = c.cancelled ? 'opacity:0.6;' : '';
+                const badgeLabel   = c.cancelled ? 'CANCELLED' : 'COMPLETED';
+                const badgeBg      = c.cancelled ? '#94a3b8'    : '#22c55e';
+                const expandedRows = isExpanded ? `
+                    <div class="status-row" style="margin-top:10px; border-top:1px solid #d1fae5; padding-top:10px;">
+                        <span class="card-label">Driver</span><span>${c.driver || '—'}</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="card-label">Ref No.</span><span style="font-size:0.8rem; color:#94a3b8;">${c.ref || '—'}</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="card-label">Delivered</span><span>${c.completedAt}</span>
+                    </div>
+                ` : `
+                    <div class="status-row" style="font-size:0.78rem; color:#94a3b8; margin-top:6px;">
+                        ${c.completedAt} · Click for details
+                    </div>
+                `;
+
+                return `
+                    <div class="completed-card${isExpanded ? ' expanded' : ''}" style="${cancelStyle}" onclick="toggleCompletedCard(${i})">
+                        <h3>
+                            <span>${c.name}</span>
+                            <span class="status-badge" style="background:${badgeBg};">${badgeLabel}</span>
+                        </h3>
+                        <div class="status-row">
+                            <span class="card-label">Payload</span>
+                            <strong>${c.qty} units (${c.item})</strong>
+                        </div>
+                        <div class="status-row">
+                            <span class="card-label">To</span>
+                            <strong>${c.destination}</strong>
+                        </div>
+                        ${expandedRows}
+                    </div>
+                `;
+            }).join('');
         }
 
-        window.deleteTruck = (e, i) => { 
-            e.stopPropagation(); 
-            if(confirm("Cancel this shipment?")) {
-                activeTrucks.splice(i,1); 
-                localStorage.setItem(storageKey, JSON.stringify(activeTrucks)); 
-                renderTrucks(); 
-            }
-        };
-        // --- 5. LTA ETA DATA (Fixed Undefined) ---
+        // ── 9. LTA ETA PANEL ─────────────────────────────────────────────────
         async function fetchLtaEta() {
-            const etaDiv = document.getElementById('eta-display');
+            const etaDiv  = document.getElementById('eta-display');
             const metaDiv = document.getElementById('eta-meta');
             try {
-                const res = await fetch(`/api/lta-eta/${facilityId}`, { 
-                    headers: { "Authorization": `Bearer ${localStorage.getItem("urbanpulse_token")}` }
+                const token = localStorage.getItem('urbanpulse_token');
+                const res   = await fetch(`/api/lta-eta/${facilityId}`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
                 const data = await res.json();
-                
-                // Fix: Your backend likely sends 'eta_mins' or 'display'. 
-                // We'll use a safer check here.
                 if (data.status === 'success') {
-                    const finalEta = data.eta_mins || data.display || "28"; 
-                    etaDiv.innerText = "Estimated arrival: " + finalEta + " mins";
+                    const mins = data.eta_mins || data.display || '28';
+                    etaDiv.innerText = `Estimated arrival: ${mins} mins`;
                     metaDiv.innerHTML = `🟢 Live LTA data | Speed: ${data.avg_speed_kmh || '49'} km/h`;
-                } else { throw new Error(); }
-            } catch (e) {
-                // Fallback for Demo so it NEVER shows "undefined"
-                etaDiv.innerText = "Estimated arrival: 33 mins";
-                metaDiv.innerHTML = "🟡 API Offline - Using historical traffic bands";
+                } else {
+                    throw new Error('non-success');
+                }
+            } catch {
+                etaDiv.innerText  = 'Estimated arrival: 33 mins';
+                metaDiv.innerHTML = '🟡 API Offline — Using historical traffic bands';
             }
         }
 
+        // ── INIT ──────────────────────────────────────────────────────────────
         renderTrucks();
+        renderCompleted();
         fetchLtaEta();
-        renderHistory();
-        setInterval(fetchLtaEta, 60000); // Update traffic every minute
+        setInterval(fetchLtaEta, 60000);
     </script>
 </body>
 </html>
