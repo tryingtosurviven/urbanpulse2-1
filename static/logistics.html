@@ -80,9 +80,14 @@
         let activeTrucks = JSON.parse(localStorage.getItem(storageKey) || '[]');
         let processedOrders = JSON.parse(localStorage.getItem(processedOrdersKey) || '[]');
 
-        // Default truck if list is empty
+        // Default truck goes to history (completed), not active
         if (activeTrucks.length === 0) {
-            activeTrucks.push({ idNum: 4, name: "Truck #04", qty: "5,000", destination: target.name, item: "N95 Masks", timestamp: Date.now(), eta: "45" });
+            truckMarker.remove(); // Hide truck if no active orders
+            const defaultCompleted = JSON.parse(localStorage.getItem('history_' + facilityId) || '[]');
+            if (defaultCompleted.length === 0) {
+                const history = [{ name: "Truck #04", qty: "5,000", item: "N95 Masks", destination: target.name, completedAt: "Mon 07 Apr" }];
+                localStorage.setItem('history_' + facilityId, JSON.stringify(history));
+            }
         }
 
         // --- TRANSACTIONAL LOGIC ---
@@ -171,6 +176,21 @@
             updateMapTooltip();
         }
 
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            const history = JSON.parse(localStorage.getItem('history_' + facilityId) || '[]');
+            if (history.length === 0) {
+                container.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem;">No completed deliveries.</div>';
+                return;
+            }
+            container.innerHTML = history.map(h => `
+                <div class="history-item">
+                    <span>${h.name} — ${h.qty} units (${h.item})</span>
+                    <span>${h.completedAt}</span>
+                </div>
+            `).join('');
+        }
+
         window.deleteTruck = (e, i) => { 
             e.stopPropagation(); 
             if(confirm("Cancel this shipment?")) {
@@ -205,6 +225,7 @@
 
         renderTrucks();
         fetchLtaEta();
+        renderHistory();
         setInterval(fetchLtaEta, 60000); // Update traffic every minute
     </script>
 </body>
