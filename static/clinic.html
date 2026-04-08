@@ -98,6 +98,7 @@
     .card.critical { border-left: 5px solid #ef4444; background: #fef2f2; }
     .card.critical .stock-indicator { background: #fee2e2; color: #991b1b; }
     .card.critical .stat-val { color: #b91c1c; }
+    .card.low-alert { border-left: 5px solid #10b981; background: #f0fdf4;}
     .status-badge.critical { background: #fee2e2; color: #991b1b; border-color: #fecaca; animation: pulse 2s infinite; }
     .status-badge.critical .dot { background: #ef4444; }
 
@@ -545,17 +546,29 @@
 
     // --- ALERT MODES ---
     function activateAlertMode(isSevere = true) {
-      const badge = document.getElementById('global-status');
-      if (!badge) return;
-      if (isSevere) {
-          badge.className = 'status-badge critical';
-          badge.innerHTML = '<span class="dot" style="background:#ef4444;"></span> ⚠️ SEVERE HAZE';
-          document.querySelectorAll('.card').forEach(c => { c.classList.remove('moderate'); c.classList.add('critical'); });
-      } else {
-          badge.style.background = '#fef3c7'; badge.style.color = '#92400e'; badge.style.borderColor = '#fde68a';
-          badge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span> ⚠️ SYSTEM ALERT';
-          document.querySelectorAll('.card').forEach(c => { c.classList.remove('critical'); c.classList.add('moderate'); });
-      }
+    const badge = document.getElementById('global-status');
+        if (!badge) return;
+        if (isSevere) {
+            badge.className = 'status-badge critical';
+            badge.removeAttribute('style');
+            badge.innerHTML = '<span class="dot" style="background:#ef4444;"></span> ⚠️ SEVERE HAZE';
+            document.querySelectorAll('.card').forEach(c => {
+                c.removeAttribute('style');
+                c.classList.remove('moderate');
+                c.classList.add('critical');
+            });
+        } else {
+            // Clear critical class fully before applying moderate amber
+            badge.className = 'status-badge';
+            badge.removeAttribute('style');
+            badge.setAttribute('style', 'background:#fef3c7; color:#92400e; border-color:#fde68a;');
+            badge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span> ⚠️ SYSTEM ALERT';
+            document.querySelectorAll('.card').forEach(c => {
+                c.removeAttribute('style');           // wipe any low-alert inline green
+                c.classList.remove('critical', 'moderate', 'low-alert'); // ← add 'low-alert' here
+                c.classList.add('moderate');          // apply amber CSS class
+            });
+        }
     }
 
     function deactivateAlertMode() {
@@ -569,7 +582,7 @@
 
       // 2. Nuclear Reset ALL Hospital/Polyclinic Cards
       document.querySelectorAll('.card').forEach(c => {
-          c.classList.remove('critical', 'moderate');
+          c.classList.remove('critical', 'moderate', 'low-alert');  // ← add 'low-alert' here
           c.style = ''; // Snaps the card back to white instantly
       });
 
@@ -692,24 +705,24 @@
                 statusEl.style.color = "#f59e0b";
             }
         } else {
-            // low_haze / dengue_low — show a subtle green alert (not full deactivation)
             activateAlertMode(false);
+            // low_haze / dengue_low — green tint via CSS class only (no inline styles on cards)
+            // Using a CSS class means .moderate and .critical can override cleanly later
             const badge = document.getElementById('global-status');
             if (badge) {
-                badge.style.background = '#dcfce7';
-                badge.style.color = '#166534';
-                badge.style.borderColor = '#bbf7d0';
-                badge.innerHTML = '<span class="dot"></span> ⚠️ LOW ALERT ACTIVE';
+                badge.className = 'status-badge';
+                badge.removeAttribute('style');
+                badge.style.cssText = 'background:#dcfce7; color:#166534; border-color:#bbf7d0;';
+                badge.innerHTML = '<span class="dot" style="background:#10b981;"></span> ⚠️ LOW ALERT ACTIVE';
             }
             document.querySelectorAll('.card').forEach(c => {
                 c.classList.remove('critical', 'moderate');
-                // Subtle green tint for low alert
-                c.style.borderLeft = '5px solid #10b981';
-                c.style.background = '#f0fdf4';
+                c.removeAttribute('style');           // wipe any prior inline
+                c.classList.add('low-alert');         // use a CSS class instead of inline styles
             });
             if (statusEl) {
-                statusEl.innerHTML = scenarioKey.startsWith('dengue') 
-                    ? `● SITUATION: DENGUE CLUSTER (LOW)` 
+                statusEl.innerHTML = scenarioKey.startsWith('dengue')
+                    ? `● SITUATION: DENGUE CLUSTER (LOW)`
                     : `● SITUATION: LOW HAZE ALERT`;
                 statusEl.style.color = "#10b981";
             }

@@ -890,16 +890,16 @@ def confirm_order():
     scenario_key_for_stock = draft.get("scenario_key", "")
     is_dengue_order = _is_dengue_scenario(scenario_key_for_stock)
     stock = clinic_state.get("stock", {})
-    # Distribute confirmed qty across all facilities (split evenly, remainder to ttsh)
-    facilities = list(stock.keys())
-    per_facility = confirmed // len(facilities)
-    remainder = confirmed % len(facilities)
-    for i, fid in enumerate(facilities):
-        extra = remainder if i == 0 else 0
+    ordering_facility = "ttsh"   # HQ facility that raises the PO
+    if ordering_facility in stock:
         if is_dengue_order:
-            stock[fid]["repellent"] = stock[fid].get("repellent", 500) + per_facility + extra
+            stock[ordering_facility]["repellent"] = (
+                stock[ordering_facility].get("repellent", 500) + confirmed
+            )
         else:
-            stock[fid]["n95"] = stock[fid].get("n95", 0) + per_facility + extra
+            stock[ordering_facility]["n95"] = (
+                stock[ordering_facility].get("n95", 0) + confirmed
+            )
     # ────────────────────────────────────────────────────────────────
 
     clinic_state["view"] = "approved"
