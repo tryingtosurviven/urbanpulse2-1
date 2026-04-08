@@ -698,9 +698,9 @@
             if (currentTab === 'dengue') {
                 showDenguePanel(SYNTHETIC_DENGUE_DATA, scenarioKey);
             }
-        } else if (!isAdmin && !isDengueScenario && isLow && currentTab === 'dengue') {
-            window._userOverrideTab = false;  // Clear override on full reset only
-            switchTab('haze');
+        } else if (!isAdmin && !isDengueScenario && isLow) {
+            window._userOverrideTab = false;  // Reset guard on full system reset
+            if (currentTab === 'dengue') switchTab('haze');
         }
 
         // ── COLOUR TIERS ──
@@ -847,16 +847,27 @@
         isResetting = true;
 
         try {
-            const res = await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
-            if (!res.ok) throw new Error('Reset failed on server');
+            // 1. Tell the server to turn the UI GREEN
+            await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
 
-            sessionStorage.removeItem('autoOrderDone');
+            // 2. Wipe the TTSH demo orders from the map
+            // This makes logistics.html show only the hardcoded default Trucks 1-4
             localStorage.removeItem('trucks_ttsh');
-            location.reload(); 
+            localStorage.removeItem('last_order_id_ttsh'); 
+
+            // 3. Clear browser alert locks
+            localStorage.removeItem('alert_lock');
+            localStorage.removeItem('last_auto_id');
+            window._userOverrideTab = false; // Reset the Tab-stuck guard
+
+            // 4. Force hard reload to the main dashboard
+            setTimeout(() => {
+                isResetting = false;
+                window.location.href = "/clinic";
+            }, 500);
 
         } catch (e) {
             console.error("Reset failed", e);
-            chatAdd(`❌ [ERROR] Reset failed: ${e.message}`);
             isResetting = false;
         }
     }

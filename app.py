@@ -989,30 +989,40 @@ def live_dengue():
 @app.post("/api/admin-reset")
 @require_role("admin")
 def admin_reset():
-    clinic_state["view"] = "normal"
-    clinic_state["protocol"] = "standard"
-    clinic_state["active_scenario"] = ""
-    clinic_state["active_risk_level"] = "LOW"
-    clinic_state["draft"]["active"] = False
-    clinic_state["draft"]["psi"] = 0
-    clinic_state["draft"]["projected_cases"] = 0
-    clinic_state["draft"]["risk_level"] = "LOW"
-    clinic_state["draft"]["governance_log"] = ""
-    clinic_state["draft"]["dengue_data"] = None
-    clinic_state["draft"]["scenario_key"] = ""
-    # Reset stock to defaults
-    clinic_state["stock"] = {
-        "ttsh": {"n95": 1200, "repellent": 500},
-        "nuh":  {"n95": 950,  "repellent": 500},
-        "cgh":  {"n95": 1050, "repellent": 500},
-        "ktph": {"n95": 890,  "repellent": 500},
-        "amk":      {"n95": 5000, "repellent": 500},
-        "jurong":   {"n95": 4200, "repellent": 500},
-        "tamp":     {"n95": 4800, "repellent": 500},
-        "woodlands":{"n95": 3900, "repellent": 500},
+    global clinic_state, current_broadcast_message
+    
+    # 1. Reset Server variables to force the UI back to Green "Normal" state
+    clinic_state = {
+        "view": "normal",
+        "protocol": "standard",
+        "draft": {
+            "active": False,
+            "facility": "---",
+            "id": "---",
+            "qty": 0,
+            "cost": "$0",
+            "reason": "",
+            "autonomous": False,
+            "psi": None,
+            "projected_cases": None,
+            "risk_level": "LOW",
+            "governance_log": "",
+        },
+        # Reset stocks to your hackathon starting values
+        "stock": {
+            "ttsh": {"n95": 1200, "repellent": 500},
+            "nuh":  {"n95": 950,  "repellent": 500},
+            "cgh":  {"n95": 1050, "repellent": 500},
+            "ktph": {"n95": 890,  "repellent": 500},
+            "amk":  {"n95": 5000, "repellent": 500},
+            "jurong":   {"n95": 4200, "repellent": 500},
+            "tamp":     {"n95": 4800, "repellent": 500},
+            "woodlands":{"n95": 3900, "repellent": 500},
+        }
     }
-    global current_broadcast_message
     current_broadcast_message = ""
+    # Note: We do NOT wipe the governance.log file here so the data stays for the judge.
+    
     return jsonify({"status": "success"})
 
 @app.route('/api/admin-broadcast', methods=['POST'])
