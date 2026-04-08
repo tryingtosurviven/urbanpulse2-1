@@ -12,71 +12,28 @@
         .back-link:hover { text-decoration: underline; }
         h1 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.8rem; }
         .subtitle { color: #64748b; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
-
-        /* ── Active cards ── */
-        .status-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-left: 5px solid #cbd5e1;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-            cursor: pointer;
-            position: relative;
-        }
+        .status-card { background: white; border: 1px solid #e2e8f0; border-left: 5px solid #cbd5e1; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s; cursor: pointer; position: relative; }
         .status-card:hover { transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.1); }
         .status-card.active-focus { background: #f0f9ff; border-left-color: #0ea5e9; border-color: #bae6fd; box-shadow: 0 8px 15px -3px rgba(14, 165, 233, 0.15); }
-
-        /* ── Completed cards ── */
-        .completed-card {
-            background: #f8faf8;
-            border: 1px solid #d1fae5;
-            border-left: 5px solid #22c55e;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-            transition: all 0.2s;
-            cursor: pointer;
-            position: relative;
-        }
+        .completed-card { background: #f8faf8; border: 1px solid #d1fae5; border-left: 5px solid #22c55e; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); transition: all 0.2s; cursor: pointer; position: relative; }
         .completed-card:hover { transform: translateY(-2px); box-shadow: 0 5px 10px rgba(34,197,94,0.12); }
         .completed-card.expanded { background: #f0fdf4; border-color: #86efac; }
-
-        .status-card h3,
-        .completed-card h3 {
-            margin: 0 0 5px 0;
-            color: #0f172a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.1rem;
-        }
-
+        .status-card h3, .completed-card h3 { margin: 0 0 5px 0; color: #0f172a; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
         .status-badge { background: #94a3b8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
         .status-card.active-focus .status-badge { background: #0ea5e9; animation: pulse 2s infinite; }
         .badge-completed { background: #22c55e !important; }
-        .badge-live      { background: #0ea5e9; animation: pulse 2s infinite; }
-        .badge-enroute   { background: #f59e0b; }
-
+        .badge-live { background: #0ea5e9; animation: pulse 2s infinite; }
+        .badge-enroute { background: #f59e0b; }
         .status-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.9rem; }
         .card-label { color: #64748b; font-size: 0.85rem; }
-
         .delete-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #cbd5e1; font-size: 1.2rem; cursor: pointer; padding: 0; line-height: 1; transition: color 0.2s; z-index: 10; }
         .delete-btn:hover { color: #ef4444; }
-
-        /* Completed section */
         .completed-section { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .section-header h4 { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; margin: 0; letter-spacing: 0.5px; }
         .section-toggle { background: none; border: none; color: #94a3b8; font-size: 0.75rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
         .section-toggle:hover { background: #f1f5f9; color: #475569; }
-
-        /* Empty state */
         .empty-state { color: #94a3b8; font-size: 0.85rem; padding: 18px 0; text-align: center; border: 1px dashed #e2e8f0; border-radius: 8px; }
-
         #map { flex: 1; height: 100%; z-index: 1; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
     </style>
@@ -93,13 +50,11 @@
             <div id="eta-meta" style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Fetching traffic speed bands...</div>
         </div>
 
-        <!-- Active shipments -->
         <div style="margin-bottom: 6px;">
             <div style="color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; font-weight: 600;">Active Shipments</div>
             <div id="truck-list-container"></div>
         </div>
 
-        <!-- Completed deliveries -->
         <div class="completed-section">
             <div class="section-header">
                 <h4>Completed Deliveries</h4>
@@ -115,93 +70,62 @@
     <script>
         // ── 1. SETUP ─────────────────────────────────────────────────────────
         const locations = {
-            'ttsh':      { name: "Tan Tock Seng Hospital",     lat: 1.321,  lng: 103.845 },
-            'nuh':       { name: "National University Hosp.",  lat: 1.294,  lng: 103.783 },
-            'cgh':       { name: "Changi General Hospital",    lat: 1.340,  lng: 103.963 },
-            'ktph':      { name: "Khoo Teck Puat Hospital",    lat: 1.424,  lng: 103.838 },
-            'amk':       { name: "Ang Mo Kio Polyclinic",      lat: 1.374,  lng: 103.845 },
-            'jurong':    { name: "Jurong Polyclinic",           lat: 1.349,  lng: 103.743 },
-            'tamp':      { name: "Tampines Polyclinic",         lat: 1.355,  lng: 103.944 },
-            'woodlands': { name: "Woodlands Polyclinic",        lat: 1.442,  lng: 103.770 }
+            'ttsh':      { name: "Tan Tock Seng Hospital",    lat: 1.321,  lng: 103.845 },
+            'nuh':       { name: "National University Hosp.", lat: 1.294,  lng: 103.783 },
+            'cgh':       { name: "Changi General Hospital",   lat: 1.340,  lng: 103.963 },
+            'ktph':      { name: "Khoo Teck Puat Hospital",   lat: 1.424,  lng: 103.838 },
+            'amk':       { name: "Ang Mo Kio Polyclinic",     lat: 1.374,  lng: 103.845 },
+            'jurong':    { name: "Jurong Polyclinic",          lat: 1.349,  lng: 103.743 },
+            'tamp':      { name: "Tampines Polyclinic",        lat: 1.355,  lng: 103.944 },
+            'woodlands': { name: "Woodlands Polyclinic",       lat: 1.442,  lng: 103.770 }
         };
 
-        const urlParams    = new URLSearchParams(window.location.search);
-        const facilityId   = urlParams.get('id') || 'ttsh';
-        const target       = locations[facilityId] || locations['ttsh'];
-        const newOrderQty  = urlParams.get('qty');
-        const urlItemName  = urlParams.get('item');
-        const orderId      = urlParams.get('orderId');
+        const urlParams   = new URLSearchParams(window.location.search);
+        const facilityId  = urlParams.get('id') || 'ttsh';
+        const target      = locations[facilityId] || locations['ttsh'];
+        const newOrderQty = urlParams.get('qty');
+        const urlItemName = urlParams.get('item');
+        const orderId     = urlParams.get('orderId');
 
-        // Resolve item label
+        // Resolve item label from URL or qty heuristic
         let itemLabel = urlItemName || "N95 Masks";
         if (!urlItemName) {
             const qty = parseInt(newOrderQty);
-            if (qty === 850 || qty === 450 || qty === 180) {
-                itemLabel = "Bottles of Mosquito Repellent";
-            }
+            if (qty === 850 || qty === 450 || qty === 180) itemLabel = "Bottles of Mosquito Repellent";
         }
 
-        const storageKey         = 'trucks_'           + facilityId;
-        const processedOrderKey  = 'processed_orders_' + facilityId;
-        const completedKey       = 'completed_trucks_' + facilityId;
+        const storageKey        = 'trucks_'           + facilityId;
+        const processedOrderKey = 'processed_orders_' + facilityId;
+        const completedKey      = 'completed_trucks_' + facilityId;
+        const resetFlagKey      = 'trucks_reset_'     + facilityId;
 
         // ── 2. SEED COMPLETED TRUCKS #01–#04 (first visit only) ──────────────
         if (!localStorage.getItem(completedKey)) {
-            const seedCompleted = [
-                {
-                    name:        "Truck #01",
-                    qty:         "10,000",
-                    item:        "N95 Masks",
-                    destination: target.name,
-                    completedAt: "Mon 07 Apr",
-                    driver:      "Ahmad bin Yusof",
-                    ref:         "PO-2025-0041"
-                },
-                {
-                    name:        "Truck #02",
-                    qty:         "3,200",
-                    item:        "Surgical Gloves (Box)",
-                    destination: target.name,
-                    completedAt: "Tue 08 Apr",
-                    driver:      "Lim Wei Jian",
-                    ref:         "PO-2025-0042"
-                },
-                {
-                    name:        "Truck #03",
-                    qty:         "850",
-                    item:        "Bottles of Mosquito Repellent",
-                    destination: target.name,
-                    completedAt: "Tue 08 Apr",
-                    driver:      "Ravi s/o Krishnan",
-                    ref:         "PO-2025-0043"
-                },
-                {
-                    name:        "Truck #04",
-                    qty:         "5,000",
-                    item:        "N95 Masks",
-                    destination: target.name,
-                    completedAt: "Wed 09 Apr",
-                    driver:      "Tan Boon Huat",
-                    ref:         "PO-2025-0044"
-                }
-            ];
-            localStorage.setItem(completedKey, JSON.stringify(seedCompleted));
+            localStorage.setItem(completedKey, JSON.stringify([
+                { name: "Truck #01", qty: "10,000", item: "N95 Masks",                    destination: target.name, completedAt: "Mon 07 Apr", driver: "Ahmad bin Yusof",   ref: "PO-2025-0041" },
+                { name: "Truck #02", qty: "3,200",  item: "Surgical Gloves (Box)",         destination: target.name, completedAt: "Tue 08 Apr", driver: "Lim Wei Jian",      ref: "PO-2025-0042" },
+                { name: "Truck #03", qty: "850",    item: "Bottles of Mosquito Repellent", destination: target.name, completedAt: "Tue 08 Apr", driver: "Ravi s/o Krishnan", ref: "PO-2025-0043" },
+                { name: "Truck #04", qty: "5,000",  item: "N95 Masks",                    destination: target.name, completedAt: "Wed 09 Apr", driver: "Tan Boon Huat",     ref: "PO-2025-0044" }
+            ]));
         }
 
-        // ── 3. LOAD ACTIVE TRUCKS & PROCESSED ORDER IDS ──────────────────────
-        // KEY FIX: If there is NO orderId in the URL, this is a plain page visit
-        // (not an order approval redirect). Clear any stale active trucks so the
-        // list starts empty, as expected — trucks only appear after admin→clinic approval.
-        if (!orderId) {
+        // ── 3. HANDLE RESET FLAG ──────────────────────────────────────────────
+        // ONLY wipe active trucks when admin explicitly reset via the reset flag.
+        // Normal navigation (no flag, no orderId) must NEVER wipe trucks.
+        if (localStorage.getItem(resetFlagKey)) {
             localStorage.removeItem(storageKey);
+            localStorage.removeItem(processedOrderKey);
+            localStorage.removeItem(resetFlagKey);
         }
 
+        // ── 4. LOAD ACTIVE TRUCKS & PROCESSED ORDERS ─────────────────────────
+        // Always load from localStorage first — persists across all navigation
         let activeTrucks    = JSON.parse(localStorage.getItem(storageKey)        || '[]');
         let processedOrders = JSON.parse(localStorage.getItem(processedOrderKey) || '[]');
 
-        // ── 4. ADD NEW ORDER (deduplicated by orderId) ────────────────────────
+        // ── 5. ADD NEW ORDER (deduplicated by orderId) ────────────────────────
+        // Only runs when arriving from the "Track on Logistics Map" button (orderId in URL)
         if (newOrderQty && orderId && !processedOrders.includes(orderId.toString())) {
-            // Count existing completed to get next truck number
             const completedTrucks = JSON.parse(localStorage.getItem(completedKey) || '[]');
             const nextNum = completedTrucks.length + activeTrucks.length + 1;
             const padded  = String(nextNum).padStart(2, '0');
@@ -217,14 +141,15 @@
                 ref:         `PO-2025-${String(44 + nextNum).padStart(4, '0')}`
             });
             processedOrders.push(orderId.toString());
+            // ── FIX: Save immediately so re-navigation preserves the truck ──
             localStorage.setItem(storageKey,        JSON.stringify(activeTrucks));
             localStorage.setItem(processedOrderKey, JSON.stringify(processedOrders));
         }
 
-        let selectedTruckIndex  = 0;
-        let completedExpanded   = {};
+        let selectedTruckIndex = 0;
+        let completedExpanded  = {};
 
-        // ── 5. MAP ────────────────────────────────────────────────────────────
+        // ── 6. MAP ────────────────────────────────────────────────────────────
         const map = L.map('map').setView([target.lat, target.lng], 13);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap & CARTO', subdomains: 'abcd', maxZoom: 19
@@ -241,7 +166,7 @@
             })
         }).addTo(map);
 
-        // ── 6. ANIMATION ──────────────────────────────────────────────────────
+        // ── 7. TRUCK ANIMATION ────────────────────────────────────────────────
         let step = 0;
         function moveTruck() {
             step = (step + 0.2) % 100;
@@ -254,7 +179,7 @@
         }
         moveTruck();
 
-        // ── 7. ACTIVE TRUCKS ──────────────────────────────────────────────────
+        // ── 8. RENDER ACTIVE TRUCKS ───────────────────────────────────────────
         function updateMapTooltip() {
             if (activeTrucks.length === 0) { truckMarker.unbindTooltip(); return; }
             const t = activeTrucks[selectedTruckIndex];
@@ -315,12 +240,11 @@
             e.stopPropagation();
             if (!confirm('Cancel this shipment?')) return;
 
-            const truck   = activeTrucks.splice(index, 1)[0];
+            const truck = activeTrucks.splice(index, 1)[0];
             localStorage.setItem(storageKey, JSON.stringify(activeTrucks));
 
-            // Move cancelled truck into completed list (top), marked cancelled
             const completed = JSON.parse(localStorage.getItem(completedKey) || '[]');
-            const today     = new Date().toLocaleDateString('en-SG', { weekday: 'short', day: '2-digit', month: 'short' });
+            const today = new Date().toLocaleDateString('en-SG', { weekday: 'short', day: '2-digit', month: 'short' });
             completed.unshift({
                 name:        truck.name,
                 qty:         truck.qty,
@@ -338,7 +262,7 @@
             renderCompleted();
         };
 
-        // ── 8. COMPLETED DELIVERIES (interactive cards) ───────────────────────
+        // ── 9. COMPLETED DELIVERIES ───────────────────────────────────────────
         let showCompleted = true;
 
         window.toggleCompleted = function() {
@@ -362,10 +286,10 @@
             }
 
             container.innerHTML = completed.map((c, i) => {
-                const isExpanded   = !!completedExpanded[i];
-                const cancelStyle  = c.cancelled ? 'opacity:0.6;' : '';
-                const badgeLabel   = c.cancelled ? 'CANCELLED' : 'COMPLETED';
-                const badgeBg      = c.cancelled ? '#94a3b8'    : '#22c55e';
+                const isExpanded  = !!completedExpanded[i];
+                const cancelStyle = c.cancelled ? 'opacity:0.6;' : '';
+                const badgeLabel  = c.cancelled ? 'CANCELLED' : 'COMPLETED';
+                const badgeBg     = c.cancelled ? '#94a3b8'   : '#22c55e';
                 const expandedRows = isExpanded ? `
                     <div class="status-row" style="margin-top:10px; border-top:1px solid #d1fae5; padding-top:10px;">
                         <span class="card-label">Driver</span><span>${c.driver || '—'}</span>
@@ -402,7 +326,7 @@
             }).join('');
         }
 
-        // ── 9. LTA ETA PANEL ─────────────────────────────────────────────────
+        // ── 10. LTA ETA PANEL ────────────────────────────────────────────────
         async function fetchLtaEta() {
             const etaDiv  = document.getElementById('eta-display');
             const metaDiv = document.getElementById('eta-meta');
@@ -416,9 +340,7 @@
                     const mins = data.eta_mins || data.display || '28';
                     etaDiv.innerText = `Estimated arrival: ${mins} mins`;
                     metaDiv.innerHTML = `🟢 Live LTA data | Speed: ${data.avg_speed_kmh || '49'} km/h`;
-                } else {
-                    throw new Error('non-success');
-                }
+                } else { throw new Error('non-success'); }
             } catch {
                 etaDiv.innerText  = 'Estimated arrival: 33 mins';
                 metaDiv.innerHTML = '🟡 API Offline — Using historical traffic bands';
