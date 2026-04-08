@@ -664,6 +664,22 @@
         const protocol    = (data.protocol || "").toLowerCase();
         const draftActive = data.draft && data.draft.active;
 
+        const isDengueScenario = scenarioKey.startsWith('dengue');
+
+        // ── AUTO-TAB SWITCH FOR CLINIC MANAGER ──
+        if (!isAdmin && isDengueScenario && !isLow) {
+            if (currentTab !== 'dengue') {
+                switchTab('dengue');
+                const dengueBtn = document.getElementById('tab-dengue');
+                if (dengueBtn) {
+                    dengueBtn.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 16px rgba(245,158,11,0.6)';
+                    setTimeout(() => { dengueBtn.style.boxShadow = 'none'; }, 3000);
+                }
+            }
+        } else if (!isAdmin && !isDengueScenario && currentTab === 'dengue' && isLow) {
+            switchTab('haze'); // Auto-return on reset
+        }
+
         // ── COLOUR TIERS — driven purely by active_scenario on server ──
         // Stays until admin resets, regardless of whether draft is open/confirmed/rejected
 
@@ -682,9 +698,9 @@
             if (statusEl) { statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981"; }
         } else if (isSevere) {
             activateAlertMode(true); // RED — stays until Reset
-            const isDengueCrisis = scenarioKey.startsWith('dengue');
+            const isDengueScenario = scenarioKey.startsWith('dengue');
             if (statusEl) {
-                statusEl.innerHTML = isDengueCrisis ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE HAZE CRISIS`;
+                statusEl.innerHTML = isDengueScenario ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE HAZE CRISIS`;
                 statusEl.style.color = "#ef4444";
             }
             // AUTO-ORDER: fires once per PO (sessionStorage prevents re-trigger on page reload)
@@ -693,7 +709,7 @@
                 const donePoId    = sessionStorage.getItem('autoOrderDone');
                 if (currentPoId && donePoId !== currentPoId) {
                     sessionStorage.setItem('autoOrderDone', currentPoId);
-                    const autoQty = data.draft.qty || (isDengueCrisis ? 850 : 1200);
+                    const autoQty = data.draft.qty || (isDengueScenario ? 850 : 1200);
                     executeAutoOrder(autoQty);
                 }
             }
@@ -780,6 +796,7 @@
 
         try {
             // Trigger the server-side agent orchestration
+            window._lastDengueScenario = scenarioKey;
             const result = await window.runScenario(scenarioKey);
             
             if (isAdmin) {
@@ -862,8 +879,8 @@
         const pollRes = await fetch('/api/clinic-poll', { headers: authHeaders() });
         const pollData = await pollRes.json();
         
-        const isDengueCrisis = pollData.draft && pollData.draft.projected_cases > 0;
-        const itemName = isDengueCrisis ? "Bottles of Mosquito Repellent" : "N95 Respiratory Masks";
+        const isDengueScenario = pollData.draft && pollData.draft.projected_cases > 0;
+        const itemName = isDengueScenario ? "Bottles of Mosquito Repellent" : "N95 Respiratory Masks";
         const confirmedQty = qty || 850;
         const orderId = Date.now();
 
@@ -1168,19 +1185,79 @@
         dengueMapInitialized = true;
     }
 
-    function showDenguePanel(dengueData) {
+    function showDenguePanel(dengueData, scenarioKey) {
         window._lastDengueData = dengueData;
+        if (scenarioKey) window._lastDengueScenario = scenarioKey;
+        const sk = window._lastDengueScenario || '';
+        const isHigh = sk === 'dengue_high';
+        const isMed  = sk === 'dengue_medium';
+        const isLow  = sk === 'dengue_low';
+
         const container = document.getElementById('dengue-district-cards');
         if (!container) return;
 
         document.getElementById('dengue-panel').style.display = 'block';
         document.querySelector('.container').style.display = 'none';
 
-        // Natalie: Keep Live row if it exists, otherwise clear container
+        // ── Panel header severity ──
+        const panelTitle = document.querySelector('#dengue-panel h2');
+        if (panelTitle) {
+            if (isHigh) {
+                panelTitle.style.color = '#b91c1c';
+                panelTitle.innerHTML = '🦟 DENGUE OUTBREAK — CRISIS LEVEL (HIGH)';
+            } else if (isMed) {
+                panelTitle.style.color = '#92400e';
+                panelTitle.innerHTML = '🦟 Dengue Cluster Alert — Elevated (MEDIUM)';
+            } else {
+                panelTitle.style.color = '#166534';
+                panelTitle.innerHTML = '🦟 Dengue Cluster Monitor — Low Activity';
+            }
+        }
+
+        // ── Populate red zones span ──
+        const redZones = Object.entries(dengueData)
+            .filter(([, c]) => c > 10)
+            .map(([d]) => d.charAt(0).toUpperCase() + d.slice(1));
+        const redZonesEl = document.getElementById('dengue-red-zones');
+        if (redZonesEl) {
+            redZonesEl.textContent = redZones.length ? redZones.join(', ') : 'monitored districts';
+            redZonesEl.style.cssText = 'font-weight:700; color:#b91c1c;';
+        }
+
+        // ── Dynamic action box ──
+        const actionBox = document.querySelector('.dengue-action-box');
+        if (actionBox) {
+            if (isLow) {
+                actionBox.style.display = 'none';
+            } else {
+                actionBox.style.display = 'block';
+                const h4  = actionBox.querySelector('h4');
+                const ul  = actionBox.querySelector('ul');
+                if (isHigh) {
+                    actionBox.style.cssText = 'background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px 18px; margin-bottom:16px;';
+                    if (h4) { h4.style.color = '#991b1b'; h4.textContent = '🚨 URGENT ACTION REQUIRED'; }
+                    if (ul) ul.innerHTML = `
+                        <li>IMMEDIATE: Order <strong>850+ repellent packs</strong> for all high-risk residents</li>
+                        <li>Activate <strong>dengue response protocol</strong> — brief ALL clinic staff today</li>
+                        <li>Mandatory: report all suspected dengue cases to MOH within <strong>24 hours</strong></li>
+                        <li>Display <strong>NEA emergency advisories</strong> prominently at clinic entrance</li>
+                        <li>Advise patients from <strong style="color:#b91c1c;">${redZones.join(', ')}</strong> to seek immediate testing</li>`;
+                } else {
+                    actionBox.style.cssText = 'background:#fef3c7; border:1px solid #fde68a; border-radius:10px; padding:14px 18px; margin-bottom:16px;';
+                    if (h4) { h4.style.color = '#92400e'; h4.textContent = '📋 Clinic Action Required'; }
+                    if (ul) ul.innerHTML = `
+                        <li>Order <strong>repellent packs</strong> (DEET-based) for distribution to high-risk residents</li>
+                        <li>Display <strong>NEA dengue advisory posters</strong> at clinic entrance</li>
+                        <li>Advise patients from <strong style="color:#b91c1c;">${redZones.join(', ') || 'affected districts'}</strong> to check for standing water</li>
+                        <li>Report any <strong>dengue fever cases</strong> to MOH within 24 hours</li>`;
+                }
+            }
+        }
+
+        // ── District cards ──
         const liveSection = document.getElementById('live-nea-section');
         container.innerHTML = liveSection ? liveSection.outerHTML : '';
 
-        // Create the simulated section
         let simulatedHtml = `
             <div id="simulated-dengue-section" style="grid-column:1/-1; margin-top:10px;">
                 <div style="background:#fef3c7; color:#92400e; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; width:fit-content; margin-bottom:10px;">
@@ -1189,15 +1266,17 @@
                 <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px;">`;
 
         Object.entries(dengueData).forEach(([district, cases]) => {
-            const zone = getZone(cases);
+            const zone   = getZone(cases);
+            const action = getClinicAction(cases);
+            const config = DISTRICT_CONFIG[district];
             simulatedHtml += `
                 <div class="dengue-card ${zone.cls}">
-                    <div style="font-weight:700;">${district.toUpperCase()}</div>
+                    <div class="dengue-district">${config ? config.label : district.toUpperCase()}</div>
                     <span class="dengue-zone-badge ${zone.cls}">${zone.level} ZONE</span>
-                    <div>🦟 Cases: <strong>${cases}</strong></div>
+                    <div class="dengue-stat">🦟 Cases: <strong>${cases}</strong></div>
+                    <div class="dengue-stat">📊 Trend: <strong>${zone.trend}</strong></div>
+                    <div class="dengue-stat" style="margin-top:6px; font-size:0.75rem; color:#78350f;">📦 ${action}</div>
                 </div>`;
-            
-            // Natalie: Draw boundary highlight only - NO Emoji/Marker
             ensureDengueMapExists();
             if (SYNTHETIC_GEOJSON[district]) {
                 L.geoJSON(SYNTHETIC_GEOJSON[district], {
@@ -1205,9 +1284,9 @@
                 }).addTo(dengueMap).bindPopup(`Simulated Cluster: ${district.toUpperCase()} (${cases} cases)`);
             }
         });
-
         simulatedHtml += `</div></div>`;
         container.insertAdjacentHTML('beforeend', simulatedHtml);
+        setTimeout(() => { if (dengueMap) dengueMap.invalidateSize(); }, 200);
     }
 
     function showDenguePanelEmpty() {
@@ -1321,7 +1400,7 @@
             hazeBtn.style.color = '#64748b';
 
             if (window._lastDengueData) {
-                showDenguePanel(window._lastDengueData);
+                showDenguePanel(window._lastDengueData, window._lastDengueScenario);
                 if (indicator) indicator.innerText = '● Live alert active';
             } else {
                 showDenguePanelEmpty();
