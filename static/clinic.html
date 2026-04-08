@@ -650,77 +650,72 @@
     function closeModal(e) { if (e.target.id === 'modal-overlay') e.target.style.display = 'none'; }
     
 
-   setInterval(async () => {
+    setInterval(async () => {
       try {
         const res = await fetch('/api/clinic-poll', { headers: authHeaders() });
         const data = await res.json();
+
+        // --- GLOBAL RESET LISTENER (The Fix for Clinic Manager) ---
+        const lastClinicReset = localStorage.getItem('last_clinic_reset');
+        if (data.reset_event_id && lastClinicReset !== String(data.reset_event_id)) {
+            console.log("Global Reset Signal Received");
+            const fid = 'ttsh';
+            localStorage.removeItem('trucks_' + fid);
+            localStorage.removeItem('processed_orders_' + fid);
+            localStorage.removeItem('completed_trucks_' + fid);
+            localStorage.removeItem('last_order_id_ttsh');
+            localStorage.removeItem('alert_lock');
+            localStorage.removeItem('last_auto_id');
+            sessionStorage.removeItem('autoOrderDone');
+            
+            localStorage.setItem('last_clinic_reset', data.reset_event_id);
+            location.reload(); 
+            return;
+        }
+
         if (data.stock) updateStockDisplay(data.stock);
 
-        const statusEl   = document.getElementById('live-status-indicator');
+        const statusEl    = document.getElementById('live-status-indicator');
         const scenarioKey = data.scenario_key || "";
-        const riskLevel   = (data.risk_level || "LOW").toUpperCase();
         const protocol    = (data.protocol || "").toLowerCase();
         const draftActive = data.draft && data.draft.active;
-
         const isDengueScenario = scenarioKey.startsWith('dengue');
 
-        // ── COMPUTE TIERS FIRST (before any usage) ──
         const isLow      = !scenarioKey || scenarioKey === 'normal';
-        const isSevere   = scenarioKey === 'severe_haze'
-                           || scenarioKey === 'dengue_high'
-                           || protocol === 'autonomous';
-        const isModerate = !isLow && !isSevere && (
-                           scenarioKey === 'moderate_haze'
-                           || scenarioKey === 'dengue_medium');
+        const isSevere   = scenarioKey === 'severe_haze' || scenarioKey === 'dengue_high' || protocol === 'autonomous';
+        const isModerate = !isLow && !isSevere && (scenarioKey === 'moderate_haze' || scenarioKey === 'dengue_medium');
 
-        // ── AUTO-TAB SWITCH FOR CLINIC MANAGER ──
+        // Auto-tab switch logic
         if (!isAdmin && isDengueScenario && !isLow) {
             if (currentTab !== 'dengue' && !window._userOverrideTab) {
                 switchTab('dengue');
-                const dengueBtn = document.getElementById('tab-dengue');
-                if (dengueBtn) {
-                    dengueBtn.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 16px rgba(245,158,11,0.6)';
-                    setTimeout(() => { dengueBtn.style.boxShadow = 'none'; }, 3000);
-                }
             }
-            // ── POPULATE DENGUE PANEL DATA from poll ──
             if (data.draft && data.draft.dengue_data) {
-                // Update data silently even if user is on haze tab
                 window._lastDengueData = data.draft.dengue_data;
                 window._lastDengueScenario = scenarioKey;
-                if (currentTab === 'dengue') {
-                    showDenguePanel(data.draft.dengue_data, scenarioKey);
-                }
-            }
-        } else if (!window._lastDengueData) {
-            window._lastDengueData = SYNTHETIC_DENGUE_DATA;
-            window._lastDengueScenario = scenarioKey;
-            if (currentTab === 'dengue') {
-                showDenguePanel(SYNTHETIC_DENGUE_DATA, scenarioKey);
+                if (currentTab === 'dengue') showDenguePanel(data.draft.dengue_data, scenarioKey);
             }
         } else if (!isAdmin && !isDengueScenario && isLow) {
-            window._userOverrideTab = false;  // Reset guard on full system reset
+            window._userOverrideTab = false;
             if (currentTab === 'dengue') switchTab('haze');
         }
 
-        // ── COLOUR TIERS ──
+        // UI Color Tiers
         if (isLow) {
             deactivateAlertMode();
             if (statusEl) { statusEl.innerHTML = `● Monitoring for incoming alerts...`; statusEl.style.color = "#10b981"; }
         } else if (isSevere) {
             activateAlertMode(true);
-            if (statusEl) {
+            if (statusEl) { 
                 statusEl.innerHTML = isDengueScenario ? `● SITUATION: DENGUE CRISIS (HIGH)` : `● SITUATION: SEVERE HAZE CRISIS`;
                 statusEl.style.color = "#ef4444";
             }
-            // AUTO-ORDER: fires once per PO
             if (!isAdmin && draftActive) {
                 const currentPoId = data.draft.id;
                 const donePoId    = sessionStorage.getItem('autoOrderDone');
                 if (currentPoId && donePoId !== currentPoId) {
                     sessionStorage.setItem('autoOrderDone', currentPoId);
-                    const autoQty = data.draft.qty || (isDengueScenario ? 850 : 1200);
-                    executeAutoOrder(autoQty);
+                    executeAutoOrder(data.draft.qty || (isDengueScenario ? 850 : 1200));
                 }
             }
         } else if (isModerate) {
@@ -729,49 +724,18 @@
                 statusEl.innerHTML = isDengueScenario ? `● SITUATION: DENGUE CLUSTER ALERT` : `● SITUATION: ELEVATED ALERT (MODERATE)`;
                 statusEl.style.color = "#f59e0b";
             }
-        } else {
-            // low_haze / dengue_low
-            activateAlertMode(false);
-            const badge = document.getElementById('global-status');
-            if (badge) {
-                badge.className = 'status-badge';
-                badge.removeAttribute('style');
-                badge.style.cssText = 'background:#dcfce7; color:#166534; border-color:#bbf7d0;';
-                badge.innerHTML = '<span class="dot" style="background:#10b981;"></span> ⚠️ LOW ALERT ACTIVE';
-            }
-            document.querySelectorAll('.card').forEach(c => {
-                c.classList.remove('critical', 'moderate');
-                c.removeAttribute('style');
-                c.classList.add('low-alert');
-            });
-            if (statusEl) {
-                statusEl.innerHTML = scenarioKey.startsWith('dengue')
-                    ? `● SITUATION: DENGUE CLUSTER (LOW)`
-                    : `● SITUATION: LOW HAZE ALERT`;
-                statusEl.style.color = "#10b981";
-            }
         }
 
-        // ── BROADCAST TICKER ──
-        const ticker    = document.getElementById('broadcast-ticker');
-        const tickerTxt = document.getElementById('ticker-text');
+        // Broadcast/Ticker
+        const ticker = document.getElementById('broadcast-ticker');
         if (data.broadcast_msg && data.broadcast_msg.trim()) {
-            if (ticker)    ticker.style.display = 'block';
-            if (tickerTxt) tickerTxt.innerText = `⚠️ MOH HQ DIRECTIVE: ${data.broadcast_msg}`;
-            const hqPopup = document.getElementById('hq-alert-popup');
-            const hqText  = document.getElementById('hq-alert-text');
-            if (hqPopup && hqText && !hqPopup._shown) {
-                hqText.innerText = data.broadcast_msg;
-                hqPopup.style.display = 'flex';
-                hqPopup._shown = true;
-            }
-        } else {
-            if (ticker) ticker.style.display = 'none';
-            const hqPopup = document.getElementById('hq-alert-popup');
-            if (hqPopup) hqPopup._shown = false;
+            if (ticker) ticker.style.display = 'block';
+            document.getElementById('ticker-text').innerText = `⚠️ MOH HQ DIRECTIVE: ${data.broadcast_msg}`;
+        } else if (ticker) {
+            ticker.style.display = 'none';
         }
 
-        // ── DRAFT PANEL (clinic manager only, non-autonomous) ──
+        // Draft Panel logic
         if (draftActive && protocol !== 'autonomous' && !isAdmin) {
             if (!userDraftVisible && data.draft.id !== lastRejectedOrderId) {
                 showDraftPanel(data.draft);
@@ -780,10 +744,8 @@
         } else if (!draftActive) {
             lastRejectedOrderId = null;
             userDraftVisible = false;
-            const dp = document.getElementById('draft-panel');
-            if (dp) dp.classList.remove('visible');
+            if (document.getElementById('draft-panel')) document.getElementById('draft-panel').classList.remove('visible');
         }
-
       } catch (e) { console.error("Polling error:", e); }
     }, 1000);
 
@@ -850,10 +812,23 @@
             // 1. Tell the server to turn the UI GREEN
             await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
 
-            // 2. Wipe the TTSH demo orders from the map
-            // This makes logistics.html show only the hardcoded default Trucks 1-4
-            localStorage.removeItem('trucks_ttsh');
-            localStorage.removeItem('last_order_id_ttsh'); 
+            // 2. Reset ALL facility logistics state back to Trucks 1-4 only
+            const facilities = ['ttsh','nuh','cgh','ktph','amk','jurong','tamp','woodlands'];
+            const defaultCompleted = (facilityName) => ([
+                { name:"Truck #01", qty:"10,000", item:"N95 Masks",                    destination: facilityName, completedAt:"Mon 07 Apr", driver:"Ahmad bin Yusof",   ref:"PO-2025-0041" },
+                { name:"Truck #02", qty:"3,200",  item:"Surgical Gloves (Box)",         destination: facilityName, completedAt:"Tue 08 Apr", driver:"Lim Wei Jian",      ref:"PO-2025-0042" },
+                { name:"Truck #03", qty:"850",    item:"Bottles of Mosquito Repellent", destination: facilityName, completedAt:"Tue 08 Apr", driver:"Ravi s/o Krishnan", ref:"PO-2025-0043" },
+                { name:"Truck #04", qty:"5,000",  item:"N95 Masks",                    destination: facilityName, completedAt:"Wed 09 Apr", driver:"Tan Boon Huat",     ref:"PO-2025-0044" }
+            ]);
+
+            facilities.forEach(fid => {
+                const loc = { ttsh:"Tan Tock Seng Hospital", nuh:"National University Hosp.", cgh:"Changi General Hospital", ktph:"Khoo Teck Puat Hospital", amk:"Ang Mo Kio Polyclinic", jurong:"Jurong Polyclinic", tamp:"Tampines Polyclinic", woodlands:"Woodlands Polyclinic" };
+                localStorage.removeItem(`trucks_${fid}`);                           // wipe active trucks
+                localStorage.removeItem(`processed_orders_${fid}`);                 // wipe dedup state
+                localStorage.setItem(`trucks_reset_${fid}`, '1');                   // signal logistics.html
+                localStorage.setItem(`completed_trucks_${fid}`, JSON.stringify(defaultCompleted(loc[fid]))); // restore only 1-4
+            });
+            localStorage.removeItem('last_order_id_ttsh');
 
             // 3. Clear browser alert locks
             localStorage.removeItem('alert_lock');

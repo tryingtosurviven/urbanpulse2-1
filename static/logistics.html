@@ -352,6 +352,28 @@
         renderCompleted();
         fetchLtaEta();
         setInterval(fetchLtaEta, 60000);
+
+        // --- LISTEN FOR ADMIN RESET WHILE ON MAP ---
+        setInterval(async () => {
+            try {
+                const token = localStorage.getItem('urbanpulse_token');
+                const res = await fetch('/api/clinic-poll', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await res.json();
+                const lastLogReset = localStorage.getItem('last_logistics_reset');
+
+                if (data.reset_event_id && lastLogReset !== String(data.reset_event_id)) {
+                    const fid = 'ttsh';
+                    localStorage.removeItem('trucks_' + fid);
+                    localStorage.removeItem('processed_orders_' + fid);
+                    localStorage.removeItem('completed_trucks_' + fid);
+                    localStorage.removeItem('last_order_id_ttsh');
+                    localStorage.setItem('last_logistics_reset', data.reset_event_id);
+                    location.reload(); // This forces the map to reload with only Trucks 1-4
+                }
+            } catch (e) {}
+        }, 2000);
     </script>
 </body>
 </html>

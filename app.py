@@ -991,10 +991,11 @@ def live_dengue():
 def admin_reset():
     global clinic_state, current_broadcast_message
     
-    # 1. Reset Server variables to force the UI back to Green "Normal" state
+    # 1. Reset Server variables
     clinic_state = {
         "view": "normal",
         "protocol": "standard",
+        "reset_event_id": int(time.time() * 1000), # Send a unique timestamp
         "draft": {
             "active": False,
             "facility": "---",
@@ -1008,7 +1009,6 @@ def admin_reset():
             "risk_level": "LOW",
             "governance_log": "",
         },
-        # Reset stocks to your hackathon starting values
         "stock": {
             "ttsh": {"n95": 1200, "repellent": 500},
             "nuh":  {"n95": 950,  "repellent": 500},
@@ -1021,8 +1021,6 @@ def admin_reset():
         }
     }
     current_broadcast_message = ""
-    # Note: We do NOT wipe the governance.log file here so the data stays for the judge.
-    
     return jsonify({"status": "success"})
 
 @app.route('/api/admin-broadcast', methods=['POST'])
