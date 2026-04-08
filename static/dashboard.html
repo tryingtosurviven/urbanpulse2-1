@@ -3,173 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrbanPulse | City Ops Console</title>
+    <title>UrbanPulse | HQ Command Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-        .ops-card { background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; margin-bottom: 20px; }
-        .urgent-border { border-left: 5px solid #ef4444; }
-        .log-feed { max-height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; color: #94a3b8; }
-        .navbar { background-color: #020617; border-bottom: 1px solid #334155; }
-        .authorize-btn {
-            background-color: #22c55e;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .reject-btn {
-            background: transparent;
-            color: #ef4444;
-            border: 1px solid #ef4444;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-left: 10px;
-        }
+        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .ops-card { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid #334155; border-radius: 12px; height: 100%; transition: all 0.3s ease; }
+        .ops-card:hover { border-color: #6366f1; box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+        .urgent-border { border-left: 5px solid #ef4444; position: relative; animation: blink-border 2s infinite; }
+        @keyframes blink-border { 0%, 100% { border-left-color: #ef4444; } 50% { border-left-color: #450a0a; } }
+        .log-feed { height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; padding: 10px; background: #000; border-radius: 8px; color: #94a3b8; }
+        .authorize-btn { background: #22c55e; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 800; width: 100%; }
+        .sim-btn { font-weight: 700; text-transform: uppercase; font-size: 0.7rem; padding: 8px; }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg px-4 py-3 mb-4">
-    <a href="/clinic" class="btn btn-outline-light btn-sm me-3">← Back to Clinic Portal</a>
-    <span class="navbar-brand fw-bold text-white mb-0">🟢 UrbanPulse // City Ops Console</span>
-    <span class="ms-auto badge bg-danger">LIVE: Haze Protocol Active</span>
+<nav class="navbar px-4 py-2 border-bottom border-secondary mb-4">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center">
+            <button onclick="window.location.href='/clinic'" class="btn btn-sm btn-outline-secondary me-3">← Back</button>
+            <span class="navbar-brand fw-bold text-uppercase">
+                <span class="text-primary">Urban</span>Pulse // <span class="text-white">HQ COMMAND CENTER</span>
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <button onclick="triggerReset()" class="btn btn-sm btn-danger fw-bold">🔄 RESET NATIONAL SYSTEM</button>
+            <div class="text-end">
+                <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.6rem;">Status</div>
+                <div id="global-status-text" class="text-success fw-bold small">● SYSTEM NORMAL</div>
+            </div>
+        </div>
+    </div>
 </nav>
 
 <div class="container-fluid px-4">
-    <div class="row">
-        <div class="col-md-7">
-            <div class="ops-card p-3" style="height: 350px;">
-                <h5 class="fw-bold text-warning">Live District Risk Map</h5>
-                <div id="sg-map" class="h-100 rounded border border-secondary" style="min-height: 280px; width: 100%;"></div>
-            </div>
-        </div>
-
-        <div class="col-md-5">
-            <div class="ops-card p-3" style="height: 350px;">
-                <h5 class="fw-bold text-info">PM2.5 Predictive Forecast</h5>
-                <ul class="list-group list-group-flush mt-3">
-                    <li class="list-group-item bg-transparent text-white border-secondary">+1 Hour: <span class="badge bg-warning text-dark float-end">110 (Moderate)</span></li>
-                    <li class="list-group-item bg-transparent text-white border-secondary">+3 Hours: <span class="badge bg-danger float-end">155 (Unhealthy)</span></li>
-                    <li class="list-group-item bg-transparent text-white border-secondary">+6 Hours: <span class="badge bg-danger float-end">180 (High Risk)</span></li>
-                </ul>
-                <p class="mt-3 small text-muted">Model Confidence: 87% (Cross-referenced with NEA wind data)</p>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="ops-card p-3 border-primary" style="background: rgba(37, 99, 235, 0.1);">
+                <h6 class="text-primary fw-bold mb-3 text-uppercase" style="font-size: 0.75rem;">🚨 Strategic Simulation Engine</h6>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-success sim-btn" onclick="runHQScenario('low_haze')">🟢 Low Haze</button>
+                    <button class="btn btn-outline-warning sim-btn" onclick="runHQScenario('moderate_haze')">🟠 Moderate Haze</button>
+                    <button class="btn btn-outline-danger sim-btn" onclick="runHQScenario('severe_haze')">🔴 Severe Haze</button>
+                    <div class="vr mx-2"></div>
+                    <button class="btn btn-outline-info sim-btn" onclick="runHQScenario('dengue_low')">🦟 Dengue Low</button>
+                    <button class="btn btn-outline-info sim-btn" onclick="runHQScenario('dengue_medium')">🦟 Dengue Med</button>
+                    <button class="btn btn-outline-info sim-btn" onclick="runHQScenario('dengue_high')">🦟 Dengue High</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-7">
-            <h5 class="fw-bold mb-3">Pending AI Actions (Authorization Required)</h5>
-            
-            <div class="ops-card p-3 urgent-border">
-                <div class="d-flex justify-content-between">
-                    <h6 class="fw-bold text-danger">⚠️ Polyclinic Surge Warning: Clementi</h6>
-                    <small class="text-muted">Triggered 2 mins ago</small>
-                </div>
-                <p class="mb-2"><strong>AI Assessment:</strong> PM2.5 predicted to exceed 150 in Clementi within 3 hours. High elderly population detected.</p>
-                <p class="mb-3"><strong>Proposed Action:</strong> Dispatch automated SMS alert to vulnerable residents and notify Clementi Polyclinic of potential 15% surge.</p>
-                <div>
-                <div class="ops-card p-3 urgent-border pending-action-card">
-                    <button class="authorize-btn" onclick="handleAction('authorize')">AUTHORIZE ACTION</button>
-                    <button class="reject-btn" onclick="handleAction('reject')">OVERRIDE / REJECT</button>
-                </div>
-                <div class="ops-card p-3 log-feed audit-log-content"></div>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="ops-card p-4">
+                <h5 class="fw-bold mb-3 text-primary">Live Intervention Map</h5>
+                <div id="sg-map" style="height: 500px; border-radius: 12px;"></div>
             </div>
         </div>
 
-        <div class="col-md-5">
-            <h5 class="fw-bold mb-3">System Audit Log</h5>
-            <div class="ops-card p-3 log-feed">
-                <p>[14:03:22] - SYSTEM: Ingested NEA live data. PM2.5 baseline established.</p>
-                <p>[14:05:10] - AGENT_WATSONX: Identified anomaly in Western sector wind patterns.</p>
-                <p>[14:08:45] - ADMIN_USER: <span class="text-success">Authorized</span> HVAC Recycle Mode for Building ID #4401.</p>
-                <p>[14:15:00] - SYSTEM: Successfully dispatched 4,200 automated SMS nudges to District 22.</p>
-                <p>[14:22:11] - AGENT_WATSONX: Awaiting human confirmation for Polyclinic alert...</p>
+        <div class="col-lg-4">
+            <div class="ops-card p-4 mb-4">
+                <h5 class="fw-bold text-info mb-3">🤖 AI Reasoning (Watsonx)</h5>
+                <div id="ai-justification" class="p-3 rounded bg-black small border border-secondary mb-3" style="min-height: 80px;">
+                    <span class="text-muted">Awaiting strategic trigger...</span>
+                </div>
+                <div id="action-required" style="display:none;" class="p-3 rounded border border-danger bg-danger bg-opacity-10">
+                    <h6 class="text-danger fw-bold small">HQ AUTHORIZATION REQUIRED</h6>
+                    <p id="action-msg" class="small mb-3"></p>
+                    <button class="authorize-btn" onclick="authorizeNationalDispatch()">AUTHORIZE DISPATCH</button>
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-12 mt-4">
-            <div class="ops-card p-3 border-info">
-                <h5 class="fw-bold text-info">⚖️ Governance & Equity Logic</h5>
-                <div class="row">
-                    <div class="col-md-4">
-                        <small class="text-muted d-block">Priority Groups</small>
-                        <span class="badge bg-outline-info border border-info me-1">Elderly (65+)</span>
-                        <span class="badge bg-outline-info border border-info me-1">Schools/CCs</span>
-                        <span class="badge bg-outline-info border border-info">Outdoor Workers</span>
-                    </div>
-                    <div class="col-md-8">
-                        <p class="small mb-0 mt-2">
-                            <strong>Equity Rule:</strong> AI automatically increases alert sensitivity by 20% for districts with higher concentrations of rental flats and CHAS card holders to ensure protective measures reach those with less indoor air filtration.
-                        </p>
-                    </div>
+            <div class="ops-card p-4">
+                <h5 class="fw-bold text-secondary mb-3">Operational Log</h5>
+                <div id="hq-log" class="log-feed">
+                    <div>[SYSTEM] UrbanPulse Online. Awaiting telemetry...</div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // 1. Initialize the map and center it on Singapore coordinates
+    // 1. Setup Map
     var map = L.map('sg-map').setView([1.3521, 103.8198], 11);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO' }).addTo(map);
 
-    // 2. Load a Dark Mode map skin (CartoDB Dark Matter)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        maxZoom: 19
-    }).addTo(map);
+    function authHeaders() {
+        return { 
+            "Authorization": `Bearer ${localStorage.getItem('urbanpulse_token')}`,
+            "Content-Type": "application/json"
+        };
+    }
 
-    // 3. Draw a live interactive "Risk Zone" over Clementi
-    var hazardZone = L.circle([1.3150, 103.7650], {
-        color: '#ef4444',      // Bootstrap danger red
-        fillColor: '#ef4444',
-        fillOpacity: 0.4,
-        radius: 2500           // 2.5km radius
-    }).addTo(map);
-
-    // Add a popup when clicked
-    hazardZone.bindPopup("<b>⚠️ Clementi Sector</b><br>PM2.5 Predicted: 155<br>Surge Risk: HIGH");
-
-    function handleAction(type) {
-        const actionCard = document.querySelector('.pending-action-card'); // Adjust selector to match your class
-        const logBox = document.querySelector('.audit-log-content'); // Adjust to match your log box class
-        const now = new  Date().toLocaleTimeString('en-GB');
-
-        if (type === 'authorize') {
-            // Visual feedback
-            alert("🚨 Action Authorized: SMS alerts dispatched to Clementi residents.");
+    // 2. TRIGGER FUNCTION (This now moves the Clinic Manager's state too)
+    async function runHQScenario(key) {
+        logAction(`DEPLOYING STRATEGY: ${key.toUpperCase()}`, "#6366f1");
+        try {
+            const res = await fetch(`/api/run-scenario/${key}`, { 
+                method: 'POST', 
+                headers: authHeaders() 
+            });
+            const data = await res.json();
             
-            // Add to the Audit Log
-            const newLine = document.createElement('div');
-            newLine.innerHTML = `[${now}] - ADMIN_USER: <span style="color: #22c55e;">Authorized</span> Polyclinic Surge Protocol for Clementi.`;
-            logBox.appendChild(newLine);
-            
-            // Disable the card to show it's "Done"
-            actionCard.style.opacity = '0.5';
-            actionCard.style.pointerEvents = 'none';
-            
-        } else {
-            alert("🛑 Action Rejected: Scenario flagged for manual oversight.");
-            
-            const newLine = document.createElement('div');
-            newLine.innerHTML = `[${now}] - ADMIN_USER: <span style="color: #ef4444;">Rejected</span> Proposed SMS alert for District 22.`;
-            logBox.appendChild(newLine);
-        }
+            if (data.status === 'success') {
+                document.getElementById('ai-justification').innerText = data.supply_chain_actions.justification;
+                document.getElementById('action-msg').innerText = data.healthcare_alerts.alert_message;
+                document.getElementById('action-required').style.display = 'block';
+                document.getElementById('global-status-text').innerText = "● ALERT ACTIVE";
+                document.getElementById('global-status-text').className = "text-danger fw-bold small";
+                logAction("AI Agents processing regional impact city-wide...", "#f59e0b");
+            }
+        } catch (e) { logAction("Trigger Failed: " + e.message, "#ef4444"); }
+    }
+
+    // 3. RESET FUNCTION (This wipes the trucks and the server state)
+    async function triggerReset() {
+        if(!confirm("Initiate National System Reset? This wipes all frontline logistics.")) return;
         
-        // Auto-scroll log to bottom
-        logBox.scrollTop = logBox.scrollHeight;
+        logAction("INITIATING NATIONAL SYSTEM RESET...", "#ef4444");
+        
+        // Tell Server to reset
+        await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
+        
+        // Wipe logistics memory for the demo hospital (TTSH)
+        const fid = 'ttsh';
+        localStorage.removeItem('trucks_' + fid);
+        localStorage.removeItem('processed_orders_' + fid);
+        localStorage.removeItem('completed_trucks_' + fid);
+        localStorage.removeItem('last_order_id_ttsh');
+        
+        // Ensure the Clinic side knows to refresh
+        localStorage.removeItem('last_clinic_reset');
+        
+        location.reload();
+    }
+
+    function logAction(msg, color) {
+        const log = document.getElementById('hq-log');
+        const time = new Date().toLocaleTimeString('en-GB');
+        log.innerHTML = `<div style="color: ${color}">[${time}] - ${msg}</div>` + log.innerHTML;
+    }
+
+    function authorizeNationalDispatch() {
+        logAction("HQ AUTHORIZATION GRANTED. Dispatched to regional clusters.", "#22c55e");
+        alert("Strategic Dispatch Confirmed. Frontline dashboards updated.");
+        document.getElementById('action-required').style.display = 'none';
     }
 </script>
-
 </body>
 </html>
