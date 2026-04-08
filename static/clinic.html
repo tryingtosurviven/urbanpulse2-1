@@ -545,28 +545,39 @@
     }
 
     // --- ALERT MODES ---
-    function activateAlertMode(isSevere = true) {
-    const badge = document.getElementById('global-status');
+    function activateAlertMode(risk) {
+        const badge = document.getElementById('global-status');
         if (!badge) return;
-        if (isSevere) {
+
+        // 1. Reset all cards first to avoid color clashing
+        document.querySelectorAll('.card').forEach(c => {
+            c.classList.remove('critical', 'moderate', 'low-alert');
+            c.removeAttribute('style'); 
+        });
+
+        // 2. Apply the correct tier based on risk level
+        if (risk === 'SEVERE' || risk === 'HIGH') {
+            // --- RED STATE ---
             badge.className = 'status-badge critical';
             badge.removeAttribute('style');
             badge.innerHTML = '<span class="dot" style="background:#ef4444;"></span> ⚠️ SEVERE CRISIS';
-            document.querySelectorAll('.card').forEach(c => {
-                c.classList.remove('moderate');
-                c.classList.add('critical');
-            });
-        } else {
-            // Clear critical class fully before applying moderate amber
+            document.querySelectorAll('.card').forEach(c => c.classList.add('critical'));
+
+        } else if (risk === 'MODERATE' || risk === 'MEDIUM') {
+            // --- AMBER STATE ---
             badge.className = 'status-badge';
             badge.removeAttribute('style');
             badge.setAttribute('style', 'background:#fef3c7; color:#92400e; border-color:#fde68a;');
             badge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span> ⚠️ SYSTEM ALERT';
-            document.querySelectorAll('.card').forEach(c => {
-                c.removeAttribute('style');           // wipe any low-alert inline green
-                c.classList.remove('critical', 'moderate', 'low-alert'); // ← add 'low-alert' here
-                c.classList.add('moderate');          // apply amber CSS class
-            });
+            document.querySelectorAll('.card').forEach(c => c.classList.add('moderate'));
+
+        } else {
+            // --- GREEN STATE (For Low Haze / Low Dengue) ---
+            badge.className = 'status-badge';
+            badge.removeAttribute('style');
+            badge.setAttribute('style', 'background:#dcfce7; color:#166534; border-color:#bbf7d0;');
+            badge.innerHTML = '<span class="dot" style="background:#10b981;"></span> ⚠️ LOW ALERT ACTIVE';
+            document.querySelectorAll('.card').forEach(c => c.classList.add('low-alert'));
         }
     }
 
@@ -648,7 +659,6 @@
     }
     function closeModal(e) { if (e.target.id === 'modal-overlay') e.target.style.display = 'none'; }
 
-
     setInterval(async () => {
         try {
             const res = await fetch('/api/clinic-poll', { headers: authHeaders() });
@@ -671,8 +681,7 @@
                 return;
             }
 
-            // 2. GET CURRENT STATE FROM SERVER
-            // This is the part that connects HQ to Clinic Mgr
+            // 2. DEFINE SYSTEM STATE
             const scenarioKey = data.scenario_key || "";
             const riskLevel   = (data.risk_level || "LOW").toUpperCase();
             const protocol    = (data.protocol || "").toLowerCase();
@@ -681,28 +690,45 @@
             const statusEl = document.getElementById('live-status-indicator');
 
             // 3. DYNAMIC UI COLOR REACTION
-            // If HQ triggers a scenario, this logic forces the Clinic UI to change
+            // This is the core fix: It checks the risk level and applies colors
             if (!scenarioKey || scenarioKey === 'normal') {
-                deactivateAlertMode(); // Back to Blue
+                deactivateAlertMode(); // Default Blue/Green state
                 if (statusEl) {
                     statusEl.innerHTML = `● Monitoring for alerts...`;
                     statusEl.style.color = "#10b981";
                 }
             } else {
-                // Determine if it should be Red (Severe/High) or Orange (Moderate/Med)
-                const isCritical = (riskLevel === 'SEVERE' || riskLevel === 'HIGH');
-                activateAlertMode(isCritical); 
+                // If it's severe/high, turn RED. If moderate/med, turn AMBER. If low, turn GREEN.
+                activateAlertMode(riskLevel); 
                 
                 if (statusEl) {
                     statusEl.innerHTML = `● SITUATION: ${scenarioKey.toUpperCase()} ACTIVE`;
-                    statusEl.style.color = isCritical ? "#ef4444" : "#f59e0b";
+                    // Update the small text color specifically
+                    if (riskLevel === 'SEVERE' || riskLevel === 'HIGH') statusEl.style.color = "#ef4444";
+                    else if (riskLevel === 'MODERATE' || riskLevel === 'MEDIUM') statusEl.style.color = "#f59e0b";
+                    else statusEl.style.color = "#10b981"; // GREEN for LOW
                 }
             }
 
             // 4. UPDATE STOCK DISPLAY
             if (data.stock) updateStockDisplay(data.stock);
 
-            // 5. AUTO-ORDER LOGIC (For Autonomous Mode)
+            // 5. AUTO-TAB SWITCH LOGIC (Dengue)
+            if (!isAdmin && isDengueScenario && scenarioKey !== 'normal') {
+                if (currentTab !== 'dengue' && !window._userOverrideTab) {
+                    switchTab('dengue');
+                }
+                if (data.draft && data.draft.dengue_data) {
+                    window._lastDengueData = data.draft.dengue_data;
+                    window._lastDengueScenario = scenarioKey;
+                    if (currentTab === 'dengue') showDenguePanel(data.draft.dengue_data, scenarioKey);
+                }
+            } else if (!isAdmin && !isDengueScenario && (!scenarioKey || scenarioKey === 'normal')) {
+                window._userOverrideTab = false;
+                if (currentTab === 'dengue') switchTab('haze');
+            }
+
+            // 6. AUTO-ORDER LOGIC
             if (protocol === 'autonomous' && !isAdmin && draftActive) {
                 const currentPoId = data.draft.id;
                 const donePoId = sessionStorage.getItem('autoOrderDone');
@@ -712,7 +738,7 @@
                 }
             }
 
-            // 6. DRAFT PO PANEL VISIBILITY
+            // 7. DRAFT PANEL VISIBILITY
             if (draftActive && protocol !== 'autonomous' && !isAdmin) {
                 if (!userDraftVisible && data.draft.id !== lastRejectedOrderId) {
                     showDraftPanel(data.draft);
@@ -725,7 +751,7 @@
                 if (panel) panel.classList.remove('visible');
             }
 
-            // 7. HQ BROADCAST TICKER
+            // 8. HQ BROADCAST TICKER
             const ticker = document.getElementById('broadcast-ticker');
             if (data.broadcast_msg && data.broadcast_msg.trim()) {
                 if (ticker) {
@@ -737,8 +763,7 @@
             }
 
         } catch (e) { console.error("Polling error:", e); }
-    }, 1000); // Check server state every 1 second
-
+    }, 1000);
     async function runClinicAssistant(scenarioKey) {
         if (assistantIsRunning) return;
         assistantIsRunning = true;
