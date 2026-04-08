@@ -146,7 +146,6 @@
         const completedKey       = 'completed_trucks_' + facilityId;
 
         // ── 2. SEED COMPLETED TRUCKS #01–#04 (first visit only) ──────────────
-        // These are real card objects, not flat history strings.
         if (!localStorage.getItem(completedKey)) {
             const seedCompleted = [
                 {
@@ -190,12 +189,19 @@
         }
 
         // ── 3. LOAD ACTIVE TRUCKS & PROCESSED ORDER IDS ──────────────────────
+        // KEY FIX: If there is NO orderId in the URL, this is a plain page visit
+        // (not an order approval redirect). Clear any stale active trucks so the
+        // list starts empty, as expected — trucks only appear after admin→clinic approval.
+        if (!orderId) {
+            localStorage.removeItem(storageKey);
+        }
+
         let activeTrucks    = JSON.parse(localStorage.getItem(storageKey)        || '[]');
         let processedOrders = JSON.parse(localStorage.getItem(processedOrderKey) || '[]');
 
         // ── 4. ADD NEW ORDER (deduplicated by orderId) ────────────────────────
         if (newOrderQty && orderId && !processedOrders.includes(orderId.toString())) {
-            // Count existing + completed to get next truck number
+            // Count existing completed to get next truck number
             const completedTrucks = JSON.parse(localStorage.getItem(completedKey) || '[]');
             const nextNum = completedTrucks.length + activeTrucks.length + 1;
             const padded  = String(nextNum).padStart(2, '0');
@@ -216,7 +222,7 @@
         }
 
         let selectedTruckIndex  = 0;
-        let completedExpanded   = {}; // track which completed cards are expanded
+        let completedExpanded   = {};
 
         // ── 5. MAP ────────────────────────────────────────────────────────────
         const map = L.map('map').setView([target.lat, target.lng], 13);
