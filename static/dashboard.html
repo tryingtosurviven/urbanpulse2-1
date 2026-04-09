@@ -3,238 +3,565 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrbanPulse HQ | Strategic Operations</title>
+    <title>UrbanPulse HQ | National Operations Console</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        * { box-sizing: border-box; }
         body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .ops-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(10px); border: 1px solid #334155; border-radius: 12px; transition: all 0.3s ease; }
-        .ops-card:hover { border-color: #6366f1; }
-        .log-feed { height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; padding: 10px; background: #000; border-radius: 8px; color: #94a3b8; }
-        .metric-val { font-size: 1.5rem; font-weight: 800; color: #6366f1; }
-        .sim-btn { font-weight: 700; text-transform: uppercase; font-size: 0.65rem; padding: 10px; letter-spacing: 1px; }
-        .authorize-btn { background: #22c55e; border: none; padding: 10px; border-radius: 8px; font-weight: 800; width: 100%; color: white; }
+
+        /* ── Navbar ── */
+        .hq-nav { 
+            background: rgba(2,6,23,0.95); 
+            border-bottom: 1px solid rgba(99,102,241,0.25); 
+            backdrop-filter: blur(12px);
+            padding: 12px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .hq-brand { 
+            font-weight: 900; font-size: 1.1rem; letter-spacing: 1px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .hq-brand .dot { 
+            width: 8px; height: 8px; border-radius: 50%; 
+            background: #22c55e; box-shadow: 0 0 6px #22c55e;
+            animation: blink 2s infinite;
+        }
+        @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+        /* ── Cards ── */
+        .ops-card { 
+            background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(51,65,85,0.7); 
+            border-radius: 14px; 
+            transition: border-color 0.3s ease;
+        }
+        .ops-card:hover { border-color: rgba(99,102,241,0.5); }
+
+        /* ── KPI Strip ── */
+        .kpi-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+        .kpi-card {
+            background: rgba(15,23,42,0.7);
+            border: 1px solid rgba(51,65,85,0.6);
+            border-radius: 12px; padding: 16px 20px;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .kpi-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 700; }
+        .kpi-val { font-size: 1.8rem; font-weight: 900; color: #6366f1; line-height: 1; }
+        .kpi-sub { font-size: 0.72rem; color: #475569; }
+
+        /* ── Sim Engine ── */
+        .sim-section {
+            background: linear-gradient(135deg, rgba(37,99,235,0.07), rgba(99,102,241,0.05));
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 14px; padding: 20px 24px; margin-bottom: 24px;
+        }
+        .sim-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #818cf8; margin-bottom: 14px; }
+        .sim-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .sim-btn { 
+            font-weight: 700; text-transform: uppercase; font-size: 0.65rem; 
+            padding: 10px 16px; letter-spacing: 0.8px; border-radius: 8px;
+            transition: all 0.2s; cursor: pointer; border: 1px solid;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .sim-btn:hover { transform: translateY(-1px); }
+        .sim-divider { width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px; }
+
+        /* ── Map ── */
+        #sg-map { height: 460px; border-radius: 12px; border: 1px solid rgba(51,65,85,0.5); }
+
+        /* ── Dispatch Queue ── */
+        .dispatch-box {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 12px; padding: 16px;
+            display: none; margin-bottom: 16px;
+        }
+        .dispatch-tag { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #f87171; margin-bottom: 8px; }
+        .dispatch-text { font-size: 0.85rem; color: #fecaca; line-height: 1.5; margin-bottom: 14px; }
+        .authorize-btn { 
+            background: linear-gradient(135deg, #16a34a, #15803d); 
+            border: none; padding: 12px; border-radius: 10px; 
+            font-weight: 800; width: 100%; color: white; cursor: pointer;
+            font-size: 0.85rem; letter-spacing: 0.5px;
+            transition: opacity 0.2s;
+        }
+        .authorize-btn:hover { opacity: 0.88; }
+
+        /* ── Equity ── */
+        .equity-card {
+            background: rgba(245,158,11,0.05);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 12px; padding: 16px;
+        }
+        .equity-label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fbbf24; margin-bottom: 12px; }
+        .region-btn-group { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+        .region-radio-label {
+            text-align: center; padding: 8px 4px; border-radius: 8px;
+            border: 1px solid rgba(245,158,11,0.25);
+            font-size: 0.72rem; font-weight: 700; cursor: pointer;
+            color: #94a3b8; transition: all 0.2s;
+        }
+        .region-radio-label:hover { border-color: #f59e0b; color: #fbbf24; }
+        .btn-check:checked + .region-radio-label {
+            background: rgba(245,158,11,0.2); border-color: #f59e0b; color: #fbbf24;
+        }
+
+        /* ── Log ── */
+        .log-feed { 
+            height: 220px; overflow-y: auto; font-family: 'Courier New', monospace; 
+            font-size: 0.72rem; padding: 12px; background: #000; border-radius: 10px; 
+            color: #64748b; border: 1px solid rgba(51,65,85,0.4);
+        }
+        .log-feed .log-line { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+        /* ── Coverage bar ── */
+        .coverage-track { background: rgba(15,23,42,0.8); border-radius: 8px; overflow: hidden; height: 28px; border: 1px solid rgba(51,65,85,0.4); }
+        .coverage-fill { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; transition: all 0.5s; }
+
+        /* ── Status badge ── */
+        .status-pill {
+            font-size: 0.72rem; font-weight: 700; padding: 5px 14px;
+            border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .status-pill.normal { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+        .status-pill.crisis { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #f87171; animation: blink 1.5s infinite; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+        /* ── Section headers ── */
+        .section-hdr { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #475569; margin-bottom: 14px; }
+
+        /* ── Broadcast ── */
+        .broadcast-bar {
+            background: rgba(99,102,241,0.07);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 12px; padding: 14px 18px;
+        }
+        .broadcast-input {
+            flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(51,65,85,0.5);
+            border-radius: 8px; color: #f1f5f9; padding: 9px 14px; font-size: 0.85rem; outline: none;
+        }
+        .broadcast-input:focus { border-color: #6366f1; }
+        .broadcast-btn {
+            background: #6366f1; border: none; padding: 9px 18px; border-radius: 8px;
+            color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: opacity 0.2s;
+        }
+        .broadcast-btn:hover { opacity: 0.85; }
+        .broadcast-clear { background: rgba(51,65,85,0.5); border: 1px solid rgba(51,65,85,0.5); padding: 9px 14px; border-radius: 8px; color: #94a3b8; font-weight: 700; cursor: pointer; font-size: 0.8rem; }
+
+        /* ── Reset btn ── */
+        .reset-btn {
+            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);
+            color: #f87171; padding: 7px 16px; border-radius: 8px;
+            font-weight: 700; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;
+        }
+        .reset-btn:hover { background: rgba(239,68,68,0.2); }
+
+        /* ── Scenario sent toast ── */
+        #dispatch-toast {
+            position: fixed; bottom: 28px; right: 28px;
+            background: rgba(22,163,74,0.95); color: white;
+            padding: 14px 22px; border-radius: 12px;
+            font-weight: 700; font-size: 0.85rem;
+            display: none; z-index: 9999;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
     </style>
 </head>
 <body>
 
-<nav class="navbar px-4 py-2 border-bottom border-secondary mb-4">
-    <div class="container-fluid">
-        <div class="d-flex align-items-center">
-            <button onclick="window.location.href='/clinic'" class="btn btn-sm btn-outline-secondary me-3">← Back</button>
-            <span class="navbar-brand fw-bold text-uppercase">
-                <span class="text-primary">Urban</span>Pulse // <span class="text-white">National Ops Console</span>
-            </span>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <button onclick="triggerReset()" class="btn btn-sm btn-outline-danger fw-bold">🔄 RESET NATIONAL DATABASE</button>
-            <span id="global-status" class="badge bg-success">SYSTEM NORMAL</span>
-        </div>
+<!-- NAV -->
+<nav class="hq-nav">
+    <div class="hq-brand">
+        <div class="dot"></div>
+        <span style="color:#6366f1;">Urban</span><span style="color:#f1f5f9;">Pulse</span>
+        <span style="color:#475569; font-weight:400; font-size:0.85rem;">// National Operations Console</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+        <span id="hq-user-badge" style="font-size:0.78rem; color:#64748b;"></span>
+        <span id="global-status" class="status-pill normal"><span class="status-dot"></span> SYSTEM NORMAL</span>
+        <button class="reset-btn" onclick="triggerReset()">🔄 RESET</button>
+        <button onclick="doLogout()" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#f87171; padding:7px 14px; border-radius:8px; font-weight:700; font-size:0.75rem; cursor:pointer;">Sign Out</button>
     </div>
 </nav>
 
-<div class="container-fluid px-4">
-    <div class="row g-3 mb-4">
-        <div class="col-lg-8">
-            <div class="ops-card p-3 border-primary" style="background: rgba(37, 99, 235, 0.05);">
-                <h6 class="text-primary fw-bold mb-3 text-uppercase" style="font-size: 0.7rem;">Crisis Simulation Engine</h6>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-success sim-btn" onclick="runHQScenario('low_haze')">🟢 Low Haze</button>
-                    <button class="btn btn-outline-warning sim-btn" onclick="runHQScenario('moderate_haze')">🟠 Moderate Haze</button>
-                    <button class="btn btn-outline-danger sim-btn" onclick="runHQScenario('severe_haze')">🔴 Severe Haze</button>
-                    <div class="vr mx-1"></div>
-                    <button class="btn btn-outline-info sim-btn" onclick="runHQScenario('dengue_low')">🦟 Dengue L</button>
-                    <button class="btn btn-outline-info sim-btn" onclick="runHQScenario('dengue_medium')">🦟 Dengue M</button>
-                    <button class="btn btn-outline-info sim-btn" onclick="runHQScenario('dengue_high')">🦟 Dengue H</button>
-                </div>
-            </div>
+<div class="container-fluid px-4 py-4">
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip">
+        <div class="kpi-card">
+            <span class="kpi-label">Facilities Online</span>
+            <span class="kpi-val">8</span>
+            <span class="kpi-sub">4 Hospitals · 4 Polyclinics</span>
         </div>
-        <div class="col-lg-4">
-            <div class="ops-card p-3">
-                <h6 class="text-muted fw-bold mb-2 text-uppercase" style="font-size: 0.6rem;">National Resource Equity</h6>
-                <div class="progress" style="height: 20px; background: #0f172a;">
-                    <div id="equity-bar" class="progress-bar bg-success" style="width: 100%">100% Coverage</div>
-                </div>
-            </div>
+        <div class="kpi-card">
+            <span class="kpi-label">National N95 Stock</span>
+            <span class="kpi-val" id="kpi-n95">11,790</span>
+            <span class="kpi-sub">Units across all facilities</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Active Scenario</span>
+            <span class="kpi-val" id="kpi-scenario" style="font-size:1rem; color:#94a3b8;">NORMAL</span>
+            <span class="kpi-sub" id="kpi-risk">No active alerts</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Last Dispatch</span>
+            <span class="kpi-val" id="kpi-dispatch" style="font-size:1rem; color:#94a3b8;">—</span>
+            <span class="kpi-sub">Authorized by HQ</span>
         </div>
     </div>
 
+    <!-- CRISIS SIMULATION ENGINE -->
+    <div class="sim-section">
+        <div class="sim-label">⚡ Crisis Simulation Engine — HQ Controlled</div>
+        <div class="sim-buttons">
+            <button class="sim-btn btn btn-outline-success" onclick="runHQScenario('low_haze')">🟢 Low Haze</button>
+            <button class="sim-btn btn btn-outline-warning" onclick="runHQScenario('moderate_haze')">🟠 Moderate Haze</button>
+            <button class="sim-btn btn btn-outline-danger" onclick="runHQScenario('severe_haze')">🔴 Severe Haze</button>
+            <div class="sim-divider"></div>
+            <button class="sim-btn btn btn-outline-info" onclick="runHQScenario('dengue_low')">🦟 Dengue Low</button>
+            <button class="sim-btn btn btn-outline-info" onclick="runHQScenario('dengue_medium')">🦟 Dengue Medium</button>
+            <button class="sim-btn btn btn-outline-danger" onclick="runHQScenario('dengue_high')">🦟 Dengue High</button>
+        </div>
+    </div>
+
+    <!-- BROADCAST BAR -->
+    <div class="broadcast-bar mb-4">
+        <div style="font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:#818cf8; margin-bottom:10px;">📣 HQ Comms — Broadcast to All Clinic Terminals</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <input type="text" id="broadcast-msg" class="broadcast-input" placeholder="Enter MOH HQ directive to all clinics...">
+            <button class="broadcast-btn" onclick="sendBroadcast()">📣 Send</button>
+            <button class="broadcast-clear" onclick="clearBroadcast()">✖ Clear</button>
+        </div>
+    </div>
+
+    <!-- MAIN GRID -->
     <div class="row g-4">
+        <!-- LEFT: MAP -->
         <div class="col-lg-8">
-            <div class="ops-card p-4">
-                <h5 class="fw-bold mb-3">Live Intervention Map</h5>
-                <div id="sg-map" style="height: 450px; border-radius: 12px;"></div>
+            <div class="ops-card p-3">
+                <div class="section-hdr mb-3">🗺 Live Intervention Map — Singapore</div>
+                <div id="sg-map"></div>
+                <div id="map-scenario-label" style="margin-top:10px; font-size:0.75rem; color:#475569; text-align:center;">No active scenario</div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="ops-card p-4 mb-4 border-info">
-                <div class="ops-card p-3 mb-4 border-warning" style="background: rgba(245, 158, 11, 0.05);">
-                    <h6 class="text-warning fw-bold mb-3 small"><i class="bi bi-shield-check"></i> EQUITY BALANCING (DISTRICT PRIORITY)</h6>
-                    <div class="d-flex flex-column gap-2">
-                        <div class="small text-muted mb-1">Select district for priority resource allocation:</div>
-                        <div class="btn-group w-100" role="group">
-                            <input type="radio" class="btn-check" name="region-priority" id="reg-west" autocomplete="off" onchange="setRegionPriority('West')">
-                            <label class="btn btn-outline-warning btn-sm border-0" for="reg-west">West</label>
+        <!-- RIGHT: CONTROLS -->
+        <div class="col-lg-4 d-flex flex-column gap-3">
 
-                            <input type="radio" class="btn-check" name="region-priority" id="reg-central" autocomplete="off" onchange="setRegionPriority('Central')">
-                            <label class="btn btn-outline-warning btn-sm border-0" for="reg-central">Central</label>
-
-                            <input type="radio" class="btn-check" name="region-priority" id="reg-north" autocomplete="off" onchange="setRegionPriority('North')">
-                            <label class="btn btn-outline-warning btn-sm border-0" for="reg-north">North</label>
-
-                            <input type="radio" class="btn-check" name="region-priority" id="reg-east" autocomplete="off" onchange="setRegionPriority('East')">
-                            <label class="btn btn-outline-warning btn-sm border-0" for="reg-east">East</label>
-                        </div>
-                        <div id="priority-status" class="mt-2 text-center border border-warning border-opacity-25 rounded p-1" style="font-size: 0.65rem; color: #f59e0b; display:none;">
-                            ⚠️ EQUITY OVERRIDE: Prioritizing <span id="active-region">None</span>
-                        </div>
+            <!-- EQUITY BALANCING -->
+            <div class="equity-card">
+                <div class="equity-label">🛡 Equity Balancing — District Priority</div>
+                <div style="font-size:0.72rem; color:#64748b; margin-bottom:10px;">Select district for priority resource allocation:</div>
+                <div class="region-btn-group">
+                    <div>
+                        <input type="radio" class="btn-check" name="region-priority" id="reg-west" autocomplete="off" onchange="setRegionPriority('West')">
+                        <label class="region-radio-label" for="reg-west">West</label>
+                    </div>
+                    <div>
+                        <input type="radio" class="btn-check" name="region-priority" id="reg-central" autocomplete="off" onchange="setRegionPriority('Central')">
+                        <label class="region-radio-label" for="reg-central">Central</label>
+                    </div>
+                    <div>
+                        <input type="radio" class="btn-check" name="region-priority" id="reg-north" autocomplete="off" onchange="setRegionPriority('North')">
+                        <label class="region-radio-label" for="reg-north">North</label>
+                    </div>
+                    <div>
+                        <input type="radio" class="btn-check" name="region-priority" id="reg-east" autocomplete="off" onchange="setRegionPriority('East')">
+                        <label class="region-radio-label" for="reg-east">East</label>
                     </div>
                 </div>
-                <h5 class="fw-bold text-info mb-3" style="font-size: 1rem;">🛡️ Strategic Dispatch Queue</h5>
-                <div id="ai-status" class="small mb-3 text-muted">Awaiting strategic trigger...</div>
-                
-                <div id="hq-action-box" style="display:none;" class="p-3 rounded border border-danger bg-danger bg-opacity-10">
-                    <div class="small fw-bold text-danger mb-1 text-uppercase">Strategic Proposal:</div>
-                    <div id="proposal-text" class="small mb-3"></div>
-                    <button class="authorize-btn" onclick="authorizeHQAction()">AUTHORIZE NATIONAL DISPATCH</button>
+                <div id="priority-status" style="display:none; margin-top:10px; font-size:0.68rem; color:#f59e0b; text-align:center; border:1px solid rgba(245,158,11,0.25); border-radius:6px; padding:6px;">
+                    ⚠️ EQUITY OVERRIDE: Prioritising <span id="active-region">—</span>
                 </div>
             </div>
 
-            <div class="ops-card p-4">
-                <h5 class="fw-bold text-secondary mb-3" style="font-size: 0.9rem;">Command Log</h5>
+            <!-- NATIONAL COVERAGE -->
+            <div class="ops-card p-3">
+                <div class="section-hdr">📊 National Resource Coverage</div>
+                <div class="coverage-track">
+                    <div id="equity-bar" class="coverage-fill bg-success text-white" style="width:100%;">100% Coverage</div>
+                </div>
+            </div>
+
+            <!-- STRATEGIC DISPATCH QUEUE -->
+            <div class="ops-card p-3 flex-fill">
+                <div class="section-hdr">🛡 Strategic Dispatch Queue</div>
+                <div id="ai-status" style="font-size:0.8rem; color:#475569; margin-bottom:12px;">Awaiting strategic trigger...</div>
+
+                <div class="dispatch-box" id="hq-action-box">
+                    <div class="dispatch-tag">Strategic Proposal — Clinic Mgr Notified</div>
+                    <div class="dispatch-text" id="proposal-text"></div>
+                    <button class="authorize-btn" onclick="authorizeHQAction()">✅ AUTHORIZE NATIONAL DISPATCH</button>
+                </div>
+
+                <!-- Command Log -->
+                <div class="section-hdr mt-2">📋 Command Log</div>
                 <div id="hq-log" class="log-feed">
-                    <div>[SYSTEM] UrbanPulse Strategic Hub initialized...</div>
+                    <div class="log-line" style="color:#4f6075;">[SYSTEM] UrbanPulse Strategic Hub initialized...</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- TOAST -->
+<div id="dispatch-toast">✅ Scenario triggered — Clinic Mgr draft order sent!</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    var map = L.map('sg-map').setView([1.3521, 103.8198], 11);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+    // ── AUTH ──
+    function getToken() { return localStorage.getItem('urbanpulse_token'); }
+    function authHeaders() { return { "Authorization": `Bearer ${getToken()}`, "Content-Type": "application/json" }; }
+    function doLogout() { localStorage.clear(); window.location.href = '/login'; }
 
-    // --- VARIABLES ---
+    // Show user badge
+    const userName = localStorage.getItem('urbanpulse_name') || 'Admin';
+    document.getElementById('hq-user-badge').innerText = `👤 ${userName} (HQ ADMIN)`;
+
+    // ── MAP ──
+    var map = L.map('sg-map').setView([1.3521, 103.8198], 11);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© CartoDB', subdomains: 'abcd', maxZoom: 19
+    }).addTo(map);
+
     let manualPriorityRegion = null;
     let currentHazardLatLng = null;
+    let currentHazardLayer = null;
+    let supplyLineLayer = null;
+    let warehouseMarker = null;
 
-    // --- HELPER FUNCTIONS ---
-    function authHeaders() {
-        return { "Authorization": `Bearer ${localStorage.getItem('urbanpulse_token')}`, "Content-Type": "application/json" };
-    }
-
-    function logAction(msg, color) {
+    // ── HELPERS ──
+    function logAction(msg, color = '#64748b') {
         const log = document.getElementById('hq-log');
         const time = new Date().toLocaleTimeString('en-GB');
-        log.innerHTML = `<div style="color: ${color}">[${time}] - ${msg}</div>` + log.innerHTML;
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `<span style="color:#334155;">[${time}]</span> <span style="color:${color};">${msg}</span>`;
+        log.insertBefore(line, log.firstChild);
     }
 
-    // --- EQUITY LOGIC ---
+    function showToast(msg, duration = 3500) {
+        const t = document.getElementById('dispatch-toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, duration);
+    }
+
+    function setGlobalStatus(crisis) {
+        const el = document.getElementById('global-status');
+        if (crisis) {
+            el.className = 'status-pill crisis';
+            el.innerHTML = '<span class="status-dot"></span> CRISIS PROTOCOL ACTIVE';
+        } else {
+            el.className = 'status-pill normal';
+            el.innerHTML = '<span class="status-dot"></span> SYSTEM NORMAL';
+        }
+    }
+
+    // ── EQUITY ──
     function setRegionPriority(region) {
         manualPriorityRegion = region;
-        document.getElementById('priority-status').style.display = 'block';
-        document.getElementById('active-region').innerText = region.toUpperCase();
-        logAction(`STRATEGIC OVERRIDE: Prioritizing ${region} cluster for equity balancing.`, "#f59e0b");
-
-        // NEW: Add a pulse effect to the map to show HQ is focusing there
-        map.flyTo(currentHazardLatLng || [1.3521, 103.8198], 14);
-    }
-
-    async function runHQScenario(key) {
-        logAction(`DEPLOYING PROTOCOL: ${key.toUpperCase()}`, "#6366f1");
-        
-        // Define unique locations for each scenario
-        const locations = {
-            'severe_haze':   { coords: [1.3329, 103.7436], color: '#ef4444' }, // Jurong
-            'moderate_haze': { coords: [1.3150, 103.7650], color: '#f59e0b' }, // Clementi
-            'low_haze':      { coords: [1.3236, 103.9300], color: '#10b981' }, // Bedok
-            'dengue_high':   { coords: [1.4361, 103.7865], color: '#ef4444' }, // Woodlands
-            'dengue_medium': { coords: [1.3525, 103.9447], color: '#f59e0b' }, // Tampines
-            'dengue_low':    { coords: [1.3691, 103.8454], color: '#10b981' }  // Ang Mo Kio
+        const regionCoords = {
+            'West': [1.3573, 103.7067],
+            'Central': [1.3150, 103.7650],
+            'North': [1.4361, 103.7865],
+            'East': [1.3525, 103.9447]
         };
 
-        const scene = locations[key] || locations['severe_haze'];
-        currentHazardLatLng = scene.coords;
+        document.getElementById('priority-status').style.display = 'block';
+        document.getElementById('active-region').innerText = region.toUpperCase();
+        
+        // flyTo the region center
+        map.flyTo(regionCoords[region], 13);
+        // 2. Add a blue 'Priority' circle to show the person what they are seeing
+        if (window.priorityCircle) map.removeLayer(window.priorityCircle);
+        window.priorityCircle = L.circle(regionCoords[region], {
+            color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.2, radius: 2000
+        }).addTo(map).bindPopup(regionInfo[region]).openPopup();
 
-        // 1. Update the Map Visually
-        if (window.currentHazard) map.removeLayer(window.currentHazard);
-        window.currentHazard = L.circle(scene.coords, {
-            color: scene.color,
-            fillColor: scene.color,
-            fillOpacity: 0.4,
-            radius: 2500
+        logAction(`STRATEGIC OVERRIDE: Prioritising ${region} cluster for equity balancing.`, '#f59e0b');
+    }
+
+    // ── SCENARIO LOCATIONS ──
+    const SCENARIO_META = {
+        'severe_haze':   { coords: [1.3329, 103.7436], color: '#ef4444', zoom: 13, label: 'Severe Haze — Jurong West', risk: 'SEVERE' },
+        'moderate_haze': { coords: [1.3150, 103.7650], color: '#f59e0b', zoom: 13, label: 'Moderate Haze — Clementi', risk: 'MODERATE' },
+        'low_haze':      { coords: [1.3236, 103.9300], color: '#10b981', zoom: 13, label: 'Low Haze — Bedok', risk: 'LOW' },
+        'dengue_high':   { coords: [1.4361, 103.7865], color: '#ef4444', zoom: 13, label: 'Dengue HIGH — Woodlands', risk: 'HIGH' },
+        'dengue_medium': { coords: [1.3525, 103.9447], color: '#f59e0b', zoom: 13, label: 'Dengue MEDIUM — Tampines', risk: 'MEDIUM' },
+        'dengue_low':    { coords: [1.3691, 103.8454], color: '#10b981', zoom: 13, label: 'Dengue LOW — Ang Mo Kio', risk: 'LOW' }
+    };
+
+    async function runHQScenario(key) {
+        const meta = SCENARIO_META[key] || SCENARIO_META['severe_haze'];
+        logAction(`DEPLOYING PROTOCOL: ${key.toUpperCase()}`, '#6366f1');
+        
+        // Update KPI
+        document.getElementById('kpi-scenario').innerText = key.replace(/_/g,' ').toUpperCase();
+        document.getElementById('kpi-scenario').style.color = meta.color;
+        document.getElementById('kpi-risk').innerText = `Risk: ${meta.risk}`;
+
+        const popContext = {
+            'severe_haze': '<b>Jurong West</b><br>Vulnerability: High particulates.<br>Demographic: 22% Senior Citizens.',
+            'moderate_haze': '<b>Clementi Sector</b><br>Vulnerability: Residential density.<br>Demographic: High Rental Flat concentration.',
+            'dengue_high': '<b>Woodlands Cluster</b><br>Vulnerability: Vector Hotspot.<br>Demographic: High student density.'
+        };
+
+        // Update Map
+        currentHazardLatLng = meta.coords;
+        if (currentHazardLayer) map.removeLayer(currentHazardLayer);
+        if (supplyLineLayer) { map.removeLayer(supplyLineLayer); supplyLineLayer = null; }
+        if (warehouseMarker) { map.removeLayer(warehouseMarker); warehouseMarker = null; }
+
+        currentHazardLayer = L.circle(meta.coords, {
+            color: meta.color, fillColor: meta.color, fillOpacity: 0.35, radius: 2500, weight: 2
+        }).addTo(map).bindPopup(popContext[key] || `<b>${meta.label}</b>`).openPopup();
+
+        L.marker(meta.coords, {
+            icon: L.divIcon({ html: `<div style="background:${meta.color};color:white;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:800;white-space:nowrap;">${meta.label}</div>`, className:'', iconAnchor:[60,14] })
         }).addTo(map);
 
-        map.flyTo(scene.coords, scene.zoom);
+        map.flyTo(meta.coords, meta.zoom);
+        document.getElementById('map-scenario-label').innerText = `⚠ Active: ${meta.label}`;
+        document.getElementById('map-scenario-label').style.color = meta.color;
 
-        // 2. Server Sync (Existing Logic)
+        // Update status
+        const isCrisis = meta.risk === 'SEVERE' || meta.risk === 'HIGH';
+        const isModerate = meta.risk === 'MODERATE' || meta.risk === 'MEDIUM';
+        setGlobalStatus(isCrisis || isModerate);
+
+        // Coverage bar
+        const bar = document.getElementById('equity-bar');
+        if (isCrisis) { bar.className = 'coverage-fill bg-danger text-white'; bar.innerText = '⚠ Resource Tension Detected'; bar.style.width = '60%'; }
+        else if (isModerate) { bar.className = 'coverage-fill bg-warning text-dark'; bar.innerText = '⚠ Monitoring Supply Levels'; bar.style.width = '80%'; }
+        else { bar.className = 'coverage-fill bg-success text-white'; bar.innerText = '✓ Supply Levels Adequate'; bar.style.width = '100%'; }
+
+        // Call backend → this triggers draft order for clinic manager
         try {
             const res = await fetch(`/api/run-scenario/${key}`, { method: 'POST', headers: authHeaders() });
             const data = await res.json();
+
             if (data.status === 'success') {
-                document.getElementById('ai-status').innerHTML = `<span class="text-white">Engine Assessment:</span> High surge probability in the ${key.includes('haze') ? 'Western' : 'Northern'} sector.`;
-                document.getElementById('proposal-text').innerText = data.healthcare_alerts.alert_message;
+                const alertMsg = data.healthcare_alerts?.alert_message || 'Strategic action required.';
+                document.getElementById('ai-status').innerHTML = `<span style="color:#e2e8f0; font-weight:600;">Engine Assessment:</span> <span style="color:${meta.color};">${meta.label} — surge risk detected.</span>`;
+                document.getElementById('proposal-text').innerText = alertMsg;
                 document.getElementById('hq-action-box').style.display = 'block';
-                document.getElementById('global-status').className = "badge bg-danger";
-                document.getElementById('global-status').innerText = "CRISIS PROTOCOL ACTIVE";
-                document.getElementById('equity-bar').className = "progress-bar bg-warning text-dark";
-                document.getElementById('equity-bar').innerText = "Resource Tension Detected";
+
+                logAction(`SCENARIO ACTIVE: ${key.toUpperCase()} — Draft PO sent to Clinic Mgr`, meta.color);
+                logAction(`ALERT: ${alertMsg.substring(0, 80)}...`, '#94a3b8');
+
+                // Update KPI last dispatch time
+                document.getElementById('kpi-dispatch').innerText = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+                document.getElementById('kpi-dispatch').style.color = meta.color;
+
+                showToast(`✅ ${meta.label} triggered — Clinic Mgr draft order sent!`);
             }
-        } catch (e) { logAction("Trigger Error", "#ef4444"); }
+        } catch (e) {
+            logAction(`❌ Trigger Error: ${e.message}`, '#ef4444');
+        }
     }
 
-    function authorizeHQAction() {
-        let logMsg = "HQ AUTHORIZATION GRANTED. National Stockpile Released.";
+    async function authorizeHQAction() {
+        let logMsg = 'HQ AUTHORIZATION GRANTED — National Stockpile Released.';
         if (manualPriorityRegion) {
-            logMsg = `HQ AUTHORIZATION GRANTED. Priority routing to ${manualPriorityRegion} sector initiated.`;
-            logAction(`LOGISTICS ENGINE: Diverting reserves to ${manualPriorityRegion} high-vulnerability clusters.`, "#10b981");
+            logMsg = `HQ AUTHORIZATION GRANTED — Priority routing to ${manualPriorityRegion} sector.`;
+            logAction(`LOGISTICS ENGINE: Diverting reserves to ${manualPriorityRegion} high-vulnerability clusters.`, '#10b981');
         }
+        logAction(logMsg, '#22c55e');
 
-        logAction(logMsg, "#22c55e");
-        
-        const warehouseCoords = [1.3644, 103.9915]; // National Warehouse (Changi)
+        const warehouseCoords = [1.3644, 103.9915];
         const targetCoords = currentHazardLatLng || [1.3521, 103.8198];
 
-        // Draw Supply Polyline
-        var supplyLine = L.polyline([warehouseCoords, targetCoords], {
-            color: manualPriorityRegion ? '#3b82f6' : '#22c55e', // Blue if Equity Override active
-            weight: 6,
-            dashArray: '10, 10',
-            opacity: 0.8
+        if (supplyLineLayer) map.removeLayer(supplyLineLayer);
+        supplyLineLayer = L.polyline([warehouseCoords, targetCoords], {
+            color: manualPriorityRegion ? '#3b82f6' : '#22c55e',
+            weight: 5, dashArray: '10, 10', opacity: 0.85
         }).addTo(map);
 
-        // Marker for Warehouse
-        L.marker(warehouseCoords, {
-            icon: L.divIcon({html: '🚚', className: 'truck-icon', iconSize: [30, 30]})
+        if (warehouseMarker) map.removeLayer(warehouseMarker);
+        warehouseMarker = L.marker(warehouseCoords, {
+            icon: L.divIcon({ html: '🚚', className: 'truck-icon', iconSize: [30, 30] })
         }).addTo(map);
+
+        try {
+            const res = await fetch('/api/authorize-dispatch', { 
+                method: 'POST', 
+                headers: authHeaders() 
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                logAction("SERVER: Strategic authorization broadcasted to all terminals.", "#10b981");
+            }
+        } catch (e) {
+            logAction("AUTH ERROR: Failed to broadcast authorization.", "#ef4444");
+        }
 
         document.getElementById('hq-action-box').style.display = 'none';
         
-        // //<--- EDITED: Update progress bar on authorization
-        document.getElementById('equity-bar').className = "progress-bar bg-success";
-        document.getElementById('equity-bar').innerText = manualPriorityRegion ? `Equity Rebalanced: ${manualPriorityRegion} Fulfilled` : "Strategic Restock Authorized";
-        
-        alert("National Strategic Stockpile Release Authorized.");
+        const bar = document.getElementById('equity-bar');
+        bar.className = 'coverage-fill bg-success text-white';
+        bar.innerText = manualPriorityRegion ? `✓ Equity Rebalanced: ${manualPriorityRegion} Fulfilled` : '✓ Strategic Restock Authorized';
+        bar.style.width = '100%';
+
+        logAction('SUPPLY LINE ACTIVE: Changi Warehouse → Crisis Zone', '#22c55e');
+        showToast('✅ National dispatch authorized!');
     }
 
     async function triggerReset() {
+        logAction('SYSTEM RESET INITIATED by HQ Admin', '#f59e0b');
         await fetch('/api/admin-reset', { method: 'POST', headers: authHeaders() });
-        const fid = 'ttsh';
-        localStorage.removeItem('trucks_' + fid);
-        localStorage.removeItem('processed_orders_' + fid);
-        localStorage.removeItem('completed_trucks_' + fid);
+        const facilities = ['ttsh','nuh','cgh','ktph','amk','jurong','tamp','woodlands'];
+        facilities.forEach(fid => {
+            localStorage.removeItem('trucks_' + fid);
+            localStorage.removeItem('processed_orders_' + fid);
+            localStorage.removeItem('completed_trucks_' + fid);
+        });
         localStorage.removeItem('last_order_id_ttsh');
         localStorage.removeItem('last_clinic_reset');
-        location.reload();
+        setGlobalStatus(false);
+        document.getElementById('kpi-scenario').innerText = 'NORMAL';
+        document.getElementById('kpi-scenario').style.color = '#94a3b8';
+        document.getElementById('kpi-risk').innerText = 'No active alerts';
+        document.getElementById('hq-action-box').style.display = 'none';
+        document.getElementById('ai-status').innerText = 'Awaiting strategic trigger...';
+        document.getElementById('map-scenario-label').innerText = 'No active scenario';
+        document.getElementById('map-scenario-label').style.color = '#475569';
+        if (currentHazardLayer) { map.removeLayer(currentHazardLayer); currentHazardLayer = null; }
+        if (supplyLineLayer) { map.removeLayer(supplyLineLayer); supplyLineLayer = null; }
+        if (warehouseMarker) { map.removeLayer(warehouseMarker); warehouseMarker = null; }
+        const bar = document.getElementById('equity-bar');
+        bar.className = 'coverage-fill bg-success text-white';
+        bar.innerText = '100% Coverage';
+        bar.style.width = '100%';
+        logAction('SYSTEM RESET COMPLETE — All terminals notified.', '#22c55e');
+        showToast('🔄 System reset complete');
     }
 
-    function logAction(msg, color) {
-        const log = document.getElementById('hq-log');
-        const time = new Date().toLocaleTimeString('en-GB');
-        log.innerHTML = `<div style="color: ${color}">[${time}] - ${msg}</div>` + log.innerHTML;
+    // ── BROADCAST ──
+    async function sendBroadcast() {
+        const msg = document.getElementById('broadcast-msg').value.trim();
+        if (!msg) return;
+        await fetch('/api/admin-broadcast', { method:'POST', headers: authHeaders(), body: JSON.stringify({ message: msg }) });
+        logAction(`📣 BROADCAST SENT: "${msg.substring(0, 60)}"`, '#818cf8');
+        document.getElementById('broadcast-msg').value = '';
+        showToast('📣 Broadcast sent to all clinic terminals!');
     }
+
+    async function clearBroadcast() {
+        await fetch('/api/admin-broadcast', { method:'POST', headers: authHeaders(), body: JSON.stringify({ message: '' }) });
+        document.getElementById('broadcast-msg').value = '';
+        logAction('BROADCAST CLEARED', '#475569');
+    }
+
+    // Enter to broadcast
+    document.getElementById('broadcast-msg').addEventListener('keydown', e => { if (e.key === 'Enter') sendBroadcast(); });
 </script>
 </body>
 </html>

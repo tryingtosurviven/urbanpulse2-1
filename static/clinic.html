@@ -291,7 +291,7 @@
 
   <!-- CLINIC MANAGER AUDIT SECTION -->
   <div id="clinic-audit-section" style="
-      max-width:1400px; margin: 12px auto 0 auto; padding: 0 30px;
+      max-width:1400px; margin: 12px auto 0 auto; padding: 0 30px; display:none;
   ">
     <div style="
         background:#1e1b4b; color:white;
@@ -300,10 +300,10 @@
         display:flex; flex-wrap:wrap; gap:10px; align-items:center;
     ">
       <span style="font-size:0.75rem; color:#a5b4fc; font-weight:700; letter-spacing:1px; margin-right:4px;">📁 AUDIT &amp; COMPLIANCE</span>
-      <button onclick="fetchGovernanceLog()" style="
+      <button id="audit-toggle-btn" onclick="toggleAuditLog()" style="
           background:#374151; color:white; border:none;
           padding:9px 16px; border-radius:8px; font-weight:700; cursor:pointer;">
-          📋 View Audit Log
+          📋 View Audit Log ▼
       </button>
       <button onclick="downloadAuditCSV()" style="
           background:#0ea5e9; color:white; border:none;
@@ -334,7 +334,7 @@
           The output is generated server-side via agent orchestration (watsonx endpoint), then a Draft PO is created for review.
         </p>
 
-        <div class="ai-buttons" id="scenario-buttons">
+        <div class="ai-buttons" id="scenario-buttons" style="display:none;">
           <button class="ai-btn low" onclick="runClinicAssistant('low_haze')">🟢 Low PSI</button>
           <button class="ai-btn mod" onclick="runClinicAssistant('moderate_haze')">🟠 Moderate PSI</button>
           <button class="ai-btn sev" onclick="runClinicAssistant('severe_haze')">🔴 Severe PSI</button>
@@ -513,17 +513,35 @@
     const currentRole = localStorage.getItem("urbanpulse_role") || "";
     const isAdmin = currentRole === "admin";
 
-    // Show admin-only panel if admin
+    // Scenario buttons: ONLY show for admin (they are already hidden by default)
     if (isAdmin) {
         const adminPanel = document.getElementById('admin-only-panel');
         if (adminPanel) adminPanel.style.display = 'block';
-        const scenarioButtons = document.getElementById('scenario-buttons');
-        if (scenarioButtons) scenarioButtons.style.display = 'none';
+        // Admin sees scenario buttons in the admin panel, not in the AI section
     } else {
         const tabs = document.getElementById('scenario-tabs');
         if (tabs) tabs.style.display = 'block';
         const subText = document.getElementById('ai-sub-text');
-        if (subText) subText.innerHTML = `📡 <strong>Live Agent Feed</strong> — Monitoring for incoming alerts...<br><br><span id="live-status-indicator" style="color:#10b981; font-weight:600;">● Monitoring for incoming alerts...</span>`;
+        if (subText) subText.innerHTML = `📡 <strong>Live Agent Feed</strong> — Monitoring for incoming alerts from HQ...<br><br><span id="live-status-indicator" style="color:#10b981; font-weight:600;">● Monitoring for incoming alerts...</span>`;
+        // Audit section: only show for clinic manager, not admin
+        const auditSection = document.getElementById('clinic-audit-section');
+        if (auditSection) auditSection.style.display = 'block';
+    }
+
+    // Audit log toggle
+    let auditLogOpen = false;
+    function toggleAuditLog() {
+        const display = document.getElementById('audit-log-display');
+        const btn = document.getElementById('audit-toggle-btn');
+        auditLogOpen = !auditLogOpen;
+        if (auditLogOpen) {
+            display.style.display = 'block';
+            btn.innerText = '📋 Hide Audit Log ^';
+            fetchGovernanceLog();
+        } else {
+            display.style.display = 'none';
+            btn.innerText = '📋 View Audit Log ▼';
+        }
     }
 
     // --- AUTH HELPERS ---

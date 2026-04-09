@@ -210,7 +210,7 @@
         if (next && next.startsWith("/")) {
           window.location.href = next;
         } else {
-          const defaults = { admin: "/admin", clinic_manager: "/clinic", citizen: "/citizen" };
+          const defaults = { admin: "/dashboard", clinic_manager: "/clinic", citizen: "/citizen" };
           window.location.href = defaults[data.role] || "/";
         }
 

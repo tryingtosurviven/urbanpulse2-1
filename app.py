@@ -8,9 +8,8 @@ import anthropic
 
 from typing import Any, Dict, Optional
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, render_template # Add render_template here
 #from ibm_watsonx_ai.foundation_models import Model
-#from ibm_watsonx_ai import Credentials
 from dotenv import load_dotenv
 
 load_dotenv()  # Loads variables from .env into environment
@@ -97,6 +96,7 @@ clinic_state = {
     "protocol": "standard",
     "active_scenario": "",       # Persists until admin resets
     "active_risk_level": "LOW",  # Persists until admin resets
+    "hq_authorized": False, # // EDITED: New tracking variable
     "stock": {
         "ttsh": {"n95": 1200, "repellent": 500},
         "nuh":  {"n95": 950,  "repellent": 500},
@@ -685,15 +685,19 @@ def clinic_portal():
 def logistics_portal():
     return send_from_directory("static", "logistics.html")
 
+# //<--- ADDED NEW: Route for the Admin Dashboard
+@app.route("/dashboard")
+@require_role("admin")
+def dashboard_portal():
+    # // EDITED: Fixed from render_template to send_from_directory
+    return send_from_directory("static", "dashboard.html")
+
+# ── FIX 2: Admin Route ──
 @app.route("/admin")
 @require_role("admin")
 def admin_portal():
-    """
-    Admins now use the unified dashboard.
-    The frontend JS will automatically reveal the 'admin-only-panel'.
-    """
-    # We explicitly serve clinic.html to admins to provide the unified view
-    return send_from_directory("static", "clinic.html")
+    # // EDITED: Fixed from render_template to send_from_directory
+    return send_from_directory("static", "dashboard.html")
 
 @app.get("/api/governance-log")
 @require_role("clinic_manager", "admin")
@@ -763,14 +767,13 @@ def api_public_run_scenario(scenario_key):
 @require_role("admin")
 def api_run_scenario(scenario_key):
     key = scenario_key.strip().lower()
-    if key not in VALID_SCENARIOS:
-        return jsonify({"error": "Invalid scenario", "code": "INVALID_SCENARIO_KEY"}), 400
+    if key not in VALID_SCENARIOS: return jsonify({"error": "Invalid"}), 400
     try:
+        # // EDITED: Reset authorization when a new scenario starts
+        clinic_state["hq_authorized"] = False 
         result = run_scenario_with_watsonx_first(key)
         return jsonify(result)
-    except Exception as e:
-        return jsonify({"status": "error", "error": str(e), "instance": INSTANCE}), 400
-
+    except Exception as e: return jsonify({"status": "error", "error": str(e)}), 400
 
 @app.post("/api/watsonx-scenario")
 @require_role("admin")
@@ -799,6 +802,7 @@ def clinic_poll():
     is_dengue = _is_dengue_scenario(clinic_state.get("active_scenario", ""))
     return jsonify({
         "status": "alert_active" if clinic_state["draft"].get("active") else "waiting",
+        "hq_authorized": clinic_state.get("hq_authorized", False), # //<--- ADD THIS LINE
         "current_view": clinic_state["view"],
         "protocol": clinic_state["protocol"],
         "draft": clinic_state["draft"],
@@ -826,6 +830,14 @@ def clinic_poll():
         "risk_level": clinic_state["draft"].get("risk_level", "LOW"),
     })
 
+# //<--- ADD THIS NEW ENDPOINT
+@app.post("/api/authorize-dispatch")
+@require_role("admin")
+def authorize_dispatch():
+    # // EDITED: New endpoint for HQ button
+    global clinic_state
+    clinic_state["hq_authorized"] = True 
+    return jsonify({"status": "success"})
 
 @app.post("/api/clinic-confirm-order")
 @require_role("clinic_manager", "admin")
